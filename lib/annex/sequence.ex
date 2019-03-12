@@ -1,10 +1,13 @@
 defmodule Annex.Sequence do
-  alias Annex.{Sequence, Layer, Data}
+  alias Annex.{Sequence, Layer, Data, Utils}
+  require Logger
+
   @behaviour Layer
 
   defstruct layers: [],
             learning_rate: 0.05,
-            initialized?: false
+            initialized?: false,
+            error_calc: nil
 
   def get_layers(%Sequence{layers: layers}) do
     layers
@@ -14,13 +17,22 @@ defmodule Annex.Sequence do
     learning_rate
   end
 
+  def apply_error_calc(%Sequence{error_calc: func}, data)
+      when is_function(func, 1) and is_list(data) do
+    Enum.map(data, func)
+  end
+
+  def apply_error_calc(%Sequence{}, data) do
+    data
+  end
+
   def initialize(seq, opts \\ [])
 
   def initialize(%Sequence{initialized?: true} = seq, _opts) do
     {:ok, seq}
   end
 
-  def initialize(%Sequence{initialized?: false} = seq1, _opts) do
+  def initialize(%Sequence{initialized?: false} = seq1, opts) do
     seq1
     |> get_layers()
     |> chunkify()
@@ -41,7 +53,12 @@ defmodule Annex.Sequence do
         {:error, errors}
 
       %{ok: initialized_layers} ->
-        initialized_seq = %Sequence{seq1 | layers: initialized_layers, initialized?: true}
+        initialized_seq = %Sequence{
+          seq1
+          | layers: initialized_layers,
+            initialized?: true,
+            error_calc: Keyword.get(opts, :error_calc)
+        }
 
         {:ok, initialized_seq}
     end
@@ -88,15 +105,17 @@ defmodule Annex.Sequence do
   end
 
   def train_once(%Sequence{} = seq, data, labels) do
-    {outputs, seq2} = Sequence.feedforward(seq, data)
+    {network_outputs, seq2} = Sequence.feedforward(seq, data)
+    outputs = Data.decode(network_outputs)
+    labels = Data.decode(labels)
 
-    total_loss_pd =
-      outputs
-      |> Data.decode()
-      |> total_loss_pd(Data.decode(labels))
+    network_error = calc_network_error(outputs, labels)
+    normalized_error = Utils.proportions(network_error)
+    backprop_error = apply_error_calc(seq, normalized_error)
 
-    ones = Enum.map(labels, fn _ -> 1.0 end)
-    {_, [], seq3} = Sequence.backprop(seq2, total_loss_pd, ones, [])
+    total_loss_pd = calculate_network_error_pd(network_error)
+
+    {_, [], seq3} = Sequence.backprop(seq2, total_loss_pd, backprop_error, [])
     seq3
   end
 
@@ -113,8 +132,8 @@ defmodule Annex.Sequence do
   end
 
   defp calc_network_error(net_outputs, labels) do
-    [labels, net_outputs]
-    |> Enum.zip()
+    labels
+    |> Utils.zip(net_outputs)
     |> Enum.map(fn
       {y_true_item, y_pred_item} -> y_true_item - y_pred_item
     end)

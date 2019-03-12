@@ -36,4 +36,39 @@ defmodule Annex.Utils do
   def zip([a | a_rest], [b | b_rest]) do
     [{a, b} | zip(a_rest, b_rest)]
   end
+
+  def transpose([]), do: []
+  def transpose([[] | _]), do: []
+
+  def transpose(a) do
+    [Enum.map(a, &hd/1) | transpose(Enum.map(a, &tl/1))]
+  end
+
+  def mean(items) do
+    items
+    |> Enum.reduce({0, 0.0}, fn item, {count_acc, total_acc} ->
+      {count_acc + 1, total_acc + item}
+    end)
+    |> case do
+      {0, _} -> 0.0
+      {count, total} -> total / count
+    end
+  end
+
+  def dot(a, b) when is_list(a) and is_list(b) do
+    a
+    |> zip(b)
+    |> Enum.reduce(0.0, fn {ax, bx}, total -> ax * bx + total end)
+  end
+
+  def normalize(data) when is_list(data) do
+    {minimum, maximum} = Enum.min_max(data)
+    diff = maximum - minimum
+    Enum.map(data, fn item -> (item - minimum) / diff end)
+  end
+
+  def proportions(data) when is_list(data) do
+    sum = Enum.sum(data)
+    Enum.map(data, fn item -> item / sum end)
+  end
 end

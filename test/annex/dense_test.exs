@@ -41,14 +41,7 @@ defmodule Annex.DenseTest do
     ones = Enum.map(labels, fn _ -> 1.0 end)
     assert {backprop_data, [], new_dense} = Dense.backprop(dense, total_loss_pd, ones, [])
 
-    assert backprop_data == [
-             0.09719470480062539,
-             0.09719470480062539,
-             0.09719470480062539,
-             0.06194229120237336,
-             0.06194229120237336,
-             0.06194229120237336
-           ]
+    assert backprop_data == [0.09719470480062539, 0.06194229120237336, 0.06194229120237336]
 
     n1 = %Neuron{
       n1
