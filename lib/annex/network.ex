@@ -36,7 +36,7 @@ defmodule Annex.Network do
       net
       |> get_layers()
       |> Enum.reverse()
-      |> Enum.reduce({[loss_pd], []}, fn layer, {prev_loss_pd, layers} ->
+      |> Enum.reduce({loss_pd, []}, fn layer, {prev_loss_pd, layers} ->
         activation_deriv = Layer.get_activation_deriv(layer)
 
         {next_loss_pd, layer} =
@@ -55,6 +55,7 @@ defmodule Annex.Network do
     # number of times to loop through the entire dataset
     epochs = Keyword.get(opts, :epochs, 1000)
     print_at_epoch = Keyword.get(opts, :print_at_epoch, 500)
+    name = Keyword.get(opts, :network_name, nil)
 
     [data, all_y_trues]
     |> Enum.zip()
@@ -69,7 +70,14 @@ defmodule Annex.Network do
       if rem(epoch, print_at_epoch) == 0 do
         y_preds = Enum.map(data, fn d -> Network.predict(net_acc, d) end)
         loss = Cost.mse_loss(all_y_trues, y_preds)
-        Logger.debug(fn -> "Epoch #{inspect(epoch)} loss: #{inspect(loss)}" end)
+
+        Logger.debug(fn ->
+          """
+          Neural Network #{name} -
+            epoch: #{inspect(epoch)}
+            loss: #{inspect(loss)}
+          """
+        end)
       end
 
       if epoch >= epochs do
@@ -86,13 +94,13 @@ defmodule Annex.Network do
     |> Enum.map(fn
       {y_true_item, y_pred_item} -> y_true_item - y_pred_item
     end)
-    |> Enum.sum()
   end
 
   defp train_once(%Network{} = net1, x, y_true) do
     {y_pred, net2} = Network.feedforward(net1, x)
-    total_error = calc_total_error(y_pred, y_true)
-    total_loss_pd = -2 * total_error
-    Network.backprop(net2, total_loss_pd, 1.0)
+    network_error = calc_total_error(y_pred, y_true)
+    total_loss_pd = -2 * Enum.sum(network_error)
+    ones = Enum.map(network_error, fn _ -> 1.0 end)
+    Network.backprop(net2, total_loss_pd, ones)
   end
 end
