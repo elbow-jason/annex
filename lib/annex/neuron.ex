@@ -46,6 +46,20 @@ defmodule Annex.Neuron do
     }
   end
 
+  def update_sum(%Neuron{} = neuron, inputs) do
+    bias = get_bias(neuron)
+
+    sum =
+      neuron
+      |> get_weights
+      |> Enum.zip(inputs)
+      |> Enum.map(fn {w, i} -> w * i end)
+      |> Enum.sum()
+      |> Kernel.+(bias)
+
+    %Neuron{neuron | sum: sum, inputs: inputs}
+  end
+
   def backprop(%Neuron{} = neuron, total_loss_pd, neuron_loss_pd, learn_rate, activation_deriv) do
     sum = get_sum(neuron)
     bias = get_bias(neuron)

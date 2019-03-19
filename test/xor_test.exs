@@ -1,6 +1,7 @@
-defmodule Annex.XorTest do
+defmodule Annex.SequenceXorTest do
   use ExUnit.Case, async: true
-  alias Annex.{Network, Layer}
+  alias Annex
+  alias Annex.Sequence
 
   test "xor test" do
     data = [
@@ -17,21 +18,24 @@ defmodule Annex.XorTest do
       [0.0]
     ]
 
-    net1 = %Network{
-      layers: [
-        Layer.new_random(8, 2, :sigmoid),
-        Layer.new_random(1, 8, :sigmoid)
-      ]
-    }
+    seq1 =
+      Annex.sequence(
+        [
+          Annex.dense(8, input_dims: 2),
+          Annex.activation(:tanh),
+          Annex.dense(1, input_dims: 8),
+          Annex.activation(:sigmoid)
+        ],
+        learning_rate: 0.05
+      )
 
-    %Network{} =
-      net2 =
-      Network.train(net1, data, labels, name: "xor", epochs: 50_000, print_at_epoch: 50_000)
+    %Sequence{} =
+      seq2 = Annex.train(seq1, data, labels, name: "xor", epochs: 10_000, print_at_epoch: 10_000)
 
-    [zero_zero] = Network.predict(net2, [0.0, 0.0])
-    [zero_one] = Network.predict(net2, [0.0, 1.0])
-    [one_zero] = Network.predict(net2, [1.0, 0.0])
-    [one_one] = Network.predict(net2, [1.0, 1.0])
+    [zero_zero] = Annex.predict(seq2, [0.0, 0.0])
+    [zero_one] = Annex.predict(seq2, [0.0, 1.0])
+    [one_zero] = Annex.predict(seq2, [1.0, 0.0])
+    [one_one] = Annex.predict(seq2, [1.0, 1.0])
 
     assert_in_delta(zero_one, 1.0, 0.1)
     assert_in_delta(zero_zero, 0.0, 0.1)
