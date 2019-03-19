@@ -21,8 +21,8 @@ defmodule AnnexTest do
 
     net1 = %Network{
       layers: [
-        Layer.new_random(8, 2, activation: :sigmoid),
-        Layer.new_random(1, 8, activation: :sigmoid)
+        Layer.new_random(8, 2, :sigmoid),
+        Layer.new_random(1, 8, :sigmoid)
       ]
     }
 
@@ -64,8 +64,8 @@ defmodule AnnexTest do
 
     net1 = %Network{
       layers: [
-        Layer.new_random(2, 2, activation: :sigmoid),
-        Layer.new_random(1, 2, activation: :sigmoid)
+        Layer.new_random(2, 2, :sigmoid),
+        Layer.new_random(1, 2, :sigmoid)
       ]
     }
 
@@ -77,13 +77,5 @@ defmodule AnnexTest do
 
     assert_in_delta(alice_pred, 1.0, 0.1)
     assert_in_delta(bob_pred, 0.0, 0.1)
-
-    # IO.puts("""
-    #   Males are 0.0
-    #   Females are 1.0
-    #   - - -
-    #   Predicted Alice => #{alice_pred}
-    #   Predicted Bob   => #{bob_pred}
-    # """)
   end
 end

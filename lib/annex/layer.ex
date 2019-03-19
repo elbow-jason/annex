@@ -1,14 +1,24 @@
 defmodule Annex.Layer do
-  alias Annex.{Layer, Neuron, Activation}
+  @callback backprop(struct(), float(), [float(), ...], Keyword.t()) :: {[float(), ...], struct}
+  @callback feedforward(struct(), [float(), ...]) :: {[float(), ...], struct()}
 
-  defstruct activation: nil,
+  alias Annex.{Layer, Neuron, Activator}
+
+  defstruct activator: nil,
             neurons: nil,
             inputs: nil,
             activation_deriv: nil
 
   def get_neurons(%Layer{neurons: neurons}), do: neurons
-  def get_activation(%Layer{activation: a}), do: a
-  def get_activation_deriv(%Layer{activation_deriv: ad}), do: ad
+
+  def get_activation(%Layer{activator: %Activator{} = a}) do
+    Activator.get_activation(a)
+  end
+
+  def get_activation_deriv(%Layer{activator: %Activator{} = a}) do
+    Activator.get_derivative(a)
+  end
+
   def get_inputs(%Layer{inputs: inputs}), do: inputs
 
   def get_output(%Layer{} = layer) do
@@ -17,33 +27,15 @@ defmodule Annex.Layer do
     |> Enum.map(&Neuron.get_output/1)
   end
 
-  def new_random(neurons, size, opts \\ []) do
-    {activation, activation_deriv} =
-      opts
-      |> Map.new()
-      |> do_fetch_activations()
-
+  def new_random(neurons, size, %Activator{} = activator) do
     %Layer{
       neurons: Enum.map(1..neurons, fn _ -> Neuron.new_random(size) end),
-      activation: activation,
-      activation_deriv: activation_deriv
+      activator: activator
     }
   end
 
-  defp do_fetch_activations(%{activation: name}) when is_atom(name) do
-    name
-    |> Activation.by_name()
-    |> do_fetch_activations()
-  end
-
-  defp do_fetch_activations(opts_map) when is_map(opts_map) do
-    activation = Map.fetch!(opts_map, :activation)
-    activation_deriv = Map.fetch!(opts_map, :activation_deriv)
-    do_fetch_activations({activation, activation_deriv})
-  end
-
-  defp do_fetch_activations({a, a_deriv}) when is_function(a, 1) and is_function(a_deriv, 1) do
-    {a, a_deriv}
+  def new_random(neurons, size, name) when is_atom(name) do
+    new_random(neurons, size, Activator.build(name))
   end
 
   def feedforward(%Layer{} = layer, inputs) do
@@ -64,7 +56,9 @@ defmodule Annex.Layer do
   end
 
   defp do_activate_neurons(%Layer{} = layer, inputs) do
-    activation = get_activation(layer)
+    activation =
+      layer
+      |> get_activation()
 
     layer
     |> get_neurons()
