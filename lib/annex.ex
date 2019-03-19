@@ -19,8 +19,7 @@ defmodule Annex do
     %Dense{
       rows: rows,
       cols: Keyword.get(opts, :input_dims),
-      neurons: Keyword.get(opts, :data),
-      inputs: nil
+      neurons: Keyword.get(opts, :data)
     }
   end
 

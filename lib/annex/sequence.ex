@@ -14,14 +14,24 @@ defmodule Annex.Sequence do
     learning_rate
   end
 
-  def initialize(%Sequence{initialized?: true} = seq) do
+  def initialize(seq, opts \\ [])
+
+  def initialize(%Sequence{initialized?: true} = seq, _opts) do
     {:ok, seq}
   end
 
-  def initialize(%Sequence{initialized?: false} = seq1) do
+  def initialize(%Sequence{initialized?: false} = seq1, _opts) do
     seq1
     |> get_layers()
-    |> Enum.map(&Layer.initialize/1)
+    |> chunkify()
+    |> Enum.map(fn {previous_layer, layer, next_layer} ->
+      layer_opts = [
+        previous_layer: previous_layer,
+        next_layer: next_layer
+      ]
+
+      Layer.initialize(layer, layer_opts)
+    end)
     |> Enum.group_by(
       fn {status, _} -> status end,
       fn {_, initialized} -> initialized end
@@ -92,5 +102,34 @@ defmodule Annex.Sequence do
     |> Enum.map(fn
       {y_true_item, y_pred_item} -> y_true_item - y_pred_item
     end)
+  end
+
+  defp chunkify([]) do
+    []
+  end
+
+  defp chunkify([one]) do
+    [{nil, one, nil}]
+  end
+
+  defp chunkify([one, two]) do
+    [{one, two, nil}, {nil, one, two}]
+  end
+
+  defp chunkify([prev, current, next | rest]) do
+    acc = [
+      {prev, current, next},
+      {nil, prev, current}
+    ]
+
+    chunkify([current, next | rest], acc)
+  end
+
+  defp chunkify([prev, current, next | rest], acc) do
+    chunkify([current, next | rest], [{prev, current, next} | acc])
+  end
+
+  defp chunkify([prev, current], acc) do
+    Enum.reverse([{prev, current, nil} | acc])
   end
 end

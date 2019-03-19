@@ -56,7 +56,7 @@ defmodule Annex.Activation do
     {loss_partial_derivs, [activation_derivative: get_derivative(layer)], layer}
   end
 
-  def initialize(%Activation{} = layer) do
+  def initialize(%Activation{} = layer, _opts) do
     {:ok, layer}
   end
 
