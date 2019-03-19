@@ -1,9 +1,11 @@
 defmodule Annex.Layer do
-  @type backprop_output :: {[float(), ...], Keyword.t(), struct()}
+  @type data :: [float(), ...] | reference()
 
-  @callback feedforward(struct(), [float(), ...]) :: {[float(), ...], struct()}
-  @callback backprop(struct(), float(), [float(), ...], Keyword.t()) :: backprop_output()
-  @callback initialize(struct()) :: {:ok, struct()} | {:error, any()}
+  @type backprop_output :: {data(), Keyword.t(), struct()}
+
+  @callback feedforward(struct(), data()) :: {data(), struct()}
+  @callback backprop(struct(), float(), data, Keyword.t()) :: backprop_output()
+  @callback initialize(struct(), Keyword.t()) :: {:ok, struct()} | {:error, any()}
 
   alias Annex.{Layer}
 
@@ -21,7 +23,7 @@ defmodule Annex.Layer do
     module.backprop(layer, total_loss_pd, loss_pds, layer_opts)
   end
 
-  def initialize(%module{} = layer) do
-    module.initialize(layer)
+  def initialize(%module{} = layer, opts \\ []) do
+    module.initialize(layer, opts)
   end
 end

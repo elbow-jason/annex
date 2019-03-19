@@ -4,20 +4,62 @@ defmodule Annex.Dense do
   @behaviour Layer
 
   defstruct neurons: nil,
-            inputs: nil,
             rows: nil,
-            cols: nil
+            cols: nil,
+            activation_derivative: nil,
+            learning_rate: nil
 
-  def get_neurons(%Dense{neurons: neurons}), do: neurons
-  def get_inputs(%Dense{inputs: inputs}), do: inputs
+  defp get_neurons(%Dense{neurons: neurons}), do: neurons
 
-  def initialize(%Dense{neurons: nil, rows: rows, cols: cols} = layer) do
-    neurons = Enum.map(1..rows, fn _ -> Neuron.new_random(cols) end)
-    {:ok, %Dense{layer | neurons: neurons}}
+  defp get_learning_rate(%Dense{learning_rate: nil}, opts) do
+    Keyword.get(opts, :learning_rate, 0.05)
   end
 
-  def initialize(%Dense{} = layer) do
-    {:ok, layer}
+  defp get_learning_rate(%Dense{learning_rate: rate}, _) when is_float(rate) do
+    rate
+  end
+
+  defp get_activation_derivative(%Dense{activation_derivative: nil}, opts) do
+    der = Keyword.get(opts, :activation_derivative)
+    next_layer = Keyword.get(opts, :next_layer)
+
+    case {der, next_layer} do
+      {nil, %module{} = next} ->
+        module.get_derivative(next)
+
+      {nil, _} ->
+        raise "Dense activation_derivative not found"
+
+      {der, _} ->
+        der
+    end
+  end
+
+  defp get_activation_derivative(%Dense{activation_derivative: a}, _) when is_function(a, 1) do
+    a
+  end
+
+  def initialize(%Dense{rows: rows, cols: cols} = layer, opts \\ []) do
+    neurons =
+      case get_neurons(layer) do
+        nil ->
+          Enum.map(1..rows, fn _ -> Neuron.new_random(cols) end)
+
+        found when is_list(found) ->
+          found
+      end
+
+    activation_derivative = get_activation_derivative(layer, opts)
+    learning_rate = get_learning_rate(layer, opts)
+
+    initialized = %Dense{
+      layer
+      | neurons: neurons,
+        activation_derivative: activation_derivative,
+        learning_rate: learning_rate
+    }
+
+    {:ok, initialized}
   end
 
   def feedforward(%Dense{} = layer, inputs) do
@@ -30,12 +72,12 @@ defmodule Annex.Dense do
       end)
       |> Enum.unzip()
 
-    {output, %Dense{layer | neurons: neurons, inputs: inputs}}
+    {output, %Dense{layer | neurons: neurons}}
   end
 
   def backprop(%Dense{} = layer, total_loss_pd, loss_pds, opts) do
-    learning_rate = Keyword.fetch!(opts, :learning_rate)
-    activation_derivative = Keyword.fetch!(opts, :activation_derivative)
+    learning_rate = get_learning_rate(layer, opts)
+    activation_derivative = get_activation_derivative(layer, opts)
 
     {next_loss_pd, neurons} =
       [get_neurons(layer), List.wrap(loss_pds)]
