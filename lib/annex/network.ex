@@ -55,7 +55,7 @@ defmodule Annex.Network do
     # number of times to loop through the entire dataset
     epochs = Keyword.get(opts, :epochs, 1000)
     print_at_epoch = Keyword.get(opts, :print_at_epoch, 500)
-    name = Keyword.get(opts, :network_name, nil)
+    name = Keyword.get(opts, :name, nil)
 
     [data, all_y_trues]
     |> Enum.zip()
