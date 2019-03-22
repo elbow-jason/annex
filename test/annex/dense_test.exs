@@ -1,6 +1,6 @@
 defmodule Annex.DenseTest do
   use ExUnit.Case, async: true
-  alias Annex.{Dense, Neuron}
+  alias Annex.{Dense, Neuron, Sequence}
 
   def fixture() do
     %Dense{
@@ -30,12 +30,13 @@ defmodule Annex.DenseTest do
 
   test "dense backprop works" do
     dense = %Dense{neurons: [n1, n2]} = fixture()
-    inputs = [0.3, 0.3, 0.3]
-    n1 = %Neuron{n1 | inputs: inputs, sum: 1.9}
-    n2 = %Neuron{n2 | inputs: inputs, sum: 1.3599999999999999}
-    dense = %Dense{dense | neurons: [n1, n2]}
-
-    assert {backprop_data, [], new_dense} = Dense.backprop(dense, 0.25, [0.2, 0.8], [])
+    inputs = [0.1, 1.0, 0.0]
+    labels = [1.0, 0.0]
+    {outputs, dense} = Dense.feedforward(dense, inputs)
+    total_loss_pd = Sequence.total_loss_pd(outputs, labels)
+    assert total_loss_pd == 5.08
+    ones = Enum.map(labels, fn _ -> 1.0 end)
+    assert {backprop_data, [], new_dense} = Dense.backprop(dense, total_loss_pd, ones, [])
 
     assert backprop_data = [
              0.11318025926193101,
@@ -48,14 +49,18 @@ defmodule Annex.DenseTest do
 
     n1 = %Neuron{
       n1
-      | bias: 0.9997170493518451,
-        weights: [0.9999151148055535, 0.9999151148055535, 0.9999151148055535]
+      | bias: 0.9753125449806411,
+        weights: [0.9975312544980641, 0.9753125449806411, 1.0],
+        inputs: inputs,
+        sum: 2.1
     }
 
     n2 = %Neuron{
       n2
-      | bias: 0.9983747379879301,
-        weights: [0.39951242139637905, 0.39951242139637905, 0.39951242139637905]
+      | bias: 0.9606666450864929,
+        weights: [0.3960666645086493, 0.36066664508649293, 0.4],
+        inputs: inputs,
+        sum: 1.44
     }
 
     assert new_dense == %Dense{dense | neurons: [n1, n2]}
