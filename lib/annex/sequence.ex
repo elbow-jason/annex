@@ -87,16 +87,27 @@ defmodule Annex.Sequence do
     {next_layers_loss_pd, next_layer_opts, %Sequence{seq | layers: layers}}
   end
 
-  def train_once(%Sequence{} = seq, x, y_true) do
-    {y_pred, seq2} = Sequence.feedforward(seq, x)
-    network_error = calc_total_error(y_pred, y_true)
-    total_loss_pd = -2 * Enum.sum(network_error)
-    ones = Enum.map(network_error, fn _ -> 1.0 end)
+  def train_once(%Sequence{} = seq, data, labels) do
+    {outputs, seq2} = Sequence.feedforward(seq, data)
+
+    total_loss_pd = total_loss_pd(outputs, labels)
+
+    ones = Enum.map(labels, fn _ -> 1.0 end)
     {_, [], seq3} = Sequence.backprop(seq2, total_loss_pd, ones, [])
     seq3
   end
 
-  defp calc_total_error(net_outputs, labels) do
+  def total_loss_pd(outputs, labels) do
+    outputs
+    |> calc_network_error(labels)
+    |> calculate_network_error_pd()
+  end
+
+  def calculate_network_error_pd(network_error) do
+    -2 * Enum.sum(network_error)
+  end
+
+  def calc_network_error(net_outputs, labels) do
     [labels, net_outputs]
     |> Enum.zip()
     |> Enum.map(fn
