@@ -48,18 +48,18 @@ defmodule Annex.NeuronTest do
     total_loss_pd = 0.5
     neuron_loss_pd = 0.3
     learn_rate = 0.05
-    activation_deriv = &Activation.sigmoid/1
+    activation_deriv = &Activation.sigmoid_deriv/1
 
     assert {next_loss_pds, n3} =
              Neuron.backprop(n2, total_loss_pd, neuron_loss_pd, learn_rate, activation_deriv)
 
     assert n3 == %Neuron{
              inputs: inputs,
-             bias: 0.9933940219151659,
-             weights: [0.9933940219151659, -0.0059453802763507054, -1.1],
+             bias: 0.9992125481094737,
+             weights: [0.9992125481094737, -7.087067014736697e-4, -1.1],
              sum: 2.0
            }
 
-    assert next_loss_pds == [0.8807970779778823, 0.0, -0.9688767857756706]
+    assert next_loss_pds == [0.10499358540350662, 0.0, -0.11549294394385728]
   end
 end

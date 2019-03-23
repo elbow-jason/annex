@@ -40,13 +40,13 @@ defmodule Annex.Neuron do
     %Neuron{neuron | sum: sum, inputs: inputs}
   end
 
-  def backprop(%Neuron{} = neuron, total_loss_pd, neuron_loss_pd, learn_rate, activation_deriv) do
+  def backprop(%Neuron{} = neuron, total_loss_pd, neuron_loss_pd, learning_rate, activation_deriv) do
     sum = get_sum(neuron)
     bias = get_bias(neuron)
     sum_deriv = activation_deriv.(sum)
     inputs = get_inputs(neuron)
     weights = get_weights(neuron)
-    delta_coeff = learn_rate * total_loss_pd * neuron_loss_pd
+    delta_coeff = learning_rate * total_loss_pd * neuron_loss_pd
 
     {[_ | next_neuron_loss], [new_bias | new_weights]} =
       [1.0 | inputs]

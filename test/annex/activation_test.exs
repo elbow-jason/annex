@@ -35,6 +35,7 @@ defmodule Annex.ActivationTest do
   end
 
   test "sigmoid_deriv/1" do
+    assert Activation.sigmoid_deriv(2.0) == 0.10499358540350662
     assert Activation.sigmoid_deriv(1.0) == 0.19661193324148185
     assert Activation.sigmoid_deriv(0.0) == 0.25
     assert Activation.sigmoid_deriv(-1.0) == 0.19661193324148185
