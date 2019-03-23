@@ -15,38 +15,18 @@ defmodule Annex.Neuron do
   end
 
   def new_random(size) when is_integer(size) and size > 0 do
-    %Neuron{
-      weights: Utils.random_weights(size),
-      bias: Utils.random_float()
-    }
+    weights = Utils.random_weights(size)
+    bias = Utils.random_float()
+    new(weights, bias)
   end
 
   def get_bias(%Neuron{bias: bias}), do: bias
   def get_weights(%Neuron{weights: w}), do: w
   def get_output(%Neuron{output: o}), do: o
-  def get_sum(%Neuron{sum: s}), do: s
+  def get_sum(%Neuron{sum: sum}), do: sum
   def get_inputs(%Neuron{inputs: inputs}), do: inputs
 
-  def activate(%Neuron{} = neuron, inputs, activation) do
-    bias = get_bias(neuron)
-
-    sum =
-      neuron
-      |> get_weights
-      |> Enum.zip(inputs)
-      |> Enum.map(fn {w, i} -> w * i end)
-      |> Enum.sum()
-      |> Kernel.+(bias)
-
-    %Neuron{
-      neuron
-      | sum: sum,
-        output: activation.(sum),
-        inputs: inputs
-    }
-  end
-
-  def update_sum(%Neuron{} = neuron, inputs) do
+  def feedforward(%Neuron{} = neuron, inputs) do
     bias = get_bias(neuron)
 
     sum =

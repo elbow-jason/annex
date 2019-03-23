@@ -1,5 +1,5 @@
 defmodule Annex.Dense do
-  alias Annex.{Dense, Layer, Neuron}
+  alias Annex.{Dense, Layer, Neuron, Utils}
 
   @behaviour Layer
 
@@ -67,7 +67,7 @@ defmodule Annex.Dense do
       layer
       |> get_neurons()
       |> Enum.map(fn neuron ->
-        neuron = Neuron.update_sum(neuron, inputs)
+        neuron = Neuron.feedforward(neuron, inputs)
         {Neuron.get_sum(neuron), neuron}
       end)
       |> Enum.unzip()
@@ -80,8 +80,9 @@ defmodule Annex.Dense do
     activation_derivative = get_activation_derivative(layer, opts)
 
     {next_loss_pd, neurons} =
-      [get_neurons(layer), List.wrap(loss_pds)]
-      |> Enum.zip()
+      layer
+      |> get_neurons()
+      |> Utils.zip(List.wrap(loss_pds))
       |> Enum.map(fn {neuron, loss_pd} ->
         Neuron.backprop(neuron, total_loss_pd, loss_pd, learning_rate, activation_derivative)
       end)

@@ -28,4 +28,12 @@ defmodule Annex.Utils do
 
     {Map.get(grouped, true, []), Map.get(grouped, false, [])}
   end
+
+  def zip([], []) do
+    []
+  end
+
+  def zip([a | a_rest], [b | b_rest]) do
+    [{a, b} | zip(a_rest, b_rest)]
+  end
 end
