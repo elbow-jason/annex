@@ -2,12 +2,6 @@ defmodule Annex.NeuronTest do
   use ExUnit.Case
   alias Annex.{Neuron, Activation}
 
-  def fixture(:neuron) do
-    weights = [1.0, 0.0, -1.1]
-    bias = 1.0
-    Neuron.new(weights, bias)
-  end
-
   test "new/2" do
     weights = [1.0, 1.0, 2.0]
     bias = 1.1

@@ -49,8 +49,8 @@ defmodule Annex.Neuron do
     delta_coeff = learn_rate * total_loss_pd * neuron_loss_pd
 
     {[_ | next_neuron_loss], [new_bias | new_weights]} =
-      [[1.0 | inputs], [bias | weights]]
-      |> Enum.zip()
+      [1.0 | inputs]
+      |> Utils.zip([bias | weights])
       |> Enum.map(fn {input, weight} ->
         delta = input * sum_deriv * delta_coeff
         {weight * sum_deriv, weight - delta}

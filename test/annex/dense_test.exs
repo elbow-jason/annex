@@ -30,6 +30,9 @@ defmodule Annex.DenseTest do
 
   test "dense backprop works" do
     dense = %Dense{neurons: [n1, n2]} = fixture()
+    assert n1 == %Neuron{weights: [1.0, 1.0, 1.0]}
+    assert n2 == %Neuron{weights: [0.4, 0.4, 0.4]}
+
     inputs = [0.1, 1.0, 0.0]
     labels = [1.0, 0.0]
     {outputs, dense} = Dense.feedforward(dense, inputs)
@@ -38,13 +41,13 @@ defmodule Annex.DenseTest do
     ones = Enum.map(labels, fn _ -> 1.0 end)
     assert {backprop_data, [], new_dense} = Dense.backprop(dense, total_loss_pd, ones, [])
 
-    assert backprop_data = [
-             0.11318025926193101,
-             0.11318025926193101,
-             0.11318025926193101,
-             0.06501048048279782,
-             0.06501048048279782,
-             0.06501048048279782
+    assert backprop_data == [
+             0.09719470480062539,
+             0.09719470480062539,
+             0.09719470480062539,
+             0.06194229120237336,
+             0.06194229120237336,
+             0.06194229120237336
            ]
 
     n1 = %Neuron{
