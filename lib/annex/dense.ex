@@ -75,6 +75,8 @@ defmodule Annex.Dense do
     {output, %Dense{layer | neurons: neurons}}
   end
 
+  def encoder, do: Annex.Data
+
   def backprop(%Dense{} = layer, total_loss_pd, loss_pds, opts) do
     learning_rate = get_learning_rate(layer, opts)
     activation_derivative = get_activation_derivative(layer, opts)

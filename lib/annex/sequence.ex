@@ -103,6 +103,8 @@ defmodule Annex.Sequence do
     |> calculate_network_error_pd()
   end
 
+  def encoder, do: Annex.Data
+
   def calculate_network_error_pd(network_error) do
     -2 * Enum.sum(network_error)
   end
