@@ -1,5 +1,5 @@
 defmodule Annex.Sequence do
-  alias Annex.{Sequence, Layer}
+  alias Annex.{Sequence, Layer, Data}
   @behaviour Layer
 
   defstruct layers: [],
@@ -64,7 +64,7 @@ defmodule Annex.Sequence do
   end
 
   def predict(%Sequence{} = seq, data) do
-    {prediction, _} = feedforward(seq, data)
+    {prediction, _} = Layer.feedforward(seq, data)
     prediction
   end
 
@@ -90,7 +90,10 @@ defmodule Annex.Sequence do
   def train_once(%Sequence{} = seq, data, labels) do
     {outputs, seq2} = Sequence.feedforward(seq, data)
 
-    total_loss_pd = total_loss_pd(outputs, labels)
+    total_loss_pd =
+      outputs
+      |> Data.decode()
+      |> total_loss_pd(Data.decode(labels))
 
     ones = Enum.map(labels, fn _ -> 1.0 end)
     {_, [], seq3} = Sequence.backprop(seq2, total_loss_pd, ones, [])
@@ -105,11 +108,11 @@ defmodule Annex.Sequence do
 
   def encoder, do: Annex.Data
 
-  def calculate_network_error_pd(network_error) do
+  defp calculate_network_error_pd(network_error) do
     -2 * Enum.sum(network_error)
   end
 
-  def calc_network_error(net_outputs, labels) do
+  defp calc_network_error(net_outputs, labels) do
     [labels, net_outputs]
     |> Enum.zip()
     |> Enum.map(fn
