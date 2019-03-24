@@ -1,5 +1,5 @@
 defmodule Annex.Layer do
-  @type data :: [float(), ...] | reference()
+  @type data :: [float(), ...] | struct()
 
   @type backprop_output :: {data(), Keyword.t(), struct()}
 
