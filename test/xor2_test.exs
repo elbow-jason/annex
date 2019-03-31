@@ -3,7 +3,7 @@ defmodule Annex.SequenceXor2Test do
   alias Annex
   alias Annex.Sequence
 
-  test "xor test" do
+  test "xor2 test" do
     data = [
       [0.0, 0.0],
       [0.0, 1.0],
@@ -21,12 +21,13 @@ defmodule Annex.SequenceXor2Test do
     seq1 =
       Annex.sequence(
         [
-          Annex.dense(8, input_dims: 2),
-          Annex.activation(:tanh),
-          Annex.dense(2, input_dims: 8),
+          Annex.dense(10, input_dims: 2),
+          Annex.activation(:sigmoid),
+          Annex.dense(2, input_dims: 10),
           Annex.activation(:sigmoid)
         ],
-        learning_rate: 0.5
+        learning_rate: 0.1,
+        error_calc: fn p -> p end
       )
 
     %Sequence{} =

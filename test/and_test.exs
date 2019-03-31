@@ -31,7 +31,8 @@ defmodule Annex.AndTest do
           Annex.dense(2, input_dims: 8),
           Annex.activation(:sigmoid)
         ],
-        learning_rate: 0.05
+        learning_rate: 0.05,
+        error_calc: fn p -> p * 2 end
       )
 
     %Sequence{} =

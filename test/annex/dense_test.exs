@@ -39,9 +39,37 @@ defmodule Annex.DenseTest do
     total_loss_pd = Sequence.total_loss_pd(outputs, labels)
     assert total_loss_pd == 5.08
     ones = Enum.map(labels, fn _ -> 1.0 end)
+
+    assert dense == %Dense{
+             activation_derivative: &Annex.Activation.sigmoid_deriv/1,
+             cols: 3,
+             learning_rate: 0.05,
+             neurons: [
+               %Annex.Neuron{
+                 bias: 1.0,
+                 inputs: [0.1, 1.0, 0.0],
+                 output: 0.0,
+                 sum: 2.1,
+                 weights: [1.0, 1.0, 1.0]
+               },
+               %Annex.Neuron{
+                 bias: 1.0,
+                 inputs: [0.1, 1.0, 0.0],
+                 output: 0.0,
+                 sum: 1.44,
+                 weights: [0.4, 0.4, 0.4]
+               }
+             ],
+             rows: 2
+           }
+
     assert {backprop_data, [], new_dense} = Dense.backprop(dense, total_loss_pd, ones, [])
 
-    assert backprop_data == [0.09719470480062539, 0.06194229120237336, 0.06194229120237336]
+    assert backprop_data == [
+             0.09719470480062539,
+             0.09719470480062539,
+             0.09719470480062539
+           ]
 
     n1 = %Neuron{
       n1
