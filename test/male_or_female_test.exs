@@ -14,7 +14,7 @@ defmodule Annex.SequenceMOrFTest do
       [-15.0, -6.0]
     ]
 
-    all_y_trues = [
+    labels = [
       # Alice
       [1.0],
       # Bob
@@ -32,11 +32,7 @@ defmodule Annex.SequenceMOrFTest do
                Annex.dense(1, input_dims: 2),
                Annex.activation(:sigmoid)
              ])
-             |> Annex.train(data, all_y_trues,
-               name: "male_or_female",
-               epochs: 50000,
-               print_at_epoch: 10000
-             )
+             |> Annex.train(data, labels, halt_condition: {:epochs, 50_000})
 
     [alice_pred] = Annex.predict(seq, [-2.0, -1.0])
     [bob_pred] = Annex.predict(seq, [25.0, 6.0])

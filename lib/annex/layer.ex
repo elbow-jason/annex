@@ -1,13 +1,13 @@
 defmodule Annex.Layer do
-  @type data :: Encoder.data()
+  @type backprop_output :: {Data.t(), Keyword.t(), struct()}
+  @type t() :: struct()
 
-  @type backprop_output :: {data(), Keyword.t(), struct()}
-
-  @callback feedforward(struct(), data()) :: {data(), struct()}
-  @callback backprop(struct(), float(), data, Keyword.t()) :: backprop_output()
-  @callback initialize(struct(), Keyword.t()) :: {:ok, struct()} | {:error, any()}
+  @callback feedforward(struct(), Data.t()) :: {Data.t(), struct()}
+  @callback backprop(struct(), float(), Data.t(), Keyword.t()) :: backprop_output()
+  @callback init_layer(struct(), Keyword.t()) :: {:ok, struct()} | {:error, any()}
   @callback encoder() :: module()
 
+  # @spec feedforward(struct(), Data.t()) :: {Data.t(), struct()}
   def feedforward(%module{} = layer, inputs) do
     inputs = encoder(layer).encode(inputs)
     module.feedforward(layer, inputs)
@@ -18,8 +18,8 @@ defmodule Annex.Layer do
     module.backprop(layer, total_loss_pd, loss_pds, layer_opts)
   end
 
-  def initialize(%module{} = layer, opts \\ []) do
-    module.initialize(layer, opts)
+  def init(%module{} = layer, opts \\ []) do
+    module.init_layer(layer, opts)
   end
 
   def encoder(%module{}) do

@@ -87,25 +87,20 @@ defmodule Annex.Examples.Iris do
       """
     end)
 
-    seq1 =
-      Annex.sequence(
-        [
-          Annex.dense(100, input_dims: 4),
-          Annex.activation(:tanh),
-          Annex.dense(3, input_dims: 100),
-          Annex.activation(:sigmoid)
-        ],
-        learning_rate: 0.07,
-        error_calc: fn p -> 2 * p + :rand.uniform() * 0.1 - 0.05 end
-      )
-
-    seq2 =
-      Annex.train(seq1, train_data, train_labels,
+    seq =
+      Annex.sequence([
+        Annex.dense(100, input_dims: 4),
+        Annex.activation(:tanh),
+        Annex.dense(3, input_dims: 100),
+        Annex.activation(:sigmoid)
+      ])
+      |> Annex.train(train_data, train_labels,
         name: :iris,
-        epochs: 10_000,
-        print_at_epoch: 200
+        learning_rate: 0.07,
+        halt_condition: {:epochs, 10_000}
       )
 
+    # error_calc: fn p -> 2 * p + :rand.uniform() * 0.1 - 0.05 end
     first_test_data = List.first(test_data)
     first_test_labels = List.first(test_labels)
     pred = Annex.predict(seq2, first_test_data)
@@ -124,7 +119,7 @@ defmodule Annex.Examples.Iris do
     test_data
     |> Enum.zip(test_labels)
     |> Enum.each(fn {datum, label} ->
-      pred = Annex.predict(seq2, datum)
+      pred = Annex.predict(seq, datum)
       norm = Utils.normalize(pred)
 
       correct? =

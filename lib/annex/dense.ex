@@ -39,7 +39,7 @@ defmodule Annex.Dense do
     a
   end
 
-  def initialize(%Dense{rows: rows, cols: cols} = layer, opts \\ []) do
+  def init_layer(%Dense{rows: rows, cols: cols} = layer, opts \\ []) do
     neurons =
       case get_neurons(layer) do
         nil ->

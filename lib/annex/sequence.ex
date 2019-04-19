@@ -1,38 +1,54 @@
 defmodule Annex.Sequence do
-  alias Annex.{Sequence, Layer, Data, Utils}
+  alias Annex.{Sequence, Layer, Data, Utils, Learner, Cost}
   require Logger
 
+  @behaviour Learner
   @behaviour Layer
 
+  @type t :: %__MODULE__{
+          layers: list(Layer.t()),
+          initialized?: boolean(),
+          init_options: Keyword.t(),
+          train_options: Keyword.t(),
+          cost_func: (float() -> float())
+        }
+
   defstruct layers: [],
-            learning_rate: 0.05,
             initialized?: false,
-            error_calc: nil
+            init_options: [],
+            train_options: [],
+            cost_func: nil
+
+  def build(opts \\ []) do
+    %Sequence{
+      layers: Keyword.get(opts, :layers, []),
+      initialized?: Keyword.get(opts, :initialized?, false),
+      cost_func: Keyword.get(opts, :cost_func, &Cost.mse/1)
+    }
+  end
 
   def get_layers(%Sequence{layers: layers}) do
     layers
   end
 
-  def get_learning_rate(%Sequence{learning_rate: learning_rate}) do
-    learning_rate
+  def train_opts(opts) when is_list(opts) do
+    opts
+    |> Keyword.take([:learning_rate])
+    |> Keyword.put_new(:learning_rate, 0.05)
   end
 
-  def apply_error_calc(%Sequence{error_calc: func}, data)
-      when is_function(func, 1) and is_list(data) do
-    Enum.map(data, func)
+  @spec init_learner(t(), any()) :: {:error, any()} | {:ok, t()}
+  def init_learner(seq, opts \\ []) do
+    init_layer(seq, opts)
   end
 
-  def apply_error_calc(%Sequence{}, data) do
-    data
-  end
+  def init_layer(seq, opts \\ [])
 
-  def initialize(seq, opts \\ [])
-
-  def initialize(%Sequence{initialized?: true} = seq, _opts) do
+  def init_layer(%Sequence{initialized?: true} = seq, _opts) do
     {:ok, seq}
   end
 
-  def initialize(%Sequence{initialized?: false} = seq1, opts) do
+  def init_layer(%Sequence{initialized?: false} = seq1, _opts) do
     seq1
     |> get_layers()
     |> chunkify()
@@ -42,7 +58,7 @@ defmodule Annex.Sequence do
         next_layer: next_layer
       ]
 
-      Layer.initialize(layer, layer_opts)
+      Layer.init(layer, layer_opts)
     end)
     |> Enum.group_by(
       fn {status, _} -> status end,
@@ -56,8 +72,7 @@ defmodule Annex.Sequence do
         initialized_seq = %Sequence{
           seq1
           | layers: initialized_layers,
-            initialized?: true,
-            error_calc: Keyword.get(opts, :error_calc)
+            initialized?: true
         }
 
         {:ok, initialized_seq}
@@ -85,8 +100,8 @@ defmodule Annex.Sequence do
     prediction
   end
 
-  def backprop(%Sequence{} = seq, total_loss_pd, loss_pd, _) do
-    learning_rate = get_learning_rate(seq)
+  def backprop(%Sequence{} = seq, total_loss_pd, loss_pd, opts) do
+    learning_rate = Keyword.fetch!(opts, :learning_rate)
 
     {next_layers_loss_pd, next_layer_opts, layers} =
       seq
@@ -104,19 +119,51 @@ defmodule Annex.Sequence do
     {next_layers_loss_pd, next_layer_opts, %Sequence{seq | layers: layers}}
   end
 
-  def train_once(%Sequence{} = seq, data, labels) do
+  # def train(seq, data, labels, opts \\ []) do
+  #   Enum.reduce_while(sequence, fn {input, target, epoch}, net_acc ->
+  #     net_acc = Sequence.train(net_acc, input, target)
+
+  #     # if rem(epoch, print_at_epoch) == 0 do
+  #     #   y_preds = Enum.map(data, fn d -> Sequence.predict(net_acc, d) end)
+
+  #     #   Logger.debug(fn ->
+  #     #     """
+  #     #     Sequence: #{name} -
+  #     #       epoch: #{inspect(epoch)}
+  #     #       loss: #{inspect(loss)}
+  #     #     """
+  #     #   end)
+  #     # end
+
+  #     if epoch >= epochs do
+  #       {:halt, net_acc}
+  #     else
+  #       {:cont, net_acc}
+  #     end
+  #   end)
+  # end
+  # end
+
+  def train(%Sequence{} = seq, data, labels, opts) do
     {network_outputs, seq2} = Sequence.feedforward(seq, data)
     outputs = Data.decode(network_outputs)
     labels = Data.decode(labels)
 
     network_error = calc_network_error(outputs, labels)
-    normalized_error = Utils.proportions(network_error)
-    backprop_error = apply_error_calc(seq, normalized_error)
+    backprop_error = Utils.proportions(network_error)
+    # backprop_error = apply_error_calc(seq, normalized_error)
 
     total_loss_pd = calculate_network_error_pd(network_error)
 
-    {_, [], seq3} = Sequence.backprop(seq2, total_loss_pd, backprop_error, [])
-    seq3
+    {_, [], seq3} = Sequence.backprop(seq2, total_loss_pd, backprop_error, opts)
+    cost_func = get_cost_func(seq)
+
+    loss =
+      labels
+      |> Utils.zipmap(outputs, fn ax, bx -> ax - bx end)
+      |> cost_func.()
+
+    {loss, seq3}
   end
 
   def total_loss_pd(outputs, labels) do
@@ -167,4 +214,6 @@ defmodule Annex.Sequence do
   defp chunkify([prev, current], acc) do
     Enum.reverse([{prev, current, nil} | acc])
   end
+
+  defp get_cost_func(%Sequence{cost_func: cost_func}), do: cost_func
 end

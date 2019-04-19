@@ -58,7 +58,7 @@ defmodule Annex.Activation do
 
   def encoder, do: Annex.Data
 
-  def initialize(%Activation{} = layer, _opts) do
+  def init_layer(%Activation{} = layer, _opts) do
     {:ok, layer}
   end
 
