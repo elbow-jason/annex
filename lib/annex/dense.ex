@@ -81,15 +81,20 @@ defmodule Annex.Dense do
     learning_rate = get_learning_rate(layer, opts)
     activation_derivative = get_activation_derivative(layer, opts)
 
-    {next_loss_pd, neurons} =
+    {neuron_errors, neurons} =
       layer
       |> get_neurons()
-      |> Utils.zip(List.wrap(loss_pds))
+      |> Utils.zip(loss_pds)
       |> Enum.map(fn {neuron, loss_pd} ->
         Neuron.backprop(neuron, total_loss_pd, loss_pd, learning_rate, activation_derivative)
       end)
       |> Enum.unzip()
 
-    {List.flatten(next_loss_pd), [], %Dense{layer | neurons: neurons}}
+    next_loss_pds =
+      neuron_errors
+      |> Utils.transpose()
+      |> Enum.map(fn items -> Annex.Cost.mse(items) end)
+
+    {next_loss_pds, [], %Dense{layer | neurons: neurons}}
   end
 end

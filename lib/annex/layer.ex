@@ -8,12 +8,6 @@ defmodule Annex.Layer do
   @callback initialize(struct(), Keyword.t()) :: {:ok, struct()} | {:error, any()}
   @callback encoder() :: module()
 
-  # defstruct neurons: nil,
-  #           inputs: nil
-
-  # def get_neurons(%Layer{neurons: neurons}), do: neurons
-  # def get_inputs(%Layer{inputs: inputs}), do: inputs
-
   def feedforward(%module{} = layer, inputs) do
     inputs = encoder(layer).encode(inputs)
     module.feedforward(layer, inputs)
@@ -26,6 +20,10 @@ defmodule Annex.Layer do
 
   def initialize(%module{} = layer, opts \\ []) do
     module.initialize(layer, opts)
+  end
+
+  def encoder(%module{}) do
+    module.encoder()
   end
 
   def encoder(%module{}) do

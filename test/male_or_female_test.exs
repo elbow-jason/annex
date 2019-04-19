@@ -34,14 +34,14 @@ defmodule Annex.SequenceMOrFTest do
              ])
              |> Annex.train(data, all_y_trues,
                name: "male_or_female",
-               epochs: 40000,
+               epochs: 50000,
                print_at_epoch: 10000
              )
 
     [alice_pred] = Annex.predict(seq, [-2.0, -1.0])
     [bob_pred] = Annex.predict(seq, [25.0, 6.0])
 
-    assert_in_delta(alice_pred, 1.0, 0.03)
-    assert_in_delta(bob_pred, 0.0, 0.03)
+    assert_in_delta(alice_pred, 1.0, 0.1)
+    assert_in_delta(bob_pred, 0.0, 0.1)
   end
 end

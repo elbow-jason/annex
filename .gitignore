@@ -23,4 +23,3 @@ erl_crash.dump
 annex-*.tar
 
 .elixir_ls
-examples/

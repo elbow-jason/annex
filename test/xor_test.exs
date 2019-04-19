@@ -30,7 +30,7 @@ defmodule Annex.SequenceXorTest do
       )
 
     %Sequence{} =
-      seq2 = Annex.train(seq1, data, labels, name: "xor", epochs: 10_000, print_at_epoch: 10_000)
+      seq2 = Annex.train(seq1, data, labels, name: "xor", epochs: 80_000, print_at_epoch: 10_000)
 
     [zero_zero] = Annex.predict(seq2, [0.0, 0.0])
     [zero_one] = Annex.predict(seq2, [0.0, 1.0])
