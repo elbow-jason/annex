@@ -26,9 +26,9 @@ defmodule Annex.AndTest do
     seq1 =
       Annex.sequence(
         [
-          Annex.dense(16, input_dims: 3),
+          Annex.dense(6, input_dims: 3),
           Annex.activation(:tanh),
-          Annex.dense(2, input_dims: 16),
+          Annex.dense(2, input_dims: 6),
           Annex.activation(:sigmoid)
         ],
         learning_rate: 0.05,
@@ -39,7 +39,7 @@ defmodule Annex.AndTest do
       seq2 =
       Annex.train(seq1, @data, @labels,
         name: "and T or F",
-        epochs: 160_000,
+        epochs: 100_000,
         print_at_epoch: 40_000
       )
 
