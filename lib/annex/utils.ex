@@ -37,6 +37,14 @@ defmodule Annex.Utils do
     [{a, b} | zip(a_rest, b_rest)]
   end
 
+  def zipmap([], [], _) do
+    []
+  end
+
+  def zipmap([a | a_rest], [b | b_rest], func) when is_function(func, 2) do
+    [func.(a, b) | zipmap(a_rest, b_rest, func)]
+  end
+
   def transpose([]), do: []
   def transpose([[] | _]), do: []
 

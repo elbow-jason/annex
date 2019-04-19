@@ -1,5 +1,5 @@
 defmodule Annex do
-  alias Annex.{Sequence, Dense, Activation, Cost}
+  alias Annex.{Sequence, Dense, Activation, Cost, Utils}
   require Logger
 
   def sequence(layers, opts \\ []) when is_list(layers) do
@@ -59,7 +59,15 @@ defmodule Annex do
 
       if rem(epoch, print_at_epoch) == 0 do
         y_preds = Enum.map(data, fn d -> Sequence.predict(net_acc, d) end)
-        loss = Cost.mse_loss(all_y_trues, y_preds)
+
+        loss =
+          all_y_trues
+          |> Utils.zipmap(y_preds, fn a, b ->
+            a
+            |> Utils.zipmap(b, fn ax, bx -> ax - bx end)
+            |> Enum.sum()
+          end)
+          |> Cost.mse()
 
         Logger.debug(fn ->
           """

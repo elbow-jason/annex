@@ -21,18 +21,18 @@ defmodule Annex.SequenceXor2Test do
     seq1 =
       Annex.sequence(
         [
-          Annex.dense(10, input_dims: 2),
-          Annex.activation(:sigmoid),
-          Annex.dense(2, input_dims: 10),
+          Annex.dense(16, input_dims: 2),
+          Annex.activation(:tanh),
+          Annex.dense(2, input_dims: 16),
           Annex.activation(:sigmoid)
         ],
-        learning_rate: 0.1,
-        error_calc: fn p -> p end
+        learning_rate: 0.05,
+        error_calc: fn p -> p * p end
       )
 
     %Sequence{} =
       seq2 =
-      Annex.train(seq1, data, labels, name: "xor2", epochs: 160_000, print_at_epoch: 10_000)
+      Annex.train(seq1, data, labels, name: "xor2", epochs: 120_000, print_at_epoch: 10_000)
 
     [pred_yes, pred_no] = Annex.predict(seq2, [0.0, 0.0])
     assert_in_delta(pred_yes, 0.0, 0.1)

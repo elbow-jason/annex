@@ -93,7 +93,7 @@ defmodule Annex.Dense do
     next_loss_pds =
       neuron_errors
       |> Utils.transpose()
-      |> Enum.map(&Enum.random/1)
+      |> Enum.map(fn items -> Annex.Cost.mse(items) end)
 
     {next_loss_pds, [], %Dense{layer | neurons: neurons}}
   end
