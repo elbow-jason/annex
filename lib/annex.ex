@@ -29,7 +29,7 @@ defmodule Annex do
     Learner.train(learner, data, labels, options)
   end
 
-  def predict(%Sequence{} = seq, data) do
-    Sequence.predict(seq, data)
+  def predict(learner, data) do
+    Learner.predict(learner, data)
   end
 end

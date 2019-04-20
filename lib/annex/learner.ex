@@ -10,6 +10,10 @@ defmodule Annex.Learner do
   @callback train_opts(options()) :: options()
   @callback predict(learner(), Data.t()) :: Data.t()
 
+  def predict(%module{} = learner, data) do
+    module.predict(learner, data)
+  end
+
   def train(%module{} = learner, all_inputs, all_labels, opts \\ []) do
     case module.init_learner(learner, opts) do
       {:ok, learner} -> do_train(learner, all_inputs, all_labels, opts)
@@ -40,23 +44,20 @@ defmodule Annex.Learner do
     |> Utils.zip(all_labels)
     |> Stream.cycle()
     |> Stream.with_index(1)
-    |> Enum.reduce_while(learner, fn {{inputs, labels}, epoch}, learner_acc ->
-      do_train_reducer(learner_acc, inputs, labels, epoch, halt_condition, log, train_opts)
+    |> Enum.reduce_while({nil, learner}, fn {{inputs, labels}, epoch}, {_, learner_acc} ->
+      {output, learner2} = module.train(learner_acc, inputs, labels, train_opts)
+
+      _ = log.(learner2, output, epoch, opts)
+
+      halt_or_cont =
+        if halt_condition.(learner2, output, epoch, opts) do
+          :halt
+        else
+          :cont
+        end
+
+      {halt_or_cont, {output, learner2}}
     end)
-  end
-
-  defp do_train_reducer(%module{} = learner1, inputs, label, epoch, halt_condition, log, opts) do
-    {output, learner2} = module.train(learner1, inputs, label, opts)
-    _ = log.(learner2, output, epoch, opts)
-
-    halt_or_cont =
-      if halt_condition.(learner2, output, epoch) do
-        :halt
-      else
-        :cont
-      end
-
-    {halt_or_cont, learner2}
   end
 
   @spec init(learner, options()) :: {:ok, learner()} | {:error, any()}
@@ -64,16 +65,16 @@ defmodule Annex.Learner do
     module.init_learner(learner, options)
   end
 
-  defp parse_halt_condition(func) when is_function(func, 3) do
+  defp parse_halt_condition(func) when is_function(func, 4) do
     func
   end
 
   defp parse_halt_condition({:epochs, num}) when is_number(num) do
-    fn _, _, index -> index >= num end
+    fn _, _, index, _ -> index >= num end
   end
 
   defp parse_halt_condition({:loss_less_than, num}) when is_number(num) do
-    fn _, output, _ -> get_loss(output) < num end
+    fn _, output, _, _ -> get_loss(output) < num end
   end
 
   defp get_loss(total_loss) when is_float(total_loss), do: total_loss

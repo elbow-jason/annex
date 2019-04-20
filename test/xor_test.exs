@@ -18,7 +18,7 @@ defmodule Annex.SequenceXorTest do
       [0.0]
     ]
 
-    seq =
+    {_loss, seq} =
       Annex.sequence([
         Annex.dense(8, input_dims: 2),
         Annex.activation(:tanh),

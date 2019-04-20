@@ -10,12 +10,13 @@ defmodule Annex.Layer do
   # @spec feedforward(struct(), Data.t()) :: {Data.t(), struct()}
   def feedforward(%module{} = layer, inputs) do
     inputs = encoder(layer).encode(inputs)
-    module.feedforward(layer, inputs)
+    {_, _} = module.feedforward(layer, inputs)
   end
 
+  @spec backprop(struct(), float(), Data.t(), Keyword.t()) :: backprop_output()
   def backprop(%module{} = layer, total_loss_pd, loss_pds, layer_opts) do
     loss_pds = encoder(layer).encode(loss_pds)
-    module.backprop(layer, total_loss_pd, loss_pds, layer_opts)
+    {_, _, _} = module.backprop(layer, total_loss_pd, loss_pds, layer_opts)
   end
 
   def init(%module{} = layer, opts \\ []) do

@@ -42,7 +42,7 @@ defmodule Annex.Examples.Iris do
     |> normalize_by_name(:petal_length)
     |> normalize_by_name(:petal_width)
     |> Enum.map(&prep_row/1)
-    |> Utils.split_dataset(0.12)
+    |> Utils.split_dataset(0.30)
     |> case do
       {trains, tests} -> {Enum.unzip(trains), Enum.unzip(tests)}
     end
@@ -87,7 +87,7 @@ defmodule Annex.Examples.Iris do
       """
     end)
 
-    seq =
+    {_output, seq} =
       Annex.sequence([
         Annex.dense(100, input_dims: 4),
         Annex.activation(:tanh),
@@ -103,7 +103,7 @@ defmodule Annex.Examples.Iris do
     # error_calc: fn p -> 2 * p + :rand.uniform() * 0.1 - 0.05 end
     first_test_data = List.first(test_data)
     first_test_labels = List.first(test_labels)
-    pred = Annex.predict(seq2, first_test_data)
+    pred = Annex.predict(seq, first_test_data)
 
     Logger.debug(fn ->
       """
@@ -113,8 +113,6 @@ defmodule Annex.Examples.Iris do
       Pred #{inspect(pred)}
       """
     end)
-
-    # {test_data, test_labels, seq2}
 
     test_data
     |> Enum.zip(test_labels)
