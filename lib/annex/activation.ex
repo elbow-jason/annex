@@ -1,12 +1,10 @@
 defmodule Annex.Activation do
-  alias Annex.{Activation, Layer}
+  alias Annex.{Activation, Layer, Backprop}
 
   @type t :: %__MODULE__{
           activator: (number -> number),
           derivative: (number -> number),
-          name: atom(),
-          inputs: nil | [float(), ...],
-          output: nil | [float(), ...]
+          name: atom()
         }
 
   @behaviour Layer
@@ -51,9 +49,13 @@ defmodule Annex.Activation do
     {output, %Activation{layer | inputs: inputs, output: output}}
   end
 
-  @spec backprop(t(), float(), [float(), ...], Keyword.t()) :: {[float(), ...], Keyword.t(), t()}
-  def backprop(%Activation{} = layer, _total_error, loss_partial_derivs, _) do
-    {loss_partial_derivs, [activation_derivative: get_derivative(layer)], layer}
+  @spec backprop(t(), Backprop.t()) :: {t(), Backprop.t()}
+  def backprop(%Activation{} = layer, backprops) do
+    {layer, put_backprop_derivative(layer, backprops)}
+  end
+
+  defp put_backprop_derivative(layer, backprops) do
+    Backprop.put_derivative(backprops, get_derivative(layer))
   end
 
   def encoder, do: Annex.Data

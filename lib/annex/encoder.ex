@@ -1,5 +1,6 @@
 defmodule Annex.Encoder do
-  @type data :: [float(), ...] | struct()
-  @callback encode(data()) :: data()
-  @callback decode(data()) :: [float(), ...]
+  alias Annex.Data
+
+  @callback encode(Data.data()) :: Data.data()
+  @callback decode(Data.data()) :: Data.float_data()
 end

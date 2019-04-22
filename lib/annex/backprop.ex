@@ -1,11 +1,11 @@
 defmodule Annex.Backprop do
-  alias Annex.Backprop
+  alias Annex.{Backprop, Data}
 
   @type derivative :: (float() -> float())
 
   @type t :: %__MODULE__{
           net_loss: float(),
-          loss_pds: [float(), ...],
+          loss_pds: Data.data(),
           derivative: derivative(),
           learning_rate: float()
         }

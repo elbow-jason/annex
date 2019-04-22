@@ -1,45 +1,29 @@
 defmodule Annex.Dense do
-  alias Annex.{Dense, Layer, Neuron, Utils}
+  alias Annex.{Dense, Layer, Neuron, Utils, Backprop}
 
   @behaviour Layer
 
+  @type t :: %__MODULE__{
+          neurons: [float(), ...] | nil,
+          rows: non_neg_integer(),
+          cols: non_neg_integer()
+        }
+
   defstruct neurons: nil,
             rows: nil,
-            cols: nil,
-            activation_derivative: nil,
-            learning_rate: nil
+            cols: nil
 
   defp get_neurons(%Dense{neurons: neurons}), do: neurons
 
-  defp get_learning_rate(%Dense{learning_rate: nil}, opts) do
-    Keyword.get(opts, :learning_rate, 0.05)
+  defp put_neurons(%Dense{} = dense, neurons) do
+    %Dense{dense | neurons: neurons}
   end
 
-  defp get_learning_rate(%Dense{learning_rate: rate}, _) when is_float(rate) do
-    rate
+  def init_layer(%Dense{} = layer, _opts \\ []) do
+    {:ok, initialize_neurons(layer)}
   end
 
-  defp get_activation_derivative(%Dense{activation_derivative: nil}, opts) do
-    der = Keyword.get(opts, :activation_derivative)
-    next_layer = Keyword.get(opts, :next_layer)
-
-    case {der, next_layer} do
-      {nil, %module{} = next} ->
-        module.get_derivative(next)
-
-      {nil, _} ->
-        raise "Dense activation_derivative not found"
-
-      {der, _} ->
-        der
-    end
-  end
-
-  defp get_activation_derivative(%Dense{activation_derivative: a}, _) when is_function(a, 1) do
-    a
-  end
-
-  def init_layer(%Dense{rows: rows, cols: cols} = layer, opts \\ []) do
+  defp initialize_neurons(%Dense{rows: rows, cols: cols} = layer) do
     neurons =
       case get_neurons(layer) do
         nil ->
@@ -49,17 +33,7 @@ defmodule Annex.Dense do
           found
       end
 
-    activation_derivative = get_activation_derivative(layer, opts)
-    learning_rate = get_learning_rate(layer, opts)
-
-    initialized = %Dense{
-      layer
-      | neurons: neurons,
-        activation_derivative: activation_derivative,
-        learning_rate: learning_rate
-    }
-
-    {:ok, initialized}
+    put_neurons(layer, neurons)
   end
 
   def feedforward(%Dense{} = layer, inputs) do
@@ -77,16 +51,19 @@ defmodule Annex.Dense do
 
   def encoder, do: Annex.Data
 
-  def backprop(%Dense{} = layer, total_loss_pd, loss_pds, opts) do
-    learning_rate = get_learning_rate(layer, opts)
-    activation_derivative = get_activation_derivative(layer, opts)
+  @spec backprop(t(), Backprop.t()) :: {t(), Backprop.t()}
+  def backprop(%Dense{} = layer, backprops) do
+    learning_rate = Backprop.get_learning_rate(backprops)
+    derivative = Backprop.get_derivative(backprops)
+    loss_pds = Backprop.get_loss_pds(backprops)
+    total_loss_pd = Backprop.get_net_loss(backprops)
 
     {neuron_errors, neurons} =
       layer
       |> get_neurons()
       |> Utils.zip(loss_pds)
       |> Enum.map(fn {neuron, loss_pd} ->
-        Neuron.backprop(neuron, total_loss_pd, loss_pd, learning_rate, activation_derivative)
+        Neuron.backprop(neuron, total_loss_pd, loss_pd, learning_rate, derivative)
       end)
       |> Enum.unzip()
 
@@ -95,6 +72,6 @@ defmodule Annex.Dense do
       |> Utils.transpose()
       |> Enum.map(fn items -> Annex.Cost.mse(items) end)
 
-    {next_loss_pds, [], %Dense{layer | neurons: neurons}}
+    {put_neurons(layer, neurons), Backprop.put_loss_pds(backprops, next_loss_pds)}
   end
 end

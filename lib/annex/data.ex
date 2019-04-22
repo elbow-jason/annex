@@ -4,9 +4,9 @@ defmodule Annex.Data do
   @behaviour Annex.Encoder
 
   @type struct_data :: struct()
-  @type float_data :: [float(), ...]
+  @type float_data :: list(float())
   @type data :: struct_data() | float_data()
-  @type dataset :: [data(), ...]
+  @type dataset :: list(data())
   @type t :: dataset() | data()
 
   @spec encode(Encoder.t()) :: data()

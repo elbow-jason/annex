@@ -111,7 +111,7 @@ defmodule Annex.Utils do
 
   The sum of the output should be approximately 1.0.
   """
-  @spec proportions([float()]) :: [float()]
+  @spec proportions([float()]) :: list(float())
   def proportions(data) when is_list(data) do
     case Enum.sum(data) do
       0.0 -> Enum.map(data, fn item -> item end)

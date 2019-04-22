@@ -1,5 +1,5 @@
 defmodule Annex.Sequence do
-  alias Annex.{Sequence, Layer, Data, Utils, Learner, Cost}
+  alias Annex.{Sequence, Layer, Data, Utils, Learner, Cost, Backprop, Activation}
   require Logger
 
   @behaviour Learner
@@ -29,6 +29,10 @@ defmodule Annex.Sequence do
 
   def get_layers(%Sequence{layers: layers}) do
     layers
+  end
+
+  defp put_layers(%Sequence{} = seq, layers) do
+    %Sequence{seq | layers: layers}
   end
 
   def train_opts(opts) when is_list(opts) do
@@ -100,62 +104,37 @@ defmodule Annex.Sequence do
     prediction
   end
 
-  def backprop(%Sequence{} = seq, total_loss_pd, loss_pd, opts) do
-    learning_rate = Keyword.fetch!(opts, :learning_rate)
-
-    {next_layers_loss_pd, next_layer_opts, layers} =
+  @spec backprop(t(), Backprop.t()) :: {t(), Backprop.t()}
+  def backprop(%Sequence{} = seq, backprops) do
+    {layers, updated_backprop} =
       seq
       |> get_layers()
       |> Enum.reverse()
-      |> Enum.reduce({loss_pd, [], []}, fn layer, {prev_loss_pd, prev_layer_opts, layers} ->
-        layer_opts = [{:learning_rate, learning_rate} | prev_layer_opts]
-
-        {next_backprop_data, next_layer_opts, layer} =
-          Layer.backprop(layer, total_loss_pd, prev_loss_pd, layer_opts)
-
-        {next_backprop_data, next_layer_opts, [layer | layers]}
+      |> Enum.reduce({backprops, []}, fn layer, {backprop_acc, layers_acc} ->
+        {layer, backprop_acc} = Layer.backprop(layer, backprop_acc)
+        {[layer | layers_acc], backprop_acc}
       end)
 
-    {next_layers_loss_pd, next_layer_opts, %Sequence{seq | layers: layers}}
+    {put_layers(seq, layers), updated_backprop}
   end
 
-  # def train(seq, data, labels, opts \\ []) do
-  #   Enum.reduce_while(sequence, fn {input, target, epoch}, net_acc ->
-  #     net_acc = Sequence.train(net_acc, input, target)
-
-  #     # if rem(epoch, print_at_epoch) == 0 do
-  #     #   y_preds = Enum.map(data, fn d -> Sequence.predict(net_acc, d) end)
-
-  #     #   Logger.debug(fn ->
-  #     #     """
-  #     #     Sequence: #{name} -
-  #     #       epoch: #{inspect(epoch)}
-  #     #       loss: #{inspect(loss)}
-  #     #     """
-  #     #   end)
-  #     # end
-
-  #     if epoch >= epochs do
-  #       {:halt, net_acc}
-  #     else
-  #       {:cont, net_acc}
-  #     end
-  #   end)
-  # end
-  # end
-
-  def train(%Sequence{} = seq, data, labels, opts) do
+  @spec train(t(), Data.t(), Data.t(), Keyword.t()) :: {list(float()), t()}
+  def train(%Sequence{} = seq, data, labels, _opts) do
     {network_outputs, seq2} = Sequence.feedforward(seq, data)
     outputs = Data.decode(network_outputs)
     labels = Data.decode(labels)
 
     network_error = calc_network_error(outputs, labels)
-    backprop_error = Utils.proportions(network_error)
     # backprop_error = apply_error_calc(seq, normalized_error)
+    # backprop_error =
+    backprops = %Backprop{
+      net_loss: calculate_network_error_pd(network_error),
+      loss_pds: Utils.proportions(network_error),
+      learning_rate: 0.05,
+      derivative: &Activation.sigmoid_deriv/1
+    }
 
-    total_loss_pd = calculate_network_error_pd(network_error)
-
-    {_, [], seq3} = Sequence.backprop(seq2, total_loss_pd, backprop_error, opts)
+    {seq3, _backprop} = Sequence.backprop(seq2, backprops)
     cost_func = get_cost_func(seq)
 
     loss =
