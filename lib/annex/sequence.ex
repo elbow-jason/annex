@@ -110,7 +110,7 @@ defmodule Annex.Sequence do
       seq
       |> get_layers()
       |> Enum.reverse()
-      |> Enum.reduce({backprops, []}, fn layer, {backprop_acc, layers_acc} ->
+      |> Enum.reduce({[], backprops}, fn layer, {layers_acc, backprop_acc} ->
         {layer, backprop_acc} = Layer.backprop(layer, backprop_acc)
         {[layer | layers_acc], backprop_acc}
       end)
