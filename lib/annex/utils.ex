@@ -68,6 +68,10 @@ defmodule Annex.Utils do
   Calculates the average.
   """
   @spec mean(any()) :: float()
+  def mean([]) do
+    0.0
+  end
+
   def mean(items) do
     items
     |> Enum.reduce({0, 0.0}, fn item, {count_acc, total_acc} ->
@@ -95,8 +99,11 @@ defmodule Annex.Utils do
   @spec normalize([float()]) :: [float()]
   def normalize(data) when is_list(data) do
     {minimum, maximum} = Enum.min_max(data)
-    diff = maximum - minimum
-    Enum.map(data, fn item -> (item - minimum) / diff end)
+
+    case maximum - minimum do
+      0.0 -> Enum.map(data, fn _ -> 1.0 end)
+      diff -> Enum.map(data, fn item -> (item - minimum) / diff end)
+    end
   end
 
   @doc """
@@ -106,7 +113,9 @@ defmodule Annex.Utils do
   """
   @spec proportions([float()]) :: [float()]
   def proportions(data) when is_list(data) do
-    sum = Enum.sum(data)
-    Enum.map(data, fn item -> item / sum end)
+    case Enum.sum(data) do
+      0.0 -> Enum.map(data, fn item -> item end)
+      sum -> Enum.map(data, fn item -> item / sum end)
+    end
   end
 end

@@ -27,15 +27,13 @@ defmodule Annex.AndTest do
              Annex.sequence([
                Annex.dense(6, input_dims: 3),
                Annex.activation(:tanh),
-               Annex.dense(6, input_dims: 6),
-               Annex.activation(:tanh),
                Annex.dense(1, input_dims: 6),
                Annex.activation(:sigmoid)
              ])
              |> Annex.train(@data, @labels,
                learning_rate: 0.05,
                name: "and T or F",
-               halt_condition: {:epochs, 100_000}
+               halt_condition: {:epochs, 40_000}
              )
 
     [should_be_true] = Annex.predict(seq, [1.0, 1.0, 1.0])
