@@ -29,6 +29,7 @@ defmodule Annex.Perceptron do
     |> activation.()
   end
 
+  @spec train(Annex.Perceptron.t(), list(float()), list(float()), Keyword.t()) :: struct()
   def train(%Perceptron{} = p, all_inputs, all_labels, opts \\ []) do
     epochs = Keyword.fetch!(opts, :epochs)
 

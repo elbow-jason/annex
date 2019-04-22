@@ -24,7 +24,7 @@ defmodule Annex.SequenceMOrFTest do
       [1.0]
     ]
 
-    assert {_, seq} =
+    assert {:ok, _, seq} =
              Annex.sequence([
                Annex.dense(2, input_dims: 2),
                Annex.activation(:sigmoid),

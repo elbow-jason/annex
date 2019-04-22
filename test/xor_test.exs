@@ -16,18 +16,18 @@ defmodule Annex.SequenceXorTest do
       [0.0]
     ]
 
-    {_loss, seq} =
-      Annex.sequence([
-        Annex.dense(8, input_dims: 2),
-        Annex.activation(:tanh),
-        Annex.dense(1, input_dims: 8),
-        Annex.activation(:sigmoid)
-      ])
-      |> Annex.train(data, labels,
-        name: "xor",
-        learning_rate: 0.05,
-        halt_condition: {:epochs, 80_000}
-      )
+    assert {:ok, _loss, seq} =
+             Annex.sequence([
+               Annex.dense(8, input_dims: 2),
+               Annex.activation(:tanh),
+               Annex.dense(1, input_dims: 8),
+               Annex.activation(:sigmoid)
+             ])
+             |> Annex.train(data, labels,
+               name: "xor",
+               learning_rate: 0.05,
+               halt_condition: {:epochs, 80_000}
+             )
 
     [zero_zero] = Annex.predict(seq, [0.0, 0.0])
     [zero_one] = Annex.predict(seq, [0.0, 1.0])

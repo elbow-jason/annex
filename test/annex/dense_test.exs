@@ -1,6 +1,6 @@
 defmodule Annex.DenseTest do
   use ExUnit.Case, async: true
-  alias Annex.{Dense, Neuron, Sequence, Backprop}
+  alias Annex.{Dense, Neuron, Sequence, Backprop, Activation}
 
   def fixture() do
     %Dense{
@@ -43,7 +43,9 @@ defmodule Annex.DenseTest do
 
     backprop = %Backprop{
       net_loss: total_loss_pd,
-      loss_pds: ones
+      loss_pds: ones,
+      derivative: &Activation.sigmoid_deriv/1,
+      learning_rate: 0.05
     }
 
     assert dense == %Dense{
@@ -67,7 +69,7 @@ defmodule Annex.DenseTest do
              rows: 2
            }
 
-    assert {backprop2, [], new_dense} = Dense.backprop(dense, backprop)
+    assert {new_dense, backprop2} = Dense.backprop(dense, backprop)
 
     assert backprop2.loss_pds == [
              0.014029189664764501,

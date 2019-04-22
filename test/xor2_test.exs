@@ -16,7 +16,7 @@ defmodule Annex.SequenceXor2Test do
       [0.0, 1.0]
     ]
 
-    {_output, seq} =
+    {:ok, _output, seq} =
       Annex.sequence([
         Annex.dense(16, input_dims: 2),
         Annex.activation(:tanh),

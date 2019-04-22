@@ -31,14 +31,12 @@ defmodule Annex.Layer do
     Backprop.put_loss_pds(backprops, loss_pds)
   end
 
+  @spec init(struct(), Keyword.t()) :: struct()
   def init(%module{} = layer, opts \\ []) do
     module.init_layer(layer, opts)
   end
 
-  def encoder(%module{}) do
-    module.encoder()
-  end
-
+  @spec encoder(struct()) :: module()
   def encoder(%module{}) do
     module.encoder()
   end

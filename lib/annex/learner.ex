@@ -14,9 +14,15 @@ defmodule Annex.Learner do
     module.predict(learner, data)
   end
 
+  @spec train(struct(), Data.dataset(), Data.dataset(), Keyword.t()) ::
+          {:ok, list(float()), struct()} | {:error, any()}
   def train(%module{} = learner, all_inputs, all_labels, opts \\ []) do
-    case module.init_learner(learner, opts) do
-      {:ok, learner} -> do_train(learner, all_inputs, all_labels, opts)
+    with(
+      {:ok, learner} <- module.init_learner(learner, opts),
+      {loss, learner2} <- do_train(learner, all_inputs, all_labels, opts)
+    ) do
+      {:ok, loss, learner2}
+    else
       {:error, _} = err -> err
     end
   end

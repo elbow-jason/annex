@@ -1,16 +1,30 @@
 defmodule Annex.Backprop do
-  alias Annex.{Backprop, Data}
+  alias Annex.{Backprop, Data, Defaults}
 
   @type derivative :: (float() -> float())
+  @type cost_func :: (float() -> float())
 
   @type t :: %__MODULE__{
           net_loss: float(),
           loss_pds: Data.data(),
           derivative: derivative(),
-          learning_rate: float()
+          learning_rate: float(),
+          cost_func: cost_func()
         }
 
-  defstruct [:net_loss, :loss_pds, :derivative, :learning_rate]
+  defstruct [:net_loss, :loss_pds, :derivative, :learning_rate, :cost_func]
+
+  def new do
+    %Backprop{
+      net_loss: 0.0,
+      loss_pds: [],
+      derivative: Defaults.derivative(),
+      cost_func: Defaults.cost(),
+      learning_rate: Defaults.learning_rate()
+    }
+  end
+
+  def get_cost_func(%Backprop{cost_func: cost_func}), do: cost_func
 
   @spec get_learning_rate(t()) :: float()
   def get_learning_rate(%Backprop{learning_rate: learning_rate}), do: learning_rate
@@ -21,7 +35,7 @@ defmodule Annex.Backprop do
   @spec get_net_loss(t()) :: float()
   def get_net_loss(%Backprop{net_loss: net_loss}), do: net_loss
 
-  @spec get_loss_pds(t()) :: [float(), ...]
+  @spec get_loss_pds(t()) :: Data.data()
   def get_loss_pds(%Backprop{loss_pds: loss_pds}), do: loss_pds
 
   @spec put_learning_rate(t(), float()) :: t()
@@ -34,7 +48,7 @@ defmodule Annex.Backprop do
     %Backprop{bp | derivative: derivative}
   end
 
-  @spec put_loss_pds(t(), [float(), ...]) :: t()
+  @spec put_loss_pds(t(), Data.data()) :: t()
   def put_loss_pds(%Backprop{} = bp, loss_pds) do
     %Backprop{bp | loss_pds: loss_pds}
   end
@@ -42,5 +56,9 @@ defmodule Annex.Backprop do
   @spec put_net_loss(t(), any()) :: t()
   def put_net_loss(%Backprop{} = bp, net_loss) do
     %Backprop{bp | net_loss: net_loss}
+  end
+
+  def put_cost_func(%Backprop{} = bp, cost) do
+    %Backprop{bp | cost_func: cost}
   end
 end

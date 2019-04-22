@@ -4,6 +4,8 @@ defmodule Annex.Utils do
   of Annex's other modules.
   """
 
+  alias Annex.Data
+
   @doc """
   Generates a float between -1.0 and 1.0
   """
@@ -15,7 +17,7 @@ defmodule Annex.Utils do
   @doc """
   Generates a list of `n` floats between -1.0 and 1.0.
   """
-  @spec random_weights(integer()) :: [float(), ...]
+  @spec random_weights(integer()) :: Data.float_data()
   def random_weights(n) when n > 0 and is_integer(n) do
     Enum.map(1..n, fn _ -> random_float() end)
   end
@@ -86,7 +88,7 @@ defmodule Annex.Utils do
   @doc """
   Calculates the dot product which is the sum of element-wise multiplication of two enumerables.
   """
-  @spec dot([float()], [float()]) :: float()
+  @spec dot(list(float()), list(float())) :: float()
   def dot(a, b) when is_list(a) and is_list(b) do
     a
     |> zip(b)
@@ -96,7 +98,7 @@ defmodule Annex.Utils do
   @doc """
   Turns a list of floats into floats between 0.0 and 1.0 at their respective ratio.
   """
-  @spec normalize([float()]) :: [float()]
+  @spec normalize(list(float())) :: list(float())
   def normalize(data) when is_list(data) do
     {minimum, maximum} = Enum.min_max(data)
 
@@ -111,7 +113,7 @@ defmodule Annex.Utils do
 
   The sum of the output should be approximately 1.0.
   """
-  @spec proportions([float()]) :: list(float())
+  @spec proportions(list(float())) :: list(float())
   def proportions(data) when is_list(data) do
     case Enum.sum(data) do
       0.0 -> Enum.map(data, fn item -> item end)

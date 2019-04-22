@@ -4,7 +4,7 @@ defmodule Annex.Dense do
   @behaviour Layer
 
   @type t :: %__MODULE__{
-          neurons: [float(), ...] | nil,
+          neurons: Data.float_data(),
           rows: non_neg_integer(),
           cols: non_neg_integer()
         }
@@ -19,6 +19,7 @@ defmodule Annex.Dense do
     %Dense{dense | neurons: neurons}
   end
 
+  @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
   def init_layer(%Dense{} = layer, _opts \\ []) do
     {:ok, initialize_neurons(layer)}
   end
@@ -36,6 +37,7 @@ defmodule Annex.Dense do
     put_neurons(layer, neurons)
   end
 
+  @spec feedforward(t(), list(float())) :: {list(float()), t()}
   def feedforward(%Dense{} = layer, inputs) do
     {output, neurons} =
       layer
@@ -49,6 +51,7 @@ defmodule Annex.Dense do
     {output, %Dense{layer | neurons: neurons}}
   end
 
+  @spec encoder() :: Annex.Data
   def encoder, do: Annex.Data
 
   @spec backprop(t(), Backprop.t()) :: {t(), Backprop.t()}

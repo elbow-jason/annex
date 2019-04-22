@@ -44,6 +44,7 @@ defmodule Annex.Activation do
     end
   end
 
+  @spec feedforward(t(), list(float())) :: {list(float()), t()}
   def feedforward(%Activation{} = layer, inputs) do
     output = generate_outputs(layer, inputs)
     {output, %Activation{layer | inputs: inputs, output: output}}
@@ -58,12 +59,15 @@ defmodule Annex.Activation do
     Backprop.put_derivative(backprops, get_derivative(layer))
   end
 
+  @spec encoder() :: Annex.Data
   def encoder, do: Annex.Data
 
+  @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
   def init_layer(%Activation{} = layer, _opts) do
     {:ok, layer}
   end
 
+  @spec generate_outputs(Annex.Activation.t(), list(float())) :: [any()]
   def generate_outputs(%Activation{} = act, inputs) do
     Enum.map(inputs, get_activator(act))
   end
@@ -74,14 +78,19 @@ defmodule Annex.Activation do
   @spec get_derivative(Activation.t()) :: (number() -> number())
   def get_derivative(%Activation{derivative: deriv}), do: deriv
 
+  @spec relu(float()) :: float()
   def relu(n) do
     relu_with_threshold(n, 0.0)
   end
 
+  @spec relu_deriv(float()) :: float()
   def relu_deriv(x), do: relu_deriv(x, 0.0)
+
+  @spec relu_deriv(float(), float()) :: float()
   def relu_deriv(x, threshold) when x > threshold, do: 1.0
   def relu_deriv(_, _), do: 0.0
 
+  @spec relu_with_threshold(float(), float()) :: float()
   def relu_with_threshold(n, threshold) do
     if n > threshold do
       n
@@ -90,19 +99,23 @@ defmodule Annex.Activation do
     end
   end
 
+  @spec sigmoid(float()) :: float()
   def sigmoid(n) do
     1.0 / (1.0 + :math.exp(-n))
   end
 
+  @spec sigmoid_deriv(float()) :: float()
   def sigmoid_deriv(x) do
     fx = sigmoid(x)
     fx * (1 - fx)
   end
 
+  @spec tanh(float()) :: float()
   def tanh(n) do
     :math.tanh(n)
   end
 
+  @spec tanh_deriv(float()) :: float()
   def tanh_deriv(x) do
     tanh_squared =
       x

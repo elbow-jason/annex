@@ -23,7 +23,7 @@ defmodule Annex.AndTest do
   ]
 
   test "and works" do
-    assert {loss, %Sequence{} = seq} =
+    assert {:ok, loss, %Sequence{} = seq} =
              Annex.sequence([
                Annex.dense(6, input_dims: 3),
                Annex.activation(:tanh),

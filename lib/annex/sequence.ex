@@ -1,5 +1,5 @@
 defmodule Annex.Sequence do
-  alias Annex.{Sequence, Layer, Data, Utils, Learner, Cost, Backprop, Activation}
+  alias Annex.{Sequence, Layer, Data, Utils, Learner, Cost, Backprop}
   require Logger
 
   @behaviour Learner
@@ -9,21 +9,18 @@ defmodule Annex.Sequence do
           layers: list(Layer.t()),
           initialized?: boolean(),
           init_options: Keyword.t(),
-          train_options: Keyword.t(),
-          cost_func: (float() -> float())
+          train_options: Keyword.t()
         }
 
   defstruct layers: [],
             initialized?: false,
             init_options: [],
-            train_options: [],
-            cost_func: nil
+            train_options: []
 
   def build(opts \\ []) do
     %Sequence{
       layers: Keyword.get(opts, :layers, []),
-      initialized?: Keyword.get(opts, :initialized?, false),
-      cost_func: Keyword.get(opts, :cost_func, &Cost.mse/1)
+      initialized?: Keyword.get(opts, :initialized?, false)
     }
   end
 
@@ -119,23 +116,22 @@ defmodule Annex.Sequence do
   end
 
   @spec train(t(), Data.t(), Data.t(), Keyword.t()) :: {list(float()), t()}
-  def train(%Sequence{} = seq, data, labels, _opts) do
+  def train(%Sequence{} = seq, data, labels, opts) do
     {network_outputs, seq2} = Sequence.feedforward(seq, data)
     outputs = Data.decode(network_outputs)
     labels = Data.decode(labels)
-
     network_error = calc_network_error(outputs, labels)
-    # backprop_error = apply_error_calc(seq, normalized_error)
-    # backprop_error =
-    backprops = %Backprop{
-      net_loss: calculate_network_error_pd(network_error),
-      loss_pds: Utils.proportions(network_error),
-      learning_rate: 0.05,
-      derivative: &Activation.sigmoid_deriv/1
-    }
+    network_error_pd = calculate_network_error_pd(network_error)
+    loss_pds = Utils.proportions(network_error)
+    cost_func = Keyword.get(opts, :cost_func, &Cost.mse/1)
+
+    backprops =
+      Backprop.new()
+      |> Backprop.put_net_loss(network_error_pd)
+      |> Backprop.put_loss_pds(loss_pds)
+      |> Backprop.put_cost_func(cost_func)
 
     {seq3, _backprop} = Sequence.backprop(seq2, backprops)
-    cost_func = get_cost_func(seq)
 
     loss =
       labels
@@ -193,6 +189,4 @@ defmodule Annex.Sequence do
   defp chunkify([prev, current], acc) do
     Enum.reverse([{prev, current, nil} | acc])
   end
-
-  defp get_cost_func(%Sequence{cost_func: cost_func}), do: cost_func
 end

@@ -1,6 +1,14 @@
 defmodule Annex.Neuron do
   alias Annex.{Neuron, Utils}
 
+  @type t :: %__MODULE__{
+          weights: list(float),
+          bias: float(),
+          sum: float(),
+          output: float(),
+          inputs: list(float)
+        }
+
   defstruct weights: [],
             bias: 1.0,
             sum: 0.0,
@@ -40,6 +48,8 @@ defmodule Annex.Neuron do
     %Neuron{neuron | sum: sum, inputs: inputs}
   end
 
+  @spec backprop(t(), float(), float(), float(), (float() -> float())) ::
+          {list(float()), t()}
   def backprop(%Neuron{} = neuron, total_loss_pd, neuron_loss_pd, learning_rate, activation_deriv) do
     sum = get_sum(neuron)
     bias = get_bias(neuron)
