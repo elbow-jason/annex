@@ -1,6 +1,5 @@
 defmodule Annex.SequenceMOrFTest do
   use ExUnit.Case, async: true
-  alias Annex.{Sequence}
 
   test "males vs females based on weight and height" do
     data = [

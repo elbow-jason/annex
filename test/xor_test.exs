@@ -1,7 +1,5 @@
 defmodule Annex.SequenceXorTest do
   use ExUnit.Case, async: true
-  alias Annex
-  alias Annex.Sequence
 
   test "xor test" do
     data = [
