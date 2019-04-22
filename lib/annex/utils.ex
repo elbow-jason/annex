@@ -46,6 +46,16 @@ defmodule Annex.Utils do
     [{a, b} | zip(a_rest, b_rest)]
   end
 
+  def zip(%Stream{} = a, b) do
+    a
+    |> Enum.into([])
+    |> zip(b)
+  end
+
+  def zip(a, %Stream{} = b) do
+    zip(a, Enum.into(b, []))
+  end
+
   @doc """
   A strict zip-while-mapping function in which the two given enumerables *must* be the same size.
   """

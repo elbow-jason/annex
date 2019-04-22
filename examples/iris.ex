@@ -1,5 +1,5 @@
 defmodule Annex.Examples.Iris do
-  alias Annex.{Utils, Network, Layer}
+  alias Annex.Utils
   require Logger
 
   @floats ~w(sepal_length sepal_width petal_length petal_width)a
@@ -18,8 +18,8 @@ defmodule Annex.Examples.Iris do
   end
 
   def line_to_map(line) do
-    [@keys, line]
-    |> Enum.zip()
+    @keys
+    |> Utils.zip(line)
     |> Map.new(fn kv -> cast(kv) end)
   end
 
@@ -52,7 +52,7 @@ defmodule Annex.Examples.Iris do
     dataset
     |> Enum.map(fn item -> item[name] end)
     |> Utils.normalize()
-    |> Enum.zip(dataset)
+    |> Utils.zip(dataset)
     |> Enum.map(fn {normalized, item} ->
       Map.put(item, name, normalized)
     end)
@@ -87,7 +87,7 @@ defmodule Annex.Examples.Iris do
       """
     end)
 
-    {_output, seq} =
+    {:ok, _output, seq} =
       Annex.sequence([
         Annex.dense(100, input_dims: 4),
         Annex.activation(:tanh),
@@ -100,7 +100,6 @@ defmodule Annex.Examples.Iris do
         halt_condition: {:epochs, 10_000}
       )
 
-    # error_calc: fn p -> 2 * p + :rand.uniform() * 0.1 - 0.05 end
     first_test_data = List.first(test_data)
     first_test_labels = List.first(test_labels)
     pred = Annex.predict(seq, first_test_data)
