@@ -1,12 +1,16 @@
-defmodule Annex.Backprop do
-  alias Annex.{Backprop, Data, Defaults}
+defmodule Annex.Layer.Backprop do
+  alias Annex.{
+    Data,
+    Defaults,
+    Layer.Backprop
+  }
 
   @type derivative :: (float() -> float())
   @type cost_func :: (float() -> float())
 
   @type t :: %__MODULE__{
           net_loss: float(),
-          loss_pds: Data.data(),
+          loss_pds: Data.float_data(),
           derivative: derivative(),
           learning_rate: float(),
           cost_func: cost_func()

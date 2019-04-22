@@ -1,5 +1,5 @@
-defmodule Annex.Dense do
-  alias Annex.{Dense, Layer, Neuron, Utils, Backprop}
+defmodule Annex.Layer.Dense do
+  alias Annex.{Layer, Layer.Backprop, Layer.Dense, Layer.Neuron, Utils}
 
   @behaviour Layer
 

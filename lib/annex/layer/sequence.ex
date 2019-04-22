@@ -1,5 +1,14 @@
-defmodule Annex.Sequence do
-  alias Annex.{Sequence, Layer, Data, Utils, Learner, Cost, Backprop}
+defmodule Annex.Layer.Sequence do
+  alias Annex.{
+    Cost,
+    Data,
+    Layer,
+    Layer.Backprop,
+    Layer.Sequence,
+    Learner,
+    Utils
+  }
+
   require Logger
 
   @behaviour Learner

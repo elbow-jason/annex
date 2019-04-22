@@ -1,5 +1,6 @@
 defmodule Annex.SequenceMOrFTest do
   use ExUnit.Case, async: true
+  alias Annex.Layer.Sequence
 
   test "males vs females based on weight and height" do
     data = [
@@ -24,7 +25,7 @@ defmodule Annex.SequenceMOrFTest do
       [1.0]
     ]
 
-    assert {:ok, _, seq} =
+    assert {:ok, _, %Sequence{} = seq} =
              Annex.sequence([
                Annex.dense(2, input_dims: 2),
                Annex.activation(:sigmoid),

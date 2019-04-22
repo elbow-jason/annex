@@ -1,5 +1,5 @@
 defmodule Annex.Layer do
-  alias Annex.{Backprop, Data}
+  alias Annex.{Data, Layer.Backprop}
 
   @type t() :: struct()
 

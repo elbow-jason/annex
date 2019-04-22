@@ -1,6 +1,6 @@
-defmodule Annex.NeuronTest do
+defmodule Annex.Layer.NeuronTest do
   use ExUnit.Case
-  alias Annex.{Neuron, Activation}
+  alias Annex.Layer.{Neuron, Activation}
 
   test "new/2" do
     weights = [1.0, 1.0, 2.0]

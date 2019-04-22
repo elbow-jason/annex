@@ -1,5 +1,6 @@
 defmodule Annex.SequenceXor2Test do
   use ExUnit.Case, async: true
+  alias Annex.Layer.Sequence
 
   test "xor2 test" do
     data = [
@@ -16,7 +17,7 @@ defmodule Annex.SequenceXor2Test do
       [0.0, 1.0]
     ]
 
-    {:ok, _output, seq} =
+    {:ok, _output, %Sequence{} = seq} =
       Annex.sequence([
         Annex.dense(16, input_dims: 2),
         Annex.activation(:tanh),

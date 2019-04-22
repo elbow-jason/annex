@@ -1,6 +1,6 @@
 defmodule Annex.AndTest do
   use ExUnit.Case
-  alias Annex.Sequence
+  alias Annex.Layer.Sequence
 
   @data [
     [1.0, 1.0, 1.0],

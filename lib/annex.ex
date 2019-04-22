@@ -1,5 +1,11 @@
 defmodule Annex do
-  alias Annex.{Sequence, Dense, Activation, Learner}
+  alias Annex.{
+    Layer.Sequence,
+    Layer.Dense,
+    Layer.Activation,
+    Learner
+  }
+
   require Logger
 
   def sequence(layers, opts \\ []) when is_list(layers) do

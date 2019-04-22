@@ -1,6 +1,6 @@
-defmodule Annex.DenseTest do
+defmodule Annex.Layer.DenseTest do
   use ExUnit.Case, async: true
-  alias Annex.{Dense, Neuron, Sequence, Backprop, Activation}
+  alias Annex.Layer.{Dense, Neuron, Sequence, Backprop, Activation}
 
   def fixture() do
     %Dense{
@@ -51,14 +51,14 @@ defmodule Annex.DenseTest do
     assert dense == %Dense{
              cols: 3,
              neurons: [
-               %Annex.Neuron{
+               %Neuron{
                  bias: 1.0,
                  inputs: [0.1, 1.0, 0.0],
                  output: 0.0,
                  sum: 1.20667,
                  weights: [-0.3333, 0.24, 0.1]
                },
-               %Annex.Neuron{
+               %Neuron{
                  bias: 1.0,
                  inputs: [0.1, 1.0, 0.0],
                  output: 0.0,

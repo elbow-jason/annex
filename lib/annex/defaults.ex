@@ -1,5 +1,5 @@
 defmodule Annex.Defaults do
-  alias Annex.{Cost, Activation}
+  alias Annex.{Cost, Layer.Activation}
 
   @spec cost() :: (float() -> float())
   def cost, do: get_func(:cost, &Cost.mse/1)

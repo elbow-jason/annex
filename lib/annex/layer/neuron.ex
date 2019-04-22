@@ -1,5 +1,5 @@
-defmodule Annex.Neuron do
-  alias Annex.{Neuron, Utils}
+defmodule Annex.Layer.Neuron do
+  alias Annex.{Layer.Neuron, Utils}
 
   @type t :: %__MODULE__{
           weights: list(float),

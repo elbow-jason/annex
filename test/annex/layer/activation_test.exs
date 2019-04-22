@@ -1,6 +1,6 @@
-defmodule Annex.ActivationTest do
+defmodule Annex.Layer.ActivationTest do
   use ExUnit.Case
-  alias Annex.Activation
+  alias Annex.Layer.Activation
 
   test "relu/1" do
     assert Activation.relu(1.0) == 1.0

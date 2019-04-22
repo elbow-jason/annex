@@ -1,5 +1,9 @@
-defmodule Annex.Activation do
-  alias Annex.{Activation, Layer, Backprop}
+defmodule Annex.Layer.Activation do
+  alias Annex.{
+    Layer,
+    Layer.Activation,
+    Layer.Backprop
+  }
 
   @type t :: %__MODULE__{
           activator: (number -> number),
