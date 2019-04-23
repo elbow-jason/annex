@@ -28,6 +28,7 @@ defmodule Annex.Layer.Backprop do
     }
   end
 
+  @spec get_cost_func(t()) :: cost_func()
   def get_cost_func(%Backprop{cost_func: cost_func}), do: cost_func
 
   @spec get_learning_rate(t()) :: float()

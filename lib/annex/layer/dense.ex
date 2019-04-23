@@ -60,6 +60,7 @@ defmodule Annex.Layer.Dense do
     derivative = Backprop.get_derivative(backprops)
     loss_pds = Backprop.get_loss_pds(backprops)
     total_loss_pd = Backprop.get_net_loss(backprops)
+    cost_func = Backprop.get_cost_func(backprops)
 
     {neuron_errors, neurons} =
       layer
@@ -73,7 +74,7 @@ defmodule Annex.Layer.Dense do
     next_loss_pds =
       neuron_errors
       |> Utils.transpose()
-      |> Enum.map(fn items -> Annex.Cost.mse(items) end)
+      |> Enum.map(cost_func)
 
     {put_neurons(layer, neurons), Backprop.put_loss_pds(backprops, next_loss_pds)}
   end

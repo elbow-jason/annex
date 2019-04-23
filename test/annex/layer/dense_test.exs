@@ -1,6 +1,14 @@
 defmodule Annex.Layer.DenseTest do
   use ExUnit.Case, async: true
-  alias Annex.Layer.{Dense, Neuron, Sequence, Backprop, Activation}
+
+  alias Annex.{
+    Cost,
+    Layer.Activation,
+    Layer.Backprop,
+    Layer.Dense,
+    Layer.Neuron,
+    Layer.Sequence
+  }
 
   def fixture() do
     %Dense{
@@ -41,12 +49,13 @@ defmodule Annex.Layer.DenseTest do
     assert total_loss_pd == 1.7533399999999997
     ones = Enum.map(labels, fn _ -> 1.0 end)
 
-    backprop = %Backprop{
-      net_loss: total_loss_pd,
-      loss_pds: ones,
-      derivative: &Activation.sigmoid_deriv/1,
-      learning_rate: 0.05
-    }
+    backprop =
+      Backprop.new()
+      |> Backprop.put_net_loss(total_loss_pd)
+      |> Backprop.put_loss_pds(ones)
+      |> Backprop.put_derivative(&Activation.sigmoid_deriv/1)
+      |> Backprop.put_learning_rate(0.05)
+      |> Backprop.put_cost_func(&Cost.mse/1)
 
     assert dense == %Dense{
              cols: 3,

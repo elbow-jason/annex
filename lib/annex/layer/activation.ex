@@ -59,6 +59,7 @@ defmodule Annex.Layer.Activation do
     {layer, put_backprop_derivative(layer, backprops)}
   end
 
+  @spec put_backprop_derivative(t(), Backprop.t()) :: Backprop.t()
   defp put_backprop_derivative(layer, backprops) do
     Backprop.put_derivative(backprops, get_derivative(layer))
   end
