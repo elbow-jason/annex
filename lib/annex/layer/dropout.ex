@@ -10,10 +10,9 @@ defmodule Annex.Layer.Dropout do
   defstruct [:frequency]
 
   @spec build(float()) :: t()
-  def build(frequency) when is_float(frequency) and frequency > 0.0 and frequency <= 1.0 do
-    %Dropout{
-      frequency: frequency
-    }
+  def build(frequency)
+      when is_float(frequency) and frequency >= 0.0 and frequency <= 1.0 do
+    %Dropout{frequency: frequency}
   end
 
   @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
@@ -31,14 +30,10 @@ defmodule Annex.Layer.Dropout do
     {Enum.map(inputs, fn value -> zeroize_by_frequency(frequency, value) end), dropout}
   end
 
-  @spec encoder() :: Annex.Encoder
-  def encoder, do: Annex.Encoder
+  @spec encoder() :: Annex.Data
+  def encoder, do: Annex.Data
 
   defp zeroize_by_frequency(frequency, value) do
-    if Utils.random_float() <= frequency do
-      0.0
-    else
-      value
-    end
+    if Utils.random_float() <= frequency, do: 0.0, else: value
   end
 end

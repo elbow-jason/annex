@@ -15,6 +15,7 @@ defmodule Annex.Layer.Dense do
 
   defp get_neurons(%Dense{neurons: neurons}), do: neurons
 
+  @spec put_neurons(t(), list(Neuron.t())) :: t()
   defp put_neurons(%Dense{} = dense, neurons) do
     %Dense{dense | neurons: neurons}
   end

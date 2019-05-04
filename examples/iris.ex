@@ -89,6 +89,7 @@ defmodule Annex.Examples.Iris do
 
     {:ok, _output, seq} =
       Annex.sequence([
+        # Annex.dropout(0.001),
         Annex.dense(100, input_dims: 4),
         Annex.activation(:tanh),
         Annex.dense(3, input_dims: 100),
@@ -97,7 +98,7 @@ defmodule Annex.Examples.Iris do
       |> Annex.train(train_data, train_labels,
         name: :iris,
         learning_rate: 0.07,
-        halt_condition: {:epochs, 10_000}
+        halt_condition: {:epochs, 20_000}
       )
 
     first_test_data = List.first(test_data)
@@ -113,27 +114,44 @@ defmodule Annex.Examples.Iris do
       """
     end)
 
-    test_data
-    |> Enum.zip(test_labels)
-    |> Enum.each(fn {datum, label} ->
-      pred = Annex.predict(seq, datum)
-      norm = Utils.normalize(pred)
+    result =
+      test_data
+      |> Enum.zip(test_labels)
+      |> Enum.map(fn {datum, label} ->
+        pred = Annex.predict(seq, datum)
+        norm = Utils.normalize(pred)
 
-      correct? =
-        norm
-        |> Enum.zip(label)
-        |> Enum.any?(fn {a, b} -> a == 1.0 and b == 1.0 end)
+        correct? =
+          norm
+          |> Enum.zip(label)
+          |> Enum.any?(fn {a, b} -> a == 1.0 and b == 1.0 end)
 
-      Logger.debug(fn ->
-        """
-        TEST PRED:
-          - datum: #{inspect(datum)}
-          - label: #{inspect(label)}
-          - pred: #{inspect(pred)}
-          - norm: #{inspect(norm)}
-          - correct?: #{inspect(correct?)}
-        """
+        Logger.debug(fn ->
+          """
+          TEST PRED:
+            - datum: #{inspect(datum)}
+            - label: #{inspect(label)}
+            - pred: #{inspect(pred)}
+            - norm: #{inspect(norm)}
+            - correct?: #{inspect(correct?)}
+          """
+        end)
+
+        if correct?, do: 1, else: 0
       end)
+
+    total = length(result)
+    corrects = Enum.sum(result)
+    wrongs = total - corrects
+
+    Logger.debug(fn ->
+      """
+      TEST RESULTS:
+        accuracy: #{corrects / total}
+        total:    #{total}
+        corrects: #{corrects}
+        wrongs:   #{wrongs}
+      """
     end)
   end
 end

@@ -5,15 +5,18 @@ defmodule Annex.Layer.Activation do
     Layer.Backprop
   }
 
+  @type func_type :: :float | :list
+
   @type t :: %__MODULE__{
           activator: (number -> number),
           derivative: (number -> number),
+          func_type: func_type(),
           name: atom()
         }
 
   @behaviour Layer
 
-  defstruct [:activator, :derivative, :name, :inputs, :output]
+  defstruct [:activator, :derivative, :name, :output, :func_type]
 
   @spec build(:relu | :sigmoid | :tanh | {:relu, number()}) :: Annex.Activation.t()
   def build(name) do
@@ -22,6 +25,7 @@ defmodule Annex.Layer.Activation do
         %Activation{
           activator: fn n -> relu_with_threshold(n, threshold) end,
           derivative: fn n -> relu_deriv(n, threshold) end,
+          func_type: :float,
           name: name
         }
 
@@ -29,6 +33,7 @@ defmodule Annex.Layer.Activation do
         %Activation{
           activator: &relu/1,
           derivative: &relu_deriv/1,
+          func_type: :float,
           name: name
         }
 
@@ -36,6 +41,7 @@ defmodule Annex.Layer.Activation do
         %Activation{
           activator: &sigmoid/1,
           derivative: &sigmoid_deriv/1,
+          func_type: :float,
           name: name
         }
 
@@ -43,6 +49,15 @@ defmodule Annex.Layer.Activation do
         %Activation{
           activator: &tanh/1,
           derivative: &tanh_deriv/1,
+          func_type: :float,
+          name: name
+        }
+
+      :softmax ->
+        %Activation{
+          activator: &softmax/1,
+          derivative: &tanh_deriv/1,
+          func_type: :list,
           name: name
         }
     end
@@ -51,7 +66,7 @@ defmodule Annex.Layer.Activation do
   @spec feedforward(t(), list(float())) :: {list(float()), t()}
   def feedforward(%Activation{} = layer, inputs) do
     output = generate_outputs(layer, inputs)
-    {output, %Activation{layer | inputs: inputs, output: output}}
+    {output, %Activation{layer | output: output}}
   end
 
   @spec backprop(t(), Backprop.t()) :: {t(), Backprop.t()}
@@ -113,6 +128,13 @@ defmodule Annex.Layer.Activation do
   def sigmoid_deriv(x) do
     fx = sigmoid(x)
     fx * (1 - fx)
+  end
+
+  @spec softmax(list(float())) :: list(float())
+  def softmax(values) when is_list(values) do
+    exps = Enum.map(values, fn vx -> :math.exp(vx) end)
+    exps_sum = Enum.sum(exps)
+    Enum.map(exps, fn e -> e / exps_sum end)
   end
 
   @spec tanh(float()) :: float()

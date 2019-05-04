@@ -24,4 +24,12 @@ defmodule Annex.Cost do
     |> mse()
     |> :math.sqrt()
   end
+
+  @spec softmax(list(float())) :: list(float())
+  def softmax(losses) do
+    maximum = Enum.max(losses)
+    diffs = Enum.map(losses, fn l -> l - maximum end)
+    sum_diffs = Enum.sum(diffs)
+    Enum.map(diffs, fn d -> d / sum_diffs end)
+  end
 end

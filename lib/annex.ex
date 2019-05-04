@@ -1,8 +1,9 @@
 defmodule Annex do
   alias Annex.{
-    Layer.Sequence,
-    Layer.Dense,
     Layer.Activation,
+    Layer.Dense,
+    Layer.Dropout,
+    Layer.Sequence,
     Learner
   }
 
@@ -10,6 +11,10 @@ defmodule Annex do
 
   def sequence(layers, opts \\ []) when is_list(layers) do
     Sequence.build([{:layers, layers} | opts])
+  end
+
+  def dropout(frequency) do
+    Dropout.build(frequency)
   end
 
   def initialize(%module{} = layer) do
