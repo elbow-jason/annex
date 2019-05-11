@@ -130,4 +130,7 @@ defmodule Annex.Utils do
       sum -> Enum.map(data, fn item -> item / sum end)
     end
   end
+
+  def reshape([], weights), do: weights
+  def reshape([size | rest], weights), do: reshape(rest, Enum.chunk_every(weights, size))
 end
