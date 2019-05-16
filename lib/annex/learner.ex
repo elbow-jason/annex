@@ -19,7 +19,6 @@ defmodule Annex.Learner do
   def train(%module{} = learner, all_inputs, all_labels, opts \\ []) do
     with(
       {:ok, learner} <- module.init_learner(learner, opts),
-      _ <- IO.inspect(learner, label: :abc123),
       {learner2, loss} <- do_train(learner, all_inputs, all_labels, opts)
     ) do
       {:ok, learner2, loss}
