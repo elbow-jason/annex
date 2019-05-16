@@ -1,11 +1,9 @@
 defmodule Annex.Layer do
   alias Annex.{
-    Encoder,
     Layer.Backprop
   }
 
   @type t() :: struct()
-  @type encoder :: Encoder.t()
   @type data :: any()
 
   @callback feedforward(struct(), data()) :: {struct(), data()}
