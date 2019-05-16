@@ -24,7 +24,7 @@ defmodule Annex.Layer.DenseTest do
   test "dense feedforward works" do
     dense = %Dense{neurons: [n1, n2]} = fixture()
     inputs = [0.9, 0.01, 0.1]
-    {output, new_dense} = Dense.feedforward(dense, inputs)
+    {new_dense, output} = Dense.feedforward(dense, inputs)
     assert output == [0.71243, 1.536]
     n1 = %Neuron{n1 | inputs: inputs, sum: 0.71243}
     n2 = %Neuron{n2 | inputs: inputs, sum: 1.536}
@@ -41,21 +41,15 @@ defmodule Annex.Layer.DenseTest do
 
     inputs = [0.1, 1.0, 0.0]
     labels = [1.0, 0.0]
-    {outputs, dense} = Dense.feedforward(dense, inputs)
+    {dense, outputs} = Dense.feedforward(dense, inputs)
 
     assert outputs == [1.20667, 0.6699999999999999]
 
     total_loss_pd = Sequence.total_loss_pd(outputs, labels)
     assert total_loss_pd == 1.7533399999999997
-    ones = Enum.map(labels, fn _ -> 1.0 end)
+    loss_pds = Enum.map(labels, fn _ -> 1.0 end)
 
-    backprop =
-      Backprop.new()
-      |> Backprop.put_net_loss(total_loss_pd)
-      |> Backprop.put_loss_pds(ones)
-      |> Backprop.put_derivative(&Activation.sigmoid_deriv/1)
-      |> Backprop.put_learning_rate(0.05)
-      |> Backprop.put_cost_func(&Cost.mse/1)
+    backprop = Backprop.new(net_loss: total_loss_pd, learning_rate: 0.05, cost_func: &Cost.mse/1)
 
     assert dense == %Dense{
              cols: 3,
@@ -78,9 +72,9 @@ defmodule Annex.Layer.DenseTest do
              rows: 2
            }
 
-    assert {new_dense, backprop2} = Dense.backprop(dense, backprop)
+    assert {new_dense, next_loss_pds, backprop2} = Dense.backprop(dense, loss_pds, backprop)
 
-    assert backprop2.loss_pds == [
+    assert next_loss_pds == [
              0.014029189664764501,
              0.00491599279921316,
              0.020463274335004233
