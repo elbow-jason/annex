@@ -1,4 +1,6 @@
 defmodule Annex.Layer.ListLayer do
+  @type t :: [float(), ...]
+
   defmacro __using__(_) do
     quote do
       @before_compile Annex.Layer.ListLayer

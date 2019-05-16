@@ -3,14 +3,14 @@ defmodule Annex.Layer.Dense do
     Layer,
     Layer.Backprop,
     Layer.Dense,
+    Layer.ListLayer,
     Layer.Neuron,
-    ListOfLists,
     Utils
   }
 
   @behaviour Layer
 
-  use Layer.ListLayer
+  use ListLayer
 
   @type t :: %__MODULE__{
           neurons: list(Neuron.t()),
@@ -47,7 +47,7 @@ defmodule Annex.Layer.Dense do
     put_neurons(layer, neurons)
   end
 
-  @spec feedforward(t(), ListOfLists.t()) :: {t(), ListOfLists.t()}
+  @spec feedforward(t(), ListLayer.t()) :: {t(), ListLayer.t()}
   def feedforward(%Dense{} = layer, inputs) do
     {output, neurons} =
       layer
@@ -61,7 +61,7 @@ defmodule Annex.Layer.Dense do
     {%Dense{layer | neurons: neurons}, output}
   end
 
-  @spec backprop(t(), ListOfLists.t(), Backprop.t()) :: {t(), ListOfLists.t(), Backprop.t()}
+  @spec backprop(t(), ListLayer.t(), Backprop.t()) :: {t(), ListLayer.t(), Backprop.t()}
   def backprop(%Dense{} = layer, losses, props) do
     learning_rate = Backprop.get_learning_rate(props)
     derivative = Backprop.get_derivative(props)

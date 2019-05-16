@@ -3,13 +3,13 @@ defmodule Annex.Layer.Dropout do
     Layer,
     Layer.Backprop,
     Layer.Dropout,
-    ListOfLists,
+    Layer.ListLayer,
     Utils
   }
 
   @behaviour Layer
 
-  use Layer.ListLayer
+  use ListLayer
 
   @type t :: %__MODULE__{
           frequency: float()
@@ -28,17 +28,17 @@ defmodule Annex.Layer.Dropout do
     {:ok, dropout}
   end
 
-  @spec backprop(t(), ListOfLists.t(), Backprop.t()) :: {t(), ListOfLists.t(), Backprop.t()}
+  @spec backprop(t(), ListLayer.t(), Backprop.t()) :: {t(), ListLayer.t(), Backprop.t()}
   def backprop(%Dropout{} = dropout, loss_pds, backprop) do
     {dropout, loss_pds, backprop}
   end
 
-  @spec feedforward(t(), ListOfLists.t()) :: {t(), ListOfLists.t()}
+  @spec feedforward(t(), ListLayer.t()) :: {t(), ListLayer.t()}
   def feedforward(%Dropout{frequency: frequency} = layer, inputs) do
     {layer, drop(inputs, frequency)}
   end
 
-  @spec drop(ListOfLists.t(), float()) :: ListOfLists.t()
+  @spec drop(ListLayer.t(), float()) :: ListLayer.t()
   def drop(inputs, frequency) do
     inputs
     |> Enum.map(fn row ->

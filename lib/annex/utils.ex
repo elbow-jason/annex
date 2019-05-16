@@ -4,7 +4,7 @@ defmodule Annex.Utils do
   of Annex's other modules.
   """
 
-  alias Annex.ListOfLists
+  alias Annex.Layer.ListLayer
 
   @doc """
   Generates a float between -1.0 and 1.0
@@ -17,7 +17,7 @@ defmodule Annex.Utils do
   @doc """
   Generates a list of `n` floats between -1.0 and 1.0.
   """
-  @spec random_weights(integer()) :: ListOfLists.t()
+  @spec random_weights(integer()) :: ListLayer.t()
   def random_weights(n) when n > 0 and is_integer(n) do
     Enum.map(1..n, fn _ -> random_float() end)
   end

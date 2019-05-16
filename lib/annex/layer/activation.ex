@@ -3,7 +3,7 @@ defmodule Annex.Layer.Activation do
     Layer,
     Layer.Activation,
     Layer.Backprop,
-    ListOfLists
+    Layer.ListLayer
   }
 
   @type func_type :: :float | :list
@@ -19,7 +19,7 @@ defmodule Annex.Layer.Activation do
 
   @behaviour Layer
 
-  use Layer.ListLayer
+  use ListLayer
 
   defstruct [:activator, :derivative, :name, :output, :func_type]
 
@@ -68,13 +68,13 @@ defmodule Annex.Layer.Activation do
     end
   end
 
-  @spec feedforward(t(), ListOfLists.t()) :: {t(), ListOfLists.t()}
+  @spec feedforward(t(), ListLayer.t()) :: {t(), ListLayer.t()}
   def feedforward(%Activation{} = layer, inputs) do
     output = generate_outputs(layer, inputs)
     {%Activation{layer | output: output}, output}
   end
 
-  @spec backprop(t(), ListOfLists.t(), Backprop.t()) :: {t(), ListOfLists.t(), Backprop.t()}
+  @spec backprop(t(), ListLayer.t(), Backprop.t()) :: {t(), ListLayer.t(), Backprop.t()}
   def backprop(%Activation{} = layer, loss_pds, props) do
     derviative = get_derivative(layer)
     {layer, loss_pds, Backprop.put_derivative(props, derviative)}
@@ -85,7 +85,7 @@ defmodule Annex.Layer.Activation do
     {:ok, layer}
   end
 
-  @spec generate_outputs(t(), ListOfLists.t()) :: [any()]
+  @spec generate_outputs(t(), ListLayer.t()) :: [any()]
   def generate_outputs(%Activation{} = layer, inputs) do
     activation = get_activator(layer)
     Enum.map(inputs, activation)
@@ -129,7 +129,7 @@ defmodule Annex.Layer.Activation do
     fx * (1 - fx)
   end
 
-  @spec softmax(ListOfLists.t()) :: ListOfLists.t()
+  @spec softmax(ListLayer.t()) :: ListLayer.t()
   def softmax(values) when is_list(values) do
     exps = Enum.map(values, fn vx -> :math.exp(vx) end)
     exps_sum = Enum.sum(exps)

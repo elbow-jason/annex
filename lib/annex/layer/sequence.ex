@@ -3,9 +3,9 @@ defmodule Annex.Layer.Sequence do
     Cost,
     Layer,
     Layer.Backprop,
+    Layer.ListLayer,
     Layer.Sequence,
     Learner,
-    ListOfLists,
     Utils
   }
 
@@ -14,7 +14,7 @@ defmodule Annex.Layer.Sequence do
   @behaviour Learner
   @behaviour Layer
 
-  use Layer.ListLayer
+  use ListLayer
 
   @type t :: %__MODULE__{
           layers: list(Layer.t()),
@@ -141,7 +141,7 @@ defmodule Annex.Layer.Sequence do
   end
 
   @impl Learner
-  @spec train(t(), ListOfLists.t(), ListOfLists.t(), Keyword.t()) :: {t(), ListOfLists.t()}
+  @spec train(t(), ListLayer.t(), ListLayer.t(), Keyword.t()) :: {t(), ListLayer.t()}
   def train(%Sequence{} = seq1, data, labels, opts) do
     cost_func = Keyword.get(opts, :cost_func, &Cost.mse/1)
 
