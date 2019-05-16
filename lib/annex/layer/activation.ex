@@ -2,10 +2,13 @@ defmodule Annex.Layer.Activation do
   alias Annex.{
     Layer,
     Layer.Activation,
-    Layer.Backprop
+    Layer.Backprop,
+    ListOfLists
   }
 
   @type func_type :: :float | :list
+
+  @type func_name :: :relu | :sigmoid | :tanh | {:relu, number()}
 
   @type t :: %__MODULE__{
           activator: (number -> number),
@@ -16,9 +19,11 @@ defmodule Annex.Layer.Activation do
 
   @behaviour Layer
 
+  use Layer.ListLayer
+
   defstruct [:activator, :derivative, :name, :output, :func_type]
 
-  @spec build(:relu | :sigmoid | :tanh | {:relu, number()}) :: Annex.Activation.t()
+  @spec build(:relu | :sigmoid | :tanh | {:relu, number()}) :: t()
   def build(name) do
     case name do
       {:relu, threshold} ->
@@ -63,33 +68,27 @@ defmodule Annex.Layer.Activation do
     end
   end
 
-  @spec feedforward(t(), list(float())) :: {list(float()), t()}
+  @spec feedforward(t(), ListOfLists.t()) :: {t(), ListOfLists.t()}
   def feedforward(%Activation{} = layer, inputs) do
     output = generate_outputs(layer, inputs)
-    {output, %Activation{layer | output: output}}
+    {%Activation{layer | output: output}, output}
   end
 
-  @spec backprop(t(), Backprop.t()) :: {t(), Backprop.t()}
-  def backprop(%Activation{} = layer, backprops) do
-    {layer, put_backprop_derivative(layer, backprops)}
+  @spec backprop(t(), ListOfLists.t(), Backprop.t()) :: {t(), ListOfLists.t(), Backprop.t()}
+  def backprop(%Activation{} = layer, loss_pds, props) do
+    derviative = get_derivative(layer)
+    {layer, loss_pds, Backprop.put_derivative(props, derviative)}
   end
-
-  @spec put_backprop_derivative(t(), Backprop.t()) :: Backprop.t()
-  defp put_backprop_derivative(layer, backprops) do
-    Backprop.put_derivative(backprops, get_derivative(layer))
-  end
-
-  @spec encoder() :: Annex.Data
-  def encoder, do: Annex.Data
 
   @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
   def init_layer(%Activation{} = layer, _opts) do
     {:ok, layer}
   end
 
-  @spec generate_outputs(Annex.Activation.t(), list(float())) :: [any()]
-  def generate_outputs(%Activation{} = act, inputs) do
-    Enum.map(inputs, get_activator(act))
+  @spec generate_outputs(t(), ListOfLists.t()) :: [any()]
+  def generate_outputs(%Activation{} = layer, inputs) do
+    activation = get_activator(layer)
+    Enum.map(inputs, activation)
   end
 
   @spec get_activator(Activation.t()) :: (number() -> number())
@@ -130,7 +129,7 @@ defmodule Annex.Layer.Activation do
     fx * (1 - fx)
   end
 
-  @spec softmax(list(float())) :: list(float())
+  @spec softmax(ListOfLists.t()) :: ListOfLists.t()
   def softmax(values) when is_list(values) do
     exps = Enum.map(values, fn vx -> :math.exp(vx) end)
     exps_sum = Enum.sum(exps)

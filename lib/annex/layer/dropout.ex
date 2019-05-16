@@ -1,7 +1,15 @@
 defmodule Annex.Layer.Dropout do
-  alias Annex.{Layer, Layer.Backprop, Layer.Dropout, Utils}
+  alias Annex.{
+    Layer,
+    Layer.Backprop,
+    Layer.Dropout,
+    ListOfLists,
+    Utils
+  }
 
   @behaviour Layer
+
+  use Layer.ListLayer
 
   @type t :: %__MODULE__{
           frequency: float()
@@ -20,18 +28,23 @@ defmodule Annex.Layer.Dropout do
     {:ok, dropout}
   end
 
-  @spec backprop(t(), Backprop.t()) :: {t(), Backprop.t()}
-  def backprop(%Dropout{} = dropout, backprop) do
-    {dropout, backprop}
+  @spec backprop(t(), ListOfLists.t(), Backprop.t()) :: {t(), ListOfLists.t(), Backprop.t()}
+  def backprop(%Dropout{} = dropout, loss_pds, backprop) do
+    {dropout, loss_pds, backprop}
   end
 
-  @spec feedforward(t(), list(float())) :: {list(float()), t()}
-  def feedforward(%Dropout{frequency: frequency} = dropout, inputs) do
-    {Enum.map(inputs, fn value -> zeroize_by_frequency(frequency, value) end), dropout}
+  @spec feedforward(t(), ListOfLists.t()) :: {t(), ListOfLists.t()}
+  def feedforward(%Dropout{frequency: frequency} = layer, inputs) do
+    {layer, drop(inputs, frequency)}
   end
 
-  @spec encoder() :: Annex.Data
-  def encoder, do: Annex.Data
+  @spec drop(ListOfLists.t(), float()) :: ListOfLists.t()
+  def drop(inputs, frequency) do
+    inputs
+    |> Enum.map(fn row ->
+      Enum.map(row, fn value -> zeroize_by_frequency(frequency, value) end)
+    end)
+  end
 
   defp zeroize_by_frequency(frequency, value) do
     if Utils.random_float() <= frequency, do: 0.0, else: value

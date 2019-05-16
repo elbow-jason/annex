@@ -1,12 +1,12 @@
 defmodule Annex.Learner do
-  alias Annex.{Utils, Data}
+  alias Annex.{Utils}
   require Logger
 
   @type learner :: struct()
   @type options :: Keyword.t()
 
   @callback init_learner(learner(), options()) :: {:ok, learner()} | {:error, any()}
-  @callback train(any(), Data.t(), Data.t(), options()) :: {any(), learner()}
+  @callback train(learner(), any(), any(), options()) :: {learner(), any()}
   @callback train_opts(options()) :: options()
   @callback predict(learner(), Data.t()) :: Data.t()
 
@@ -14,14 +14,15 @@ defmodule Annex.Learner do
     module.predict(learner, data)
   end
 
-  @spec train(struct(), Data.dataset(), Data.dataset(), Keyword.t()) ::
-          {:ok, list(float()), struct()} | {:error, any()}
+  @spec train(struct(), any(), any(), Keyword.t()) ::
+          {:ok, struct(), list(float())} | {:error, any()}
   def train(%module{} = learner, all_inputs, all_labels, opts \\ []) do
     with(
       {:ok, learner} <- module.init_learner(learner, opts),
-      {loss, learner2} <- do_train(learner, all_inputs, all_labels, opts)
+      _ <- IO.inspect(learner, label: :abc123),
+      {learner2, loss} <- do_train(learner, all_inputs, all_labels, opts)
     ) do
-      {:ok, loss, learner2}
+      {:ok, learner2, loss}
     else
       {:error, _} = err -> err
     end
@@ -51,7 +52,7 @@ defmodule Annex.Learner do
     |> Stream.cycle()
     |> Stream.with_index(1)
     |> Enum.reduce_while({nil, learner}, fn {{inputs, labels}, epoch}, {_, learner_acc} ->
-      {output, learner2} = module.train(learner_acc, inputs, labels, train_opts)
+      {learner2, output} = module.train(learner_acc, inputs, labels, train_opts)
 
       _ = log.(learner2, output, epoch, opts)
 

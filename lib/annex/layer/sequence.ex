@@ -1,11 +1,11 @@
 defmodule Annex.Layer.Sequence do
   alias Annex.{
     Cost,
-    Data,
     Layer,
     Layer.Backprop,
     Layer.Sequence,
     Learner,
+    ListOfLists,
     Utils
   }
 
@@ -13,6 +13,8 @@ defmodule Annex.Layer.Sequence do
 
   @behaviour Learner
   @behaviour Layer
+
+  use Layer.ListLayer
 
   @type t :: %__MODULE__{
           layers: list(Layer.t()),
@@ -41,17 +43,22 @@ defmodule Annex.Layer.Sequence do
     %Sequence{seq | layers: layers}
   end
 
+  @impl Learner
+  @spec train_opts(keyword()) :: keyword()
   def train_opts(opts) when is_list(opts) do
     opts
     |> Keyword.take([:learning_rate])
     |> Keyword.put_new(:learning_rate, 0.05)
   end
 
+  @impl Learner
   @spec init_learner(t(), any()) :: {:error, any()} | {:ok, t()}
   def init_learner(seq, opts \\ []) do
     init_layer(seq, opts)
   end
 
+  @impl Layer
+  @spec init_layer(Sequence.t(), any()) :: {:error, any()} | {:ok, Sequence.t()}
   def init_layer(seq, opts \\ [])
 
   def init_layer(%Sequence{initialized?: true} = seq, _opts) do
@@ -89,65 +96,79 @@ defmodule Annex.Layer.Sequence do
     end
   end
 
+  @impl Layer
+  @spec feedforward(Sequence.t(), any()) :: {Sequence.t(), any()}
   def feedforward(%Sequence{} = seq, inputs) do
     {output, layers} =
       seq
       |> get_layers()
       |> Enum.reduce({inputs, []}, fn layer, {input, layers} ->
-        {out, fed_layer} = Layer.feedforward(layer, input)
-        {out, [fed_layer | layers]}
+        prev_layer = List.first(layers) || seq
+        encoded_inputs = Layer.convert(input, prev_layer, layer)
+        {updated_layer, output} = Layer.feedforward(layer, encoded_inputs)
+        {output, [updated_layer | layers]}
       end)
       |> case do
         {output, rev_layers} ->
           {output, Enum.reverse(rev_layers)}
       end
 
-    {output, %Sequence{seq | layers: layers}}
+    {%Sequence{seq | layers: layers}, output}
   end
 
+  @impl Learner
+  @spec predict(Sequence.t(), any()) :: any()
   def predict(%Sequence{} = seq, data) do
-    {prediction, _} = Layer.feedforward(seq, data)
+    {_, prediction} = Layer.feedforward(seq, data)
     prediction
   end
 
-  @spec backprop(t(), Backprop.t()) :: {t(), Backprop.t()}
-  def backprop(%Sequence{} = seq, backprops) do
-    {layers, updated_backprop} =
+  @impl Layer
+  @spec backprop(Sequence.t(), any(), keyword()) :: {Sequence.t(), any(), keyword()}
+  def backprop(%Sequence{} = seq, seq_losses, backprops) do
+    {layers, final_losses, updated_backprop} =
       seq
       |> get_layers()
       |> Enum.reverse()
-      |> Enum.reduce({[], backprops}, fn layer, {layers_acc, backprop_acc} ->
-        {layer, backprop_acc} = Layer.backprop(layer, backprop_acc)
-        {[layer | layers_acc], backprop_acc}
+      |> Enum.reduce({[], seq_losses, backprops}, fn layer, {layers, losses, props} ->
+        prev_layer = List.first(layers) || seq
+        encoded_losses = Layer.convert(losses, prev_layer, layer)
+        {updated_layer, next_losses, next_props} = Layer.backprop(layer, encoded_losses, props)
+        {[updated_layer | layers], next_losses, next_props}
       end)
 
-    {put_layers(seq, layers), updated_backprop}
+    {put_layers(seq, layers), final_losses, updated_backprop}
   end
 
-  @spec train(t(), Data.t(), Data.t(), Keyword.t()) :: {list(float()), t()}
-  def train(%Sequence{} = seq, data, labels, opts) do
-    {network_outputs, seq2} = Sequence.feedforward(seq, data)
-    outputs = Data.decode(network_outputs)
-    labels = Data.decode(labels)
-    network_error = calc_network_error(outputs, labels)
-    network_error_pd = calculate_network_error_pd(network_error)
-    loss_pds = Utils.proportions(network_error)
+  @impl Learner
+  @spec train(t(), ListOfLists.t(), ListOfLists.t(), Keyword.t()) :: {t(), ListOfLists.t()}
+  def train(%Sequence{} = seq1, data, labels, opts) do
     cost_func = Keyword.get(opts, :cost_func, &Cost.mse/1)
 
-    backprops =
-      Backprop.new()
-      |> Backprop.put_net_loss(network_error_pd)
-      |> Backprop.put_loss_pds(loss_pds)
-      |> Backprop.put_cost_func(cost_func)
+    {%Sequence{} = seq2, prediction} = Layer.feedforward(seq1, data)
 
-    {seq3, _backprop} = Sequence.backprop(seq2, backprops)
+    last_layer =
+      seq2
+      |> get_layers()
+      |> List.last()
+
+    labels = Layer.convert(labels, seq2, seq2)
+    prediction = Layer.convert(prediction, last_layer, seq2)
+
+    network_error = calc_network_error(prediction, labels)
+    network_error_pd = calculate_network_error_pd(network_error)
+    loss_pds = Utils.proportions(network_error)
+
+    props = Backprop.new(net_loss: network_error_pd, cost_func: cost_func)
+
+    {seq3, _next_loss_pds, _props} = Layer.backprop(seq2, loss_pds, props)
 
     loss =
       labels
-      |> Utils.zipmap(outputs, fn ax, bx -> ax - bx end)
+      |> Utils.zipmap(prediction, fn ax, bx -> ax - bx end)
       |> cost_func.()
 
-    {loss, seq3}
+    {seq3, loss}
   end
 
   def total_loss_pd(outputs, labels) do
@@ -155,8 +176,6 @@ defmodule Annex.Layer.Sequence do
     |> calc_network_error(labels)
     |> calculate_network_error_pd()
   end
-
-  def encoder, do: Annex.Data
 
   defp calculate_network_error_pd(network_error) do
     -2 * Enum.sum(network_error)

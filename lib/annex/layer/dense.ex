@@ -1,10 +1,19 @@
 defmodule Annex.Layer.Dense do
-  alias Annex.{Layer, Layer.Backprop, Layer.Dense, Layer.Neuron, Utils}
+  alias Annex.{
+    Layer,
+    Layer.Backprop,
+    Layer.Dense,
+    Layer.Neuron,
+    ListOfLists,
+    Utils
+  }
 
   @behaviour Layer
 
+  use Layer.ListLayer
+
   @type t :: %__MODULE__{
-          neurons: Data.float_data(),
+          neurons: list(Neuron.t()),
           rows: non_neg_integer(),
           cols: non_neg_integer()
         }
@@ -38,7 +47,7 @@ defmodule Annex.Layer.Dense do
     put_neurons(layer, neurons)
   end
 
-  @spec feedforward(t(), list(float())) :: {list(float()), t()}
+  @spec feedforward(t(), ListOfLists.t()) :: {t(), ListOfLists.t()}
   def feedforward(%Dense{} = layer, inputs) do
     {output, neurons} =
       layer
@@ -49,24 +58,20 @@ defmodule Annex.Layer.Dense do
       end)
       |> Enum.unzip()
 
-    {output, %Dense{layer | neurons: neurons}}
+    {%Dense{layer | neurons: neurons}, output}
   end
 
-  @spec encoder() :: Annex.Data
-  def encoder, do: Annex.Data
-
-  @spec backprop(t(), Backprop.t()) :: {t(), Backprop.t()}
-  def backprop(%Dense{} = layer, backprops) do
-    learning_rate = Backprop.get_learning_rate(backprops)
-    derivative = Backprop.get_derivative(backprops)
-    loss_pds = Backprop.get_loss_pds(backprops)
-    total_loss_pd = Backprop.get_net_loss(backprops)
-    cost_func = Backprop.get_cost_func(backprops)
+  @spec backprop(t(), ListOfLists.t(), Backprop.t()) :: {t(), ListOfLists.t(), Backprop.t()}
+  def backprop(%Dense{} = layer, losses, props) do
+    learning_rate = Backprop.get_learning_rate(props)
+    derivative = Backprop.get_derivative(props)
+    total_loss_pd = Backprop.get_net_loss(props)
+    cost_func = Backprop.get_cost_func(props)
 
     {neuron_errors, neurons} =
       layer
       |> get_neurons()
-      |> Utils.zip(loss_pds)
+      |> Utils.zip(losses)
       |> Enum.map(fn {neuron, loss_pd} ->
         Neuron.backprop(neuron, total_loss_pd, loss_pd, learning_rate, derivative)
       end)
@@ -77,6 +82,6 @@ defmodule Annex.Layer.Dense do
       |> Utils.transpose()
       |> Enum.map(cost_func)
 
-    {put_neurons(layer, neurons), Backprop.put_loss_pds(backprops, next_loss_pds)}
+    {put_neurons(layer, neurons), next_loss_pds, props}
   end
 end
