@@ -49,13 +49,96 @@ defmodule Annex.Layer.Dense do
     {:ok, initialize_neurons(layer)}
   end
 
+  def build_random(rows, cols) do
+    %Dense{
+      neurons: random_neurons(rows, cols),
+      rows: rows,
+      cols: cols
+    }
+  end
+
+  defp random_neurons(rows, cols) do
+    Enum.map(1..rows, fn _ -> Neuron.new_random(cols) end)
+  end
+
+  def build_from_data(rows, cols, weights, biases) do
+    len_weights = length(weights)
+    len_biases = length(biases)
+
+    cond do
+      !is_integer(rows) or rows <= 0 ->
+        raise ArgumentError,
+          message: """
+          Rows must be a positive integer -
+          rows: #{inspect(rows)}
+          """
+
+      !is_integer(cols) or cols <= 0 ->
+        raise ArgumentError,
+          message: """
+          Columns must be a positive integer -
+          columns: #{inspect(cols)}
+          """
+
+      len_weights != rows * cols ->
+        raise ArgumentError,
+          message: """
+          Bad weights dimensions -
+          rows:     #{inspect(rows)}
+          cols:     #{inspect(cols)}
+          length:   #{inspect(len_weights)}
+          expected: #{inspect(rows * cols)}
+          weights:  #{inspect(weights)}
+          """
+
+      # {:error,
+      #  {:bad_data_dimensions, %{rows: rows, cols: cols, len_data: len_data, data: data}}}
+
+      len_biases != rows ->
+        raise ArgumentError,
+          message: """
+          Bad biases length -
+          rows:   #{inspect(rows)}
+          length: #{inspect(len_biases)}
+          biases: #{inspect(biases)}
+          """
+
+      Enum.all?(weights, &is_float/1) ->
+        raise ArgumentError,
+          message: """
+          Weights must be floats -
+          weights: #{inspect(weights)}
+          """
+
+      Enum.all?(biases, &is_float/1) ->
+        raise ArgumentError,
+          message: """
+          Biases must be floats -
+          biases: #{inspect(biases)}
+          """
+
+      true ->
+        neurons =
+          weights
+          |> Enum.chunk_every(cols)
+          |> Enum.zip(biases)
+          |> Enum.map(fn {weights, bias} -> Neuron.new(weights, bias) end)
+
+        %Dense{
+          neurons: neurons,
+          rows: rows,
+          cols: cols
+        }
+    end
+  end
+
   defp initialize_neurons(%Dense{rows: rows, cols: cols} = layer) do
     neurons =
       case get_neurons(layer) do
         nil ->
-          Enum.map(1..rows, fn _ -> Neuron.new_random(cols) end)
+          random_neurons(rows, cols)
 
-        found when is_list(found) ->
+        [%Neuron{} | _] = found ->
           found
       end
 
@@ -64,20 +147,15 @@ defmodule Annex.Layer.Dense do
 
   @spec feedforward(t(), ListLayer.t()) :: {t(), ListLayer.t()}
   def feedforward(%Dense{} = layer, input) do
-    {output, neurons} =
+    output =
       layer
       |> get_neurons()
-      |> Enum.map(fn neuron ->
-        neuron = Neuron.feedforward(neuron, input)
-        {Neuron.get_sum(neuron), neuron}
-      end)
-      |> Enum.unzip()
+      |> Enum.map(fn neuron -> Neuron.feedforward(neuron, input) end)
 
     updated_layer =
       layer
       |> put_input(input)
       |> put_output(output)
-      |> put_neurons(neurons)
 
     {updated_layer, output}
   end
@@ -89,12 +167,17 @@ defmodule Annex.Layer.Dense do
     total_loss_pd = Backprop.get_net_loss(props)
     cost_func = Backprop.get_cost_func(props)
 
+    output = get_output(layer)
+    input = get_input(layer)
+
     {neuron_errors, neurons} =
       layer
       |> get_neurons()
       |> Utils.zip(losses)
-      |> Enum.map(fn {neuron, loss_pd} ->
-        Neuron.backprop(neuron, total_loss_pd, loss_pd, learning_rate, derivative)
+      |> Utils.zip(output)
+      |> Enum.map(fn {{neuron, loss_pd}, neuron_output} ->
+        sum_deriv = derivative.(neuron_output)
+        Neuron.backprop(neuron, input, sum_deriv, total_loss_pd, loss_pd, learning_rate)
       end)
       |> Enum.unzip()
 

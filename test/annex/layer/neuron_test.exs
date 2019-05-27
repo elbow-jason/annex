@@ -8,20 +8,20 @@ defmodule Annex.Layer.NeuronTest do
 
     assert Neuron.new(weights, bias) == %Neuron{
              weights: weights,
-             bias: bias,
-             sum: 0.0
+             bias: bias
+             #  sum: 0.0
            }
   end
 
   test "new_random/1" do
     assert %Neuron{
              bias: bias,
-             weights: weights,
-             sum: sum
+             weights: weights
+             #  sum: sum
            } = Neuron.new_random(4)
 
-    assert is_float(sum)
-    assert sum == 0.0
+    # assert is_float(sum)
+    # assert sum == 0.0
     assert length(weights) == 4
     assert Enum.all?(weights, &is_float/1)
     assert is_float(bias)
@@ -32,9 +32,7 @@ defmodule Annex.Layer.NeuronTest do
     bias = 1.0
     n1 = Neuron.new(weights, bias)
     inputs = [1.0, 0.9, 0.0]
-    n2 = Neuron.feedforward(n1, inputs)
-    assert n1 == %Neuron{weights: weights}
-    assert n2 == %Neuron{weights: weights, inputs: inputs, sum: 2.0}
+    assert 2.0 = Neuron.feedforward(n1, inputs)
   end
 
   test "backprop/5" do
@@ -42,22 +40,23 @@ defmodule Annex.Layer.NeuronTest do
     bias = 1.0
     n1 = Neuron.new(weights, bias)
     assert n1 == %Neuron{weights: weights, bias: bias}
-    inputs = [1.0, 0.9, 0.0]
-    n2 = Neuron.feedforward(n1, inputs)
-    assert n2 == %Neuron{weights: weights, inputs: inputs, sum: 2.0}
+    input = [1.0, 0.9, 0.0]
+    output = Neuron.feedforward(n1, input)
+
     total_loss_pd = 0.5
     neuron_loss_pd = 0.3
     learn_rate = 0.05
     activation_deriv = &Activation.sigmoid_deriv/1
+    sum_deriv = activation_deriv.(output)
 
-    assert {next_loss_pds, n3} =
-             Neuron.backprop(n2, total_loss_pd, neuron_loss_pd, learn_rate, activation_deriv)
+    assert {next_loss_pds, n2} =
+             Neuron.backprop(n1, input, sum_deriv, total_loss_pd, neuron_loss_pd, learn_rate)
 
-    assert n3 == %Neuron{
-             inputs: inputs,
+    assert n2 == %Neuron{
+             #  inputs: inputs,
              bias: 0.9992125481094737,
-             weights: [0.9992125481094737, -7.087067014736697e-4, -1.1],
-             sum: 2.0
+             weights: [0.9992125481094737, -7.087067014736697e-4, -1.1]
+             #  sum: 2.0
            }
 
     assert next_loss_pds == [0.10499358540350662, 0.0, -0.11549294394385728]

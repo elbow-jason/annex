@@ -24,11 +24,15 @@ defmodule Annex do
 
   @spec dense(pos_integer(), keyword()) :: Dense.t()
   def dense(rows, opts \\ []) do
-    %Dense{
-      rows: rows,
-      cols: Keyword.get(opts, :input_dims),
-      neurons: Keyword.get(opts, :data)
-    }
+    cols = Keyword.get(opts, :input_dims)
+    weights = Keyword.get(opts, :weights)
+    biases = Keyword.get(opts, :biases)
+
+    if is_list(weights) and is_list(biases) do
+      Dense.build_from_data(rows, cols, weights, biases)
+    else
+      Dense.build_random(rows, cols)
+    end
   end
 
   @spec activation(Activation.func_name()) :: Activation.t()

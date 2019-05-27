@@ -3,7 +3,6 @@ defmodule Annex.Layer.DenseTest do
 
   alias Annex.{
     Cost,
-    Layer.Activation,
     Layer.Backprop,
     Layer.Dense,
     Layer.Neuron,
@@ -22,16 +21,11 @@ defmodule Annex.Layer.DenseTest do
   end
 
   test "dense feedforward works" do
-    dense = %Dense{neurons: [n1, n2]} = fixture()
+    assert %Dense{} = dense = fixture()
     input = [0.9, 0.01, 0.1]
-    {new_dense, output} = Dense.feedforward(dense, input)
-    assert output == [0.71243, 1.536]
-    n1 = %Neuron{n1 | inputs: input, sum: 0.71243}
-    n2 = %Neuron{n2 | inputs: input, sum: 1.536}
-
-    expected_dense = %Dense{dense | neurons: [n1, n2], input: input, output: output}
-
-    assert new_dense == expected_dense
+    output = [0.71243, 1.536]
+    assert {new_dense, ^output} = Dense.feedforward(dense, input)
+    assert new_dense == %Dense{dense | input: input, output: output}
   end
 
   test "dense backprop works" do
@@ -58,16 +52,16 @@ defmodule Annex.Layer.DenseTest do
              neurons: [
                %Neuron{
                  bias: 1.0,
-                 inputs: input,
+                 #  inputs: input,
                  #  output: 0.0,
-                 sum: 1.20667,
+                 #  sum: 1.20667,
                  weights: [-0.3333, 0.24, 0.1]
                },
                %Neuron{
                  bias: 1.0,
-                 inputs: input,
+                 #  inputs: input,
                  #  output: 0.0,
-                 sum: 0.6699999999999999,
+                 #  sum: 0.6699999999999999,
                  weights: [0.7, -0.4, -0.9]
                }
              ],
@@ -85,17 +79,17 @@ defmodule Annex.Layer.DenseTest do
     n1 = %Neuron{
       n1
       | bias: 0.9844604158342636,
-        weights: [-0.3348539584165736, 0.22446041583426357, 0.1],
-        inputs: input,
-        sum: 1.20667
+        weights: [-0.3348539584165736, 0.22446041583426357, 0.1]
+        # inputs: input,
+        # sum: 1.20667
     }
 
     n2 = %Neuron{
       n2
       | bias: 0.9803698920690089,
-        weights: [0.6980369892069008, -0.41963010793099104, -0.9],
-        inputs: input,
-        sum: 0.6699999999999999
+        weights: [0.6980369892069008, -0.41963010793099104, -0.9]
+        # inputs: input,
+        # sum: 0.6699999999999999
     }
 
     assert new_dense == %Dense{dense | neurons: [n1, n2]}
