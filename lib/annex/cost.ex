@@ -1,4 +1,6 @@
 defmodule Annex.Cost do
+  alias Annex.Utils
+
   @spec by_name(:mse | :rmse) :: (float() -> float())
   def by_name(key) do
     case key do
@@ -9,13 +11,7 @@ defmodule Annex.Cost do
 
   @spec mse(list(float())) :: float()
   def mse(losses) do
-    {count, total} =
-      Enum.reduce(losses, {0, 0.0}, fn loss, {count, total} ->
-        squared_error = :math.pow(loss, 2)
-        {count + 1, squared_error + total}
-      end)
-
-    total / count
+    Utils.mean(losses, fn loss -> :math.pow(loss, 2) end)
   end
 
   @spec rmse(list(float())) :: float()

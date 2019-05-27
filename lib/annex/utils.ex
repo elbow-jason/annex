@@ -80,19 +80,26 @@ defmodule Annex.Utils do
   Calculates the average.
   """
   @spec mean(any()) :: float()
-  def mean([]) do
-    0.0
-  end
+  def mean([]), do: 0.0
 
   def mean(items) do
-    items
-    |> Enum.reduce({0, 0.0}, fn item, {count_acc, total_acc} ->
-      {count_acc + 1, total_acc + item}
-    end)
-    |> case do
-      {0, _} -> 0.0
-      {count, total} -> total / count
-    end
+    {counted, totaled} =
+      Enum.reduce(items, {0, 0.0}, fn item, {count, total} ->
+        {count + 1, total + item}
+      end)
+
+    totaled / counted
+  end
+
+  def mean([], _), do: 0.0
+
+  def mean(items, mapper) when is_function(mapper, 1) do
+    {counted, totaled} =
+      Enum.reduce(items, {0, 0.0}, fn item, {count, total} ->
+        {count + 1, mapper.(item) + total}
+      end)
+
+    totaled / counted
   end
 
   @doc """
