@@ -23,7 +23,7 @@ defmodule Annex do
   end
 
   @spec dense(pos_integer(), keyword()) :: Dense.t()
-  def dense(rows, opts \\ []) do
+  def dense(rows, opts \\ []) when is_integer(rows) and rows > 0 do
     cols = Keyword.get(opts, :input_dims)
     weights = Keyword.get(opts, :weights)
     biases = Keyword.get(opts, :biases)

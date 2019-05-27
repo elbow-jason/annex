@@ -16,8 +16,8 @@ defmodule Annex.Layer.Dense do
           neurons: list(Neuron.t()),
           rows: non_neg_integer(),
           cols: non_neg_integer(),
-          input: list(float()),
-          output: list(float())
+          input: list(float()) | nil,
+          output: list(float()) | nil
         }
 
   defstruct neurons: nil,
