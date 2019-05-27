@@ -25,7 +25,7 @@ defmodule Annex.Layer.DropoutTest do
       original = 0.666
       {_layer2, pred} = Layer.feedforward(layer1, [original])
       assert [zeroed_or_original] = pred
-      assert zeroed_or_original in [1.0, 0.0]
+      assert zeroed_or_original in [original, 0.0]
     end
 
     test "dropout does not change on feedforward" do
