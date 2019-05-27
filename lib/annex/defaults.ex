@@ -1,8 +1,22 @@
 defmodule Annex.Defaults do
-  alias Annex.{Cost.MeanSquaredError, Layer.Activation}
+  alias Annex.{
+    Cost,
+    # Cost.MeanSquaredError,
+    Layer.Activation
+  }
 
-  @spec cost() :: module()
-  def cost, do: Application.get_env(:cost, MeanSquaredError)
+  @spec cost_func() :: (float() -> float())
+  def cost_func do
+    case Application.get_env(:annex, :cost_func, &Cost.mse/1) do
+      func1 when is_function(func1, 1) ->
+        func1
+
+      {module, func} when is_atom(module) and is_atom(func) ->
+        fn errors ->
+          apply(module, func, [errors])
+        end
+    end
+  end
 
   @spec derivative() :: (float() -> float())
   def derivative, do: get_func(:derivative, &Activation.sigmoid_deriv/1)

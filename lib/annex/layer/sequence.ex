@@ -47,7 +47,7 @@ defmodule Annex.Layer.Sequence do
   @spec train_opts(keyword()) :: keyword()
   def train_opts(opts) when is_list(opts) do
     opts
-    |> Keyword.take([:learning_rate])
+    |> Keyword.take([:learning_rate, :cost])
     |> Keyword.put_new(:learning_rate, 0.05)
   end
 
@@ -143,9 +143,9 @@ defmodule Annex.Layer.Sequence do
 
   @impl Learner
   @spec train(t(), ListLayer.t(), ListLayer.t(), Keyword.t()) :: {t(), ListLayer.t()}
-  def train(%Sequence{} = seq1, data, labels, opts) do
-    cost = Keyword.get(opts, :cost, Cost.MeanSquaredError)
-    cost_func = &cost.calculate/2
+  def train(%Sequence{} = seq1, data, labels, _opts) do
+    # cost = Keyword.get(opts, :cost, Cost.MeanSquaredError)
+    cost_func = &Cost.mse/1
 
     {%Sequence{} = seq2, prediction} = Layer.feedforward(seq1, data)
 
@@ -162,10 +162,12 @@ defmodule Annex.Layer.Sequence do
     loss_pds = Utils.proportions(network_error)
 
     props = Backprop.new(net_loss: network_error_pd, cost_func: cost_func)
-
     {seq3, _next_loss_pds, _props} = Layer.backprop(seq2, loss_pds, props)
 
-    loss = cost_func.(labels, prediction)
+    loss =
+      labels
+      |> Utils.subtract(prediction)
+      |> cost_func.()
 
     {seq3, loss}
   end

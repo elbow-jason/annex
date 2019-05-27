@@ -17,7 +17,7 @@ defmodule Annex.Layer.Backprop do
   def default do
     [
       derivative: Defaults.derivative(),
-      cost_func: Defaults.cost(),
+      cost_func: Defaults.cost_func(),
       learning_rate: Defaults.learning_rate()
     ]
   end
