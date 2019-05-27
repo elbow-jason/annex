@@ -15,19 +15,34 @@ defmodule Annex.Layer.Dense do
   @type t :: %__MODULE__{
           neurons: list(Neuron.t()),
           rows: non_neg_integer(),
-          cols: non_neg_integer()
+          cols: non_neg_integer(),
+          input: list(float()),
+          output: list(float())
         }
 
   defstruct neurons: nil,
             rows: nil,
-            cols: nil
+            cols: nil,
+            input: nil,
+            output: nil
 
-  defp get_neurons(%Dense{neurons: neurons}), do: neurons
-
-  @spec put_neurons(t(), list(Neuron.t())) :: t()
   defp put_neurons(%Dense{} = dense, neurons) do
     %Dense{dense | neurons: neurons}
   end
+
+  defp get_neurons(%Dense{neurons: neurons}), do: neurons
+
+  defp put_output(%Dense{} = dense, output) when is_list(output) do
+    %Dense{dense | output: output}
+  end
+
+  defp get_output(%Dense{output: o}) when is_list(o), do: o
+
+  defp put_input(%Dense{} = dense, input) do
+    %Dense{dense | input: input}
+  end
+
+  def get_input(%Dense{input: input}) when is_list(input), do: input
 
   @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
   def init_layer(%Dense{} = layer, _opts \\ []) do
@@ -48,17 +63,23 @@ defmodule Annex.Layer.Dense do
   end
 
   @spec feedforward(t(), ListLayer.t()) :: {t(), ListLayer.t()}
-  def feedforward(%Dense{} = layer, inputs) do
+  def feedforward(%Dense{} = layer, input) do
     {output, neurons} =
       layer
       |> get_neurons()
       |> Enum.map(fn neuron ->
-        neuron = Neuron.feedforward(neuron, inputs)
+        neuron = Neuron.feedforward(neuron, input)
         {Neuron.get_sum(neuron), neuron}
       end)
       |> Enum.unzip()
 
-    {%Dense{layer | neurons: neurons}, output}
+    updated_layer =
+      layer
+      |> put_input(input)
+      |> put_output(output)
+      |> put_neurons(neurons)
+
+    {updated_layer, output}
   end
 
   @spec backprop(t(), ListLayer.t(), Backprop.t()) :: {t(), ListLayer.t(), Backprop.t()}

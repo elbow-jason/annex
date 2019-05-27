@@ -51,11 +51,14 @@ defmodule Annex.Layer.Neuron do
   @spec backprop(t(), float(), float(), float(), (float() -> float())) ::
           {list(float()), t()}
   def backprop(%Neuron{} = neuron, total_loss_pd, neuron_loss_pd, learning_rate, activation_deriv) do
-    sum = get_sum(neuron)
+    weights = get_weights(neuron)
     bias = get_bias(neuron)
+
+    sum = get_sum(neuron)
+
     sum_deriv = activation_deriv.(sum)
     inputs = get_inputs(neuron)
-    weights = get_weights(neuron)
+
     delta_coeff = learning_rate * total_loss_pd * neuron_loss_pd
 
     {[_ | next_neuron_loss], [new_bias | new_weights]} =
