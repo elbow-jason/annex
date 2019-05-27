@@ -1,8 +1,8 @@
 defmodule Annex.Defaults do
-  alias Annex.{Cost, Layer.Activation}
+  alias Annex.{Cost.MeanSquaredError, Layer.Activation}
 
-  @spec cost() :: (float() -> float())
-  def cost, do: get_func(:cost, &Cost.mse/1)
+  @spec cost() :: module()
+  def cost, do: Application.get_env(:cost, MeanSquaredError)
 
   @spec derivative() :: (float() -> float())
   def derivative, do: get_func(:derivative, &Activation.sigmoid_deriv/1)

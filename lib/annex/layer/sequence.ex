@@ -144,7 +144,8 @@ defmodule Annex.Layer.Sequence do
   @impl Learner
   @spec train(t(), ListLayer.t(), ListLayer.t(), Keyword.t()) :: {t(), ListLayer.t()}
   def train(%Sequence{} = seq1, data, labels, opts) do
-    cost_func = Keyword.get(opts, :cost_func, &Cost.mse/1)
+    cost = Keyword.get(opts, :cost, Cost.MeanSquaredError)
+    cost_func = &cost.calculate/2
 
     {%Sequence{} = seq2, prediction} = Layer.feedforward(seq1, data)
 
@@ -164,10 +165,7 @@ defmodule Annex.Layer.Sequence do
 
     {seq3, _next_loss_pds, _props} = Layer.backprop(seq2, loss_pds, props)
 
-    loss =
-      labels
-      |> Utils.zipmap(prediction, fn ax, bx -> ax - bx end)
-      |> cost_func.()
+    loss = cost_func.(labels, prediction)
 
     {seq3, loss}
   end
