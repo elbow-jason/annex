@@ -68,6 +68,7 @@ defmodule Annex.Layer.Sequence do
   def init_layer(%Sequence{initialized?: false} = seq1, _opts) do
     seq1
     |> get_layers()
+    |> prepare_for_chunkify()
     |> chunkify()
     |> Enum.map(fn {previous_layer, layer, next_layer} ->
       layer_opts = [
@@ -189,32 +190,19 @@ defmodule Annex.Layer.Sequence do
     end)
   end
 
-  defp chunkify([]) do
-    []
+  defp prepare_for_chunkify(layers) do
+    [nil] ++ layers ++ [nil]
   end
 
-  defp chunkify([one]) do
-    [{nil, one, nil}]
+  defp chunkify(prepared_layers) do
+    chunkify(prepared_layers, [])
   end
 
-  defp chunkify([one, two]) do
-    [{one, two, nil}, {nil, one, two}]
-  end
-
-  defp chunkify([prev, current, next | rest]) do
-    acc = [
-      {prev, current, next},
-      {nil, prev, current}
-    ]
-
-    chunkify([current, next | rest], acc)
+  defp chunkify([prev, current, next], acc) do
+    Enum.reverse([{prev, current, next} | acc])
   end
 
   defp chunkify([prev, current, next | rest], acc) do
     chunkify([current, next | rest], [{prev, current, next} | acc])
-  end
-
-  defp chunkify([prev, current], acc) do
-    Enum.reverse([{prev, current, nil} | acc])
   end
 end

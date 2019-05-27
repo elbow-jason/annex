@@ -4,8 +4,11 @@ defmodule Annex.Layer.Dropout do
     Layer.Backprop,
     Layer.Dropout,
     Layer.ListLayer,
+    Type,
     Utils
   }
+
+  require Type
 
   @behaviour Layer
 
@@ -34,16 +37,14 @@ defmodule Annex.Layer.Dropout do
   end
 
   @spec feedforward(t(), ListLayer.t()) :: {t(), ListLayer.t()}
-  def feedforward(%Dropout{frequency: frequency} = layer, inputs) do
+  def feedforward(%Dropout{frequency: frequency} = layer, inputs)
+      when Type.is_list_of_floats(inputs) do
     {layer, drop(inputs, frequency)}
   end
 
   @spec drop(ListLayer.t(), float()) :: ListLayer.t()
-  def drop(inputs, frequency) do
-    inputs
-    |> Enum.map(fn row ->
-      Enum.map(row, fn value -> zeroize_by_frequency(frequency, value) end)
-    end)
+  def drop(inputs, frequency) when Type.is_list_of_floats(inputs) do
+    Enum.map(inputs, fn value -> zeroize_by_frequency(frequency, value) end)
   end
 
   defp zeroize_by_frequency(frequency, value) do
