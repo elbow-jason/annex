@@ -57,14 +57,14 @@ defmodule Annex.Layer.DenseTest do
                %Neuron{
                  bias: 1.0,
                  inputs: [0.1, 1.0, 0.0],
-                 output: 0.0,
+                 #  output: 0.0,
                  sum: 1.20667,
                  weights: [-0.3333, 0.24, 0.1]
                },
                %Neuron{
                  bias: 1.0,
                  inputs: [0.1, 1.0, 0.0],
-                 output: 0.0,
+                 #  output: 0.0,
                  sum: 0.6699999999999999,
                  weights: [0.7, -0.4, -0.9]
                }

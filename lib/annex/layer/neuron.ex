@@ -5,14 +5,14 @@ defmodule Annex.Layer.Neuron do
           weights: list(float),
           bias: float(),
           sum: float(),
-          output: float(),
+          # output: float(),
           inputs: list(float)
         }
 
   defstruct weights: [],
             bias: 1.0,
             sum: 0.0,
-            output: 0.0,
+            # output: 0.0,
             inputs: nil
 
   def new(weights, bias) do
@@ -30,7 +30,7 @@ defmodule Annex.Layer.Neuron do
 
   def get_bias(%Neuron{bias: bias}), do: bias
   def get_weights(%Neuron{weights: w}), do: w
-  def get_output(%Neuron{output: o}), do: o
+  # def get_output(%Neuron{output: o}), do: o
   def get_sum(%Neuron{sum: sum}), do: sum
   def get_inputs(%Neuron{inputs: inputs}), do: inputs
 
