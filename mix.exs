@@ -11,7 +11,6 @@ defmodule Annex.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       description: description(),
       package: package(),
-      deps: deps(),
       name: "Annex",
       source_url: "https://github.com/elbow-jason/annex"
     ]
