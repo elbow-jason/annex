@@ -1,6 +1,6 @@
 # Annex
 
-**TODO: Add description**
+Don't use this lib yet. It will be ready for use by ElixirConf 2019 (27 AUG 2019).
 
 ## Installation
 
