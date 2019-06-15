@@ -25,7 +25,7 @@ defmodule Annex.SequenceXorTest do
                Annex.activation(:sigmoid)
              ])
              |> Annex.train(data, labels,
-               name: "xor",
+               name: "XOR operation",
                learning_rate: 0.05,
                halt_condition: {:epochs, 80_000}
              )

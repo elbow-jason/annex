@@ -31,7 +31,8 @@ defmodule Annex.Learner do
     if rem(epoch, 10_000) == 0 do
       Logger.debug(fn ->
         """
-        Learner Training #{Keyword.get(opts, :name)}...
+        Learner -
+        training: #{Keyword.get(opts, :name)}
         epoch: #{epoch}
         loss: #{get_loss(output)}
         """

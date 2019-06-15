@@ -32,7 +32,10 @@ defmodule Annex.SequenceMOrFTest do
                Annex.dense(1, 2),
                Annex.activation(:sigmoid)
              ])
-             |> Annex.train(data, labels, halt_condition: {:epochs, 50_000})
+             |> Annex.train(data, labels,
+               name: "male or female based on normalized weight and height",
+               halt_condition: {:epochs, 50_000}
+             )
 
     [alice_pred] = Annex.predict(seq, [-2.0, -1.0])
     [bob_pred] = Annex.predict(seq, [25.0, 6.0])

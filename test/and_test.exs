@@ -32,7 +32,7 @@ defmodule Annex.AndTest do
              ])
              |> Annex.train(@data, @labels,
                learning_rate: 0.05,
-               name: "and T or F",
+               name: "AND operation",
                halt_condition: {:epochs, 40_000}
              )
 
