@@ -3,7 +3,9 @@ defmodule Annex.Layer.SequenceTest do
 
   alias Annex.Layer.{Sequence, Dense, Activation, Dropout, Backprop}
 
-  def generate_n_layers(n) do
+  def generate_n_layers(n) when rem(n, 3) == 0 or n < 3 do
+    # the n_layers should be a multiple of n layers.
+    # else wierd configuration issues happen.
     [
       Annex.dense(1, input_dims: 1),
       Annex.activation(:sigmoid),
@@ -49,13 +51,13 @@ defmodule Annex.Layer.SequenceTest do
   end
 
   setup do
-    seq = Annex.sequence(generate_n_layers(10))
+    seq = Annex.sequence(generate_n_layers(9))
     {:ok, %{seq: seq}}
   end
 
   describe "layer ordering:" do
     test "order helpers work" do
-      layers = generate_n_layers(10)
+      layers = generate_n_layers(9)
       assert all_in_order?(layers)
       refute layers |> Enum.reverse() |> all_in_order?
     end
@@ -72,8 +74,8 @@ defmodule Annex.Layer.SequenceTest do
       end)
     end
 
-    test "Annex.sequence/2 preserves ordering of 10 layers" do
-      run_order_assertions(10, fn layers ->
+    test "Annex.sequence/2 preserves ordering of 12 layers" do
+      run_order_assertions(12, fn layers ->
         Annex.sequence(layers)
       end)
     end
@@ -101,7 +103,9 @@ defmodule Annex.Layer.SequenceTest do
       assert_in_order(seq2)
       assert {%Sequence{} = seq3, _} = Sequence.feedforward(seq2, [1.0])
       assert_in_order(seq3)
-      props = Backprop.new(cost_gradient: 0.03, net_loss: 0.1, loss_pds: [0.4])
+
+      props = Backprop.new(negative_gradient: 0.1)
+
       assert {%Sequence{} = seq4, _, _} = Sequence.backprop(seq3, [1.0], props)
       assert_in_order(seq4)
     end

@@ -19,8 +19,8 @@ defmodule Annex.Layer do
   end
 
   @spec backprop(struct(), any(), Backprop.t()) :: {struct(), any(), Backprop.t()}
-  def backprop(%module{} = layer, loss_pds, props) do
-    module.backprop(layer, loss_pds, props)
+  def backprop(%module{} = layer, error, props) do
+    module.backprop(layer, error, props)
   end
 
   @spec init(struct(), Keyword.t()) :: struct()

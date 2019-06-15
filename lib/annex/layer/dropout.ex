@@ -32,8 +32,8 @@ defmodule Annex.Layer.Dropout do
   end
 
   @spec backprop(t(), ListLayer.t(), Backprop.t()) :: {t(), ListLayer.t(), Backprop.t()}
-  def backprop(%Dropout{} = dropout, loss_pds, backprop) do
-    {dropout, loss_pds, backprop}
+  def backprop(%Dropout{} = dropout, error, backprop) do
+    {dropout, error, backprop}
   end
 
   @spec feedforward(t(), ListLayer.t()) :: {t(), ListLayer.t()}

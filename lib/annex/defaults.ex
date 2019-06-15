@@ -1,22 +1,17 @@
 defmodule Annex.Defaults do
-  alias Annex.{Cost, Layer.Activation}
+  alias Annex.Cost.MeanSquaredError
 
-  @spec cost() :: (float() -> float())
-  def cost, do: get_func(:cost, &Cost.mse/1)
+  @spec get_defaults :: Keyword.t()
+  def get_defaults, do: Application.get_env(:annex, :defaults, [])
 
-  @spec derivative() :: (float() -> float())
-  def derivative, do: get_func(:derivative, &Activation.sigmoid_deriv/1)
+  @spec get_defaults(atom, any) :: any
+  def get_defaults(key, default \\ nil) do
+    Keyword.get(get_defaults(), key, default)
+  end
+
+  @spec cost() :: module()
+  def cost, do: get_defaults(:cost, MeanSquaredError)
 
   @spec learning_rate() :: float()
-  def learning_rate, do: Application.get_env(:annex, :learning_rate, 0.05)
-
-  defp get_func(key, default) do
-    case Application.get_env(:annex, key, default) do
-      {module, func} ->
-        fn val -> apply(module, func, [val]) end
-
-      func when is_function(func, 1) ->
-        func
-    end
-  end
+  def learning_rate, do: get_defaults(:learning_rate, 0.05)
 end
