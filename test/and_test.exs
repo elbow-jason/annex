@@ -25,9 +25,9 @@ defmodule Annex.AndTest do
   test "and works" do
     assert {:ok, loss, %Sequence{} = seq} =
              Annex.sequence([
-               Annex.dense(6, input_dims: 3),
+               Annex.dense(6, 3),
                Annex.activation(:tanh),
-               Annex.dense(1, input_dims: 6),
+               Annex.dense(1, 6),
                Annex.activation(:sigmoid)
              ])
              |> Annex.train(@data, @labels,

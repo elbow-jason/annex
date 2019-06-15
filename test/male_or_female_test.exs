@@ -27,9 +27,9 @@ defmodule Annex.SequenceMOrFTest do
 
     assert {:ok, _, %Sequence{} = seq} =
              Annex.sequence([
-               Annex.dense(2, input_dims: 2),
+               Annex.dense(2, 2),
                Annex.activation(:sigmoid),
-               Annex.dense(1, input_dims: 2),
+               Annex.dense(1, 2),
                Annex.activation(:sigmoid)
              ])
              |> Annex.train(data, labels, halt_condition: {:epochs, 50_000})

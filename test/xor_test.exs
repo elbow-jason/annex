@@ -19,9 +19,9 @@ defmodule Annex.SequenceXorTest do
 
     assert {:ok, _loss, %Sequence{} = seq} =
              Annex.sequence([
-               Annex.dense(8, input_dims: 2),
+               Annex.dense(8, 2),
                Annex.activation(:tanh),
-               Annex.dense(1, input_dims: 8),
+               Annex.dense(1, 8),
                Annex.activation(:sigmoid)
              ])
              |> Annex.train(data, labels,

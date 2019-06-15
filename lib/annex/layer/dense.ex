@@ -1,4 +1,8 @@
 defmodule Annex.Layer.Dense do
+  @moduledoc """
+  `rows` are the number outputs and `columns` are the number of inputs.
+  """
+
   use Annex.Debug
   use Annex.Layer.ListLayer
 
@@ -11,21 +15,25 @@ defmodule Annex.Layer.Dense do
     Utils
   }
 
+  import Annex.Utils, only: [is_pos_integer: 1]
+
   @behaviour Layer
 
   @type t :: %__MODULE__{
           neurons: list(Neuron.t()),
-          rows: non_neg_integer(),
-          cols: non_neg_integer(),
-          input: list(float()) | nil,
-          output: list(float()) | nil
+          rows: pos_integer(),
+          columns: pos_integer() | nil,
+          input: list(float()),
+          output: list(float()),
+          initialized?: boolean()
         }
 
-  defstruct neurons: nil,
+  defstruct neurons: [],
             rows: nil,
-            cols: nil,
-            input: nil,
-            output: nil
+            columns: nil,
+            input: [],
+            output: [],
+            initialized?: false
 
   defp put_neurons(%Dense{} = dense, neurons) do
     %Dense{dense | neurons: neurons}
@@ -43,26 +51,31 @@ defmodule Annex.Layer.Dense do
     %Dense{dense | input: input}
   end
 
-  def get_input(%Dense{input: input}) when is_list(input), do: input
+  defp get_input(%Dense{input: input}) when is_list(input), do: input
 
   @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
-  def init_layer(%Dense{} = layer, _opts \\ []) do
-    {:ok, initialize_neurons(layer)}
+  def init_layer(layer, opts \\ [])
+
+  def init_layer(%Dense{initialized?: false} = layer, _opts) do
+    {:ok, %Dense{put_random_neurons(layer) | initialized?: true}}
   end
 
-  def build_random(rows, cols) do
+  def init_layer(%Dense{initialized?: true} = layer, _opts) do
+    {:ok, layer}
+  end
+
+  def build(rows, columns) when is_pos_integer(rows) and is_pos_integer(columns) do
     %Dense{
-      neurons: random_neurons(rows, cols),
       rows: rows,
-      cols: cols
+      columns: columns
     }
   end
 
-  defp random_neurons(rows, cols) do
-    Enum.map(1..rows, fn _ -> Neuron.new_random(cols) end)
+  def build(rows) when is_integer(rows) and rows > 0 do
+    %Dense{rows: rows}
   end
 
-  def build_from_data(rows, cols, weights, biases) do
+  def build(rows, columns, weights, biases) do
     debug_assert "Dense rows must be a positive integer", do: is_integer(rows)
     debug_assert "Dense rows must be a positive integer", do: rows > 0
     debug_assert "Dense columns must be a positive integer", do: is_integer(columns)
@@ -74,28 +87,16 @@ defmodule Annex.Layer.Dense do
 
     neurons =
       weights
-      |> Enum.chunk_every(cols)
+      |> Enum.chunk_every(columns)
       |> Enum.zip(biases)
       |> Enum.map(fn {weights, bias} -> Neuron.new(weights, bias) end)
 
     %Dense{
       neurons: neurons,
       rows: rows,
-      cols: cols
+      columns: columns,
+      initialized?: true
     }
-  end
-
-  defp initialize_neurons(%Dense{rows: rows, cols: cols} = layer) do
-    neurons =
-      case get_neurons(layer) do
-        nil ->
-          random_neurons(rows, cols)
-
-        [%Neuron{} | _] = found ->
-          found
-      end
-
-    put_neurons(layer, neurons)
   end
 
   @spec feedforward(t(), ListLayer.t()) :: {t(), ListLayer.t()}
@@ -139,5 +140,13 @@ defmodule Annex.Layer.Dense do
       |> Enum.map(&Enum.sum/1)
 
     {put_neurons(layer, neurons), next_error, props}
+  end
+
+  defp random_neurons(rows, columns) do
+    Enum.map(1..rows, fn _ -> Neuron.new_random(columns) end)
+  end
+
+  defp put_random_neurons(%Dense{rows: rows, columns: columns} = layer) do
+    put_neurons(layer, random_neurons(rows, columns))
   end
 end

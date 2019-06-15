@@ -31,10 +31,10 @@ defmodule Annex.Layer.Sequence do
             train_options: [],
             cost: Defaults.get_defaults(:cost)
 
-  @spec build(keyword) :: Sequence.t()
-  def build(opts \\ []) do
+  @spec build(list(Layer.t()), Keyword.t()) :: Sequence.t()
+  def build(layers, opts \\ []) do
     %Sequence{
-      layers: Keyword.get(opts, :layers, []),
+      layers: layers,
       initialized?: Keyword.get(opts, :initialized?, false)
     }
   end
@@ -84,7 +84,7 @@ defmodule Annex.Layer.Sequence do
         next_layer: next_layer
       ]
 
-      Layer.init(layer, layer_opts)
+      Layer.init_layer(layer, layer_opts)
     end)
     |> Enum.group_by(
       fn {status, _} -> status end,

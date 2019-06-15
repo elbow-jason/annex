@@ -4,6 +4,8 @@ defmodule Annex.Utils do
   of Annex's other modules.
   """
 
+  defguard is_pos_integer(x) when is_integer(x) and x > 0
+
   alias Annex.Layer.ListLayer
 
   @doc """

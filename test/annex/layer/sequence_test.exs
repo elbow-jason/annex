@@ -7,12 +7,16 @@ defmodule Annex.Layer.SequenceTest do
     # the n_layers should be a multiple of n layers.
     # else wierd configuration issues happen.
     [
-      Annex.dense(1, input_dims: 1),
+      Annex.dense(1, 1),
       Annex.activation(:sigmoid),
       Annex.dropout(0.5)
     ]
     |> Stream.cycle()
     |> Enum.take(n)
+  end
+
+  def generate_sequence(layers) do
+    Sequence.build(layers)
   end
 
   def in_order?([%Dense{}, %Activation{} | _rest]), do: true
@@ -51,7 +55,7 @@ defmodule Annex.Layer.SequenceTest do
   end
 
   setup do
-    seq = Annex.sequence(generate_n_layers(9))
+    seq = generate_sequence(generate_n_layers(9))
     {:ok, %{seq: seq}}
   end
 
