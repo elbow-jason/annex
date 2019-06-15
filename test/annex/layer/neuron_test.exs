@@ -9,7 +9,6 @@ defmodule Annex.Layer.NeuronTest do
     assert Neuron.new(weights, bias) == %Neuron{
              weights: weights,
              bias: bias
-             #  sum: 0.0
            }
   end
 
@@ -17,11 +16,8 @@ defmodule Annex.Layer.NeuronTest do
     assert %Neuron{
              bias: bias,
              weights: weights
-             #  sum: sum
            } = Neuron.new_random(4)
 
-    # assert is_float(sum)
-    # assert sum == 0.0
     assert length(weights) == 4
     assert Enum.all?(weights, &is_float/1)
     assert is_float(bias)

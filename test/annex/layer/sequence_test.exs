@@ -104,11 +104,7 @@ defmodule Annex.Layer.SequenceTest do
       assert {%Sequence{} = seq3, _} = Sequence.feedforward(seq2, [1.0])
       assert_in_order(seq3)
 
-      props =
-        Backprop.new(
-          negative_gradient: 0.1
-          # derivative: &Activation.sigmoid_deriv/1
-        )
+      props = Backprop.new(negative_gradient: 0.1)
 
       assert {%Sequence{} = seq4, _, _} = Sequence.backprop(seq3, [1.0], props)
       assert_in_order(seq4)

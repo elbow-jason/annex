@@ -39,7 +39,7 @@ defmodule Annex.Layer.Sequence do
     }
   end
 
-  @spec get_cost(Sequence.t()) :: module()
+  @spec get_cost(Sequence.t()) :: Cost.t()
   def get_cost(%Sequence{cost: cost}), do: cost
 
   @spec get_layers(Sequence.t()) :: list(Layer.t())
@@ -54,9 +54,9 @@ defmodule Annex.Layer.Sequence do
   @impl Learner
   @spec train_opts(keyword()) :: keyword()
   def train_opts(opts) when is_list(opts) do
-    opts
+    Defaults.get_defaults()
+    |> Keyword.merge(opts)
     |> Keyword.take([:learning_rate, :cost])
-    |> Keyword.put_new(:learning_rate, 0.05)
   end
 
   @impl Learner
