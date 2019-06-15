@@ -1,5 +1,7 @@
 # Annex
 
+[![Build Status](https://travis-ci.com/elbow-jason/annex.svg?branch=master)](https://travis-ci.com/elbow-jason/annex)
+
 Don't use this lib yet. It will be ready for use by ElixirConf 2019 (27 AUG 2019).
 
 ## Installation
