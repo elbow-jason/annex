@@ -1,6 +1,7 @@
 defmodule Annex.Layer.Sequence do
   alias Annex.{
     Cost,
+    Defaults,
     Layer,
     Layer.Backprop,
     Layer.ListLayer,
@@ -20,14 +21,17 @@ defmodule Annex.Layer.Sequence do
           layers: list(Layer.t()),
           initialized?: boolean(),
           init_options: Keyword.t(),
-          train_options: Keyword.t()
+          train_options: Keyword.t(),
+          cost: Cost.t()
         }
 
   defstruct layers: [],
             initialized?: false,
             init_options: [],
-            train_options: []
+            train_options: [],
+            cost: Defaults.get_defaults(:cost)
 
+  @spec build(keyword) :: Sequence.t()
   def build(opts \\ []) do
     %Sequence{
       layers: Keyword.get(opts, :layers, []),
@@ -35,6 +39,10 @@ defmodule Annex.Layer.Sequence do
     }
   end
 
+  @spec get_cost(Sequence.t()) :: module()
+  def get_cost(%Sequence{cost: cost}), do: cost
+
+  @spec get_layers(Sequence.t()) :: list(Layer.t())
   def get_layers(%Sequence{layers: layers}) do
     layers
   end
@@ -142,11 +150,8 @@ defmodule Annex.Layer.Sequence do
   end
 
   @impl Learner
-  @spec train(t(), ListLayer.t(), ListLayer.t(), Keyword.t()) :: {t(), ListLayer.t()}
+  @spec train(t(), any(), any(), Keyword.t()) :: {t(), float()}
   def train(%Sequence{} = seq1, data, labels, _opts) do
-    # cost = Keyword.get(opts, :cost, Cost.MeanSquaredError)
-    cost_func = &Cost.mse/1
-
     {%Sequence{} = seq2, prediction} = Layer.feedforward(seq1, data)
 
     last_layer =
@@ -156,39 +161,22 @@ defmodule Annex.Layer.Sequence do
 
     labels = Layer.convert(labels, seq2, seq2)
     prediction = Layer.convert(prediction, last_layer, seq2)
+    error = error(prediction, labels)
 
-    network_error = calc_network_error(prediction, labels)
-    network_error_pd = calculate_network_error_pd(network_error)
-    loss_pds = Utils.proportions(network_error)
+    cost = get_cost(seq1)
+    # negative gradient so -1.0
+    negative_gradient = -1.0 * Cost.derivative(cost, error, data, labels)
+    proportioned_error = Utils.proportions(error)
 
-    props = Backprop.new(net_loss: network_error_pd, cost_func: cost_func)
-    {seq3, _next_loss_pds, _props} = Layer.backprop(seq2, loss_pds, props)
+    props = Backprop.new(negative_gradient: negative_gradient)
+    {seq3, _next_error, _props} = Layer.backprop(seq2, proportioned_error, props)
 
-    loss =
-      labels
-      |> Utils.subtract(prediction)
-      |> cost_func.()
+    loss = Cost.calculate(cost, error)
 
     {seq3, loss}
   end
 
-  def total_loss_pd(outputs, labels) do
-    outputs
-    |> calc_network_error(labels)
-    |> calculate_network_error_pd()
-  end
-
-  defp calculate_network_error_pd(network_error) do
-    -2 * Enum.sum(network_error)
-  end
-
-  defp calc_network_error(net_outputs, labels) do
-    labels
-    |> Utils.zip(net_outputs)
-    |> Enum.map(fn
-      {y_true_item, y_pred_item} -> y_true_item - y_pred_item
-    end)
-  end
+  def error(outputs, labels), do: Utils.subtract(outputs, labels)
 
   defp prepare_for_chunkify(layers) do
     [nil] ++ layers ++ [nil]

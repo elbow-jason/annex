@@ -10,17 +10,10 @@ defmodule Annex.Layer.Backprop do
 
   @type t :: Keyword.t()
 
-  def new(opts \\ []) do
-    Keyword.merge(default(), opts)
-  end
+  @spec new(keyword) :: keyword
+  def new(opts \\ []), do: Keyword.merge(defaults(), opts)
 
-  def default do
-    [
-      derivative: Defaults.derivative(),
-      cost_func: Defaults.cost_func(),
-      learning_rate: Defaults.learning_rate()
-    ]
-  end
+  def defaults, do: Defaults.get_defaults()
 
   @spec get_cost_func(t()) :: cost_func()
   def get_cost_func(props), do: fetch!(props, :cost_func)
@@ -31,8 +24,8 @@ defmodule Annex.Layer.Backprop do
   @spec get_derivative(t()) :: derivative()
   def get_derivative(props), do: fetch!(props, :derivative)
 
-  @spec get_net_loss(t()) :: float()
-  def get_net_loss(props), do: fetch!(props, :net_loss)
+  @spec get_negative_gradient(t()) :: float()
+  def get_negative_gradient(props), do: fetch!(props, :negative_gradient)
 
   @spec put_derivative(t(), derivative()) :: t()
   def put_derivative(props, derivative) when is_function(derivative, 1) do

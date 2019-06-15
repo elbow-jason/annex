@@ -43,22 +43,27 @@ defmodule Annex.Layer.NeuronTest do
     input = [1.0, 0.9, 0.0]
     output = Neuron.feedforward(n1, input)
 
-    total_loss_pd = 0.5
-    neuron_loss_pd = 0.3
+    negative_gradient = 0.5
+    neuron_local_error = 0.3
     learn_rate = 0.05
     activation_deriv = &Activation.sigmoid_deriv/1
     sum_deriv = activation_deriv.(output)
 
-    assert {next_loss_pds, n2} =
-             Neuron.backprop(n1, input, sum_deriv, total_loss_pd, neuron_loss_pd, learn_rate)
+    assert {next_error, n2} =
+             Neuron.backprop(
+               n1,
+               input,
+               sum_deriv,
+               negative_gradient,
+               neuron_local_error,
+               learn_rate
+             )
 
     assert n2 == %Neuron{
-             #  inputs: inputs,
              bias: 0.9992125481094737,
              weights: [0.9992125481094737, -7.087067014736697e-4, -1.1]
-             #  sum: 2.0
            }
 
-    assert next_loss_pds == [0.10499358540350662, 0.0, -0.11549294394385728]
+    assert next_error == [0.10499358540350662, 0.0, -0.11549294394385728]
   end
 end

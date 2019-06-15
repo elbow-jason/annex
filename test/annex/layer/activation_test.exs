@@ -18,16 +18,6 @@ defmodule Annex.Layer.ActivationTest do
     assert Activation.relu_deriv(-0.0001) == 0.0
   end
 
-  test "relu_with_threshold/1" do
-    assert Activation.relu_with_threshold(1.0, 2.0) == 2.0
-    assert Activation.relu_with_threshold(0.5, 2.0) == 2.0
-    assert Activation.relu_with_threshold(0.0, 2.0) == 2.0
-    assert Activation.relu_with_threshold(-10.0, 2.0) == 2.0
-    assert Activation.relu_with_threshold(10.0, 2.0) == 10.0
-    assert Activation.relu_with_threshold(1.9, 2.0) == 2.0
-    assert Activation.relu_with_threshold(2.1, 2.0) == 2.1
-  end
-
   test "sigmoid/1" do
     assert Activation.sigmoid(1.0) == 0.7310585786300049
     assert Activation.sigmoid(0.0) == 0.5

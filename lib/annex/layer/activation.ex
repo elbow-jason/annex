@@ -28,7 +28,7 @@ defmodule Annex.Layer.Activation do
     case name do
       {:relu, threshold} ->
         %Activation{
-          activator: fn n -> relu_with_threshold(n, threshold) end,
+          activator: fn n -> max(n, threshold) end,
           derivative: fn n -> relu_deriv(n, threshold) end,
           func_type: :float,
           name: name
@@ -75,9 +75,9 @@ defmodule Annex.Layer.Activation do
   end
 
   @spec backprop(t(), ListLayer.t(), Backprop.t()) :: {t(), ListLayer.t(), Backprop.t()}
-  def backprop(%Activation{} = layer, loss_pds, props) do
+  def backprop(%Activation{} = layer, error, props) do
     derviative = get_derivative(layer)
-    {layer, loss_pds, Backprop.put_derivative(props, derviative)}
+    {layer, error, Backprop.put_derivative(props, derviative)}
   end
 
   @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
@@ -98,9 +98,7 @@ defmodule Annex.Layer.Activation do
   def get_derivative(%Activation{derivative: deriv}), do: deriv
 
   @spec relu(float()) :: float()
-  def relu(n) do
-    relu_with_threshold(n, 0.0)
-  end
+  def relu(n), do: max(n, 0.0)
 
   @spec relu_deriv(float()) :: float()
   def relu_deriv(x), do: relu_deriv(x, 0.0)
@@ -109,16 +107,10 @@ defmodule Annex.Layer.Activation do
   def relu_deriv(x, threshold) when x > threshold, do: 1.0
   def relu_deriv(_, _), do: 0.0
 
-  @spec relu_with_threshold(float(), float()) :: float()
-  def relu_with_threshold(n, threshold) do
-    if n > threshold do
-      n
-    else
-      threshold
-    end
-  end
-
   @spec sigmoid(float()) :: float()
+  def sigmoid(n) when n > 100, do: 1.0
+  def sigmoid(n) when n < -100, do: 0.0
+
   def sigmoid(n) do
     1.0 / (1.0 + :math.exp(-n))
   end
@@ -126,7 +118,7 @@ defmodule Annex.Layer.Activation do
   @spec sigmoid_deriv(float()) :: float()
   def sigmoid_deriv(x) do
     fx = sigmoid(x)
-    fx * (1 - fx)
+    fx * (1.0 - fx)
   end
 
   @spec softmax(ListLayer.t()) :: ListLayer.t()

@@ -6,10 +6,14 @@ defmodule Annex.Cost.MeanSquaredError do
   def calculate(labels, predictions) do
     labels
     |> Utils.subtract(predictions)
-    |> Utils.mean(fn loss -> :math.pow(loss, 2) end)
+    |> calculate()
   end
 
-  def derivative(_errors, _data) do
-    raise "not implemented"
+  def calculate(error) do
+    Utils.mean(error, fn loss -> loss * loss end)
+  end
+
+  def derivative(errors, _data, _labels \\ []) do
+    -2.0 * Enum.sum(errors)
   end
 end

@@ -1,4 +1,6 @@
 defmodule Annex.Layer.Dense do
+  use Annex.Debug
+
   alias Annex.{
     Layer,
     Layer.Backprop,
@@ -62,74 +64,26 @@ defmodule Annex.Layer.Dense do
   end
 
   def build_from_data(rows, cols, weights, biases) do
-    len_weights = length(weights)
-    len_biases = length(biases)
+    debug_assert "Dense rows must be a positive integer", do: is_integer(rows)
+    debug_assert "Dense rows must be a positive integer", do: rows > 0
+    debug_assert "Dense columns must be a positive integer", do: is_integer(columns)
+    debug_assert "Dense columns must be a positive integer", do: columns > 0
+    debug_assert "Dense weights must be a list of floats", do: is_list(data)
+    debug_assert "Dense weights must be a list of floats", do: Enum.all?(data, &is_float/1)
+    debug_assert "Dense biases must be a list of floats", do: is_list(biases)
+    debug_assert "Dense biases must be a list of floats", do: Enum.all?(data, &is_float/1)
 
-    cond do
-      !is_integer(rows) or rows <= 0 ->
-        raise ArgumentError,
-          message: """
-          Rows must be a positive integer -
-          rows: #{inspect(rows)}
-          """
+    neurons =
+      weights
+      |> Enum.chunk_every(cols)
+      |> Enum.zip(biases)
+      |> Enum.map(fn {weights, bias} -> Neuron.new(weights, bias) end)
 
-      !is_integer(cols) or cols <= 0 ->
-        raise ArgumentError,
-          message: """
-          Columns must be a positive integer -
-          columns: #{inspect(cols)}
-          """
-
-      len_weights != rows * cols ->
-        raise ArgumentError,
-          message: """
-          Bad weights dimensions -
-          rows:     #{inspect(rows)}
-          cols:     #{inspect(cols)}
-          length:   #{inspect(len_weights)}
-          expected: #{inspect(rows * cols)}
-          weights:  #{inspect(weights)}
-          """
-
-      # {:error,
-      #  {:bad_data_dimensions, %{rows: rows, cols: cols, len_data: len_data, data: data}}}
-
-      len_biases != rows ->
-        raise ArgumentError,
-          message: """
-          Bad biases length -
-          rows:   #{inspect(rows)}
-          length: #{inspect(len_biases)}
-          biases: #{inspect(biases)}
-          """
-
-      Enum.all?(weights, &is_float/1) ->
-        raise ArgumentError,
-          message: """
-          Weights must be floats -
-          weights: #{inspect(weights)}
-          """
-
-      Enum.all?(biases, &is_float/1) ->
-        raise ArgumentError,
-          message: """
-          Biases must be floats -
-          biases: #{inspect(biases)}
-          """
-
-      true ->
-        neurons =
-          weights
-          |> Enum.chunk_every(cols)
-          |> Enum.zip(biases)
-          |> Enum.map(fn {weights, bias} -> Neuron.new(weights, bias) end)
-
-        %Dense{
-          neurons: neurons,
-          rows: rows,
-          cols: cols
-        }
-    end
+    %Dense{
+      neurons: neurons,
+      rows: rows,
+      cols: cols
+    }
   end
 
   defp initialize_neurons(%Dense{rows: rows, cols: cols} = layer) do
@@ -161,31 +115,30 @@ defmodule Annex.Layer.Dense do
   end
 
   @spec backprop(t(), ListLayer.t(), Backprop.t()) :: {t(), ListLayer.t(), Backprop.t()}
-  def backprop(%Dense{} = layer, losses, props) do
+  def backprop(%Dense{} = layer, error, props) do
     learning_rate = Backprop.get_learning_rate(props)
     derivative = Backprop.get_derivative(props)
-    total_loss_pd = Backprop.get_net_loss(props)
-    cost_func = Backprop.get_cost_func(props)
+    negative_gradient = Backprop.get_negative_gradient(props)
 
     output = get_output(layer)
     input = get_input(layer)
 
-    {neuron_errors, neurons} =
+    {neuron_error, neurons} =
       layer
       |> get_neurons()
-      |> Utils.zip(losses)
+      |> Utils.zip(error)
       |> Utils.zip(output)
-      |> Enum.map(fn {{neuron, loss_pd}, neuron_output} ->
+      |> Enum.map(fn {{neuron, local_error}, neuron_output} ->
         sum_deriv = derivative.(neuron_output)
-        Neuron.backprop(neuron, input, sum_deriv, total_loss_pd, loss_pd, learning_rate)
+        Neuron.backprop(neuron, input, sum_deriv, negative_gradient, local_error, learning_rate)
       end)
       |> Enum.unzip()
 
-    next_loss_pds =
-      neuron_errors
+    next_error =
+      neuron_error
       |> Utils.transpose()
-      |> Enum.map(cost_func)
+      |> Enum.map(&Enum.sum/1)
 
-    {put_neurons(layer, neurons), next_loss_pds, props}
+    {put_neurons(layer, neurons), next_error, props}
   end
 end

@@ -30,6 +30,7 @@ defmodule Annex.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:numerix, "~> 0.5.1"},
       {:nimble_csv, "~> 0.3", only: [:dev]},
       {:ex_doc, "~> 0.14", only: :dev, runtime: false}
     ]
