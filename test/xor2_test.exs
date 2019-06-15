@@ -19,15 +19,15 @@ defmodule Annex.SequenceXor2Test do
 
     {:ok, _output, %Sequence{} = seq} =
       Annex.sequence([
-        Annex.dense(9, input_dims: 2),
+        Annex.dense(11, input_dims: 2),
         Annex.activation(:relu),
-        Annex.dense(2, input_dims: 9),
+        Annex.dense(2, input_dims: 11),
         Annex.activation(:sigmoid)
       ])
       |> Annex.train(data, labels,
         name: "xor2",
-        learning_rate: 0.09,
-        halt_condition: {:epochs, 100_000}
+        learning_rate: 0.02,
+        halt_condition: {:epochs, 200_000}
       )
 
     [pred_yes, pred_no] = Annex.predict(seq, [0.0, 0.0])
