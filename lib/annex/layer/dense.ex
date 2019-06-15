@@ -1,5 +1,6 @@
 defmodule Annex.Layer.Dense do
   use Annex.Debug
+  use Annex.Layer.ListLayer
 
   alias Annex.{
     Layer,
@@ -11,8 +12,6 @@ defmodule Annex.Layer.Dense do
   }
 
   @behaviour Layer
-
-  use ListLayer
 
   @type t :: %__MODULE__{
           neurons: list(Neuron.t()),
