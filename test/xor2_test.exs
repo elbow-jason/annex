@@ -19,9 +19,9 @@ defmodule Annex.SequenceXor2Test do
 
     {:ok, _output, %Sequence{} = seq} =
       Annex.sequence([
-        Annex.dense(11, input_dims: 2),
+        Annex.dense(11, 2),
         Annex.activation(:relu),
-        Annex.dense(2, input_dims: 11),
+        Annex.dense(2, 11),
         Annex.activation(:sigmoid)
       ])
       |> Annex.train(data, labels,

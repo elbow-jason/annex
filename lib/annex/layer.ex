@@ -23,8 +23,8 @@ defmodule Annex.Layer do
     module.backprop(layer, error, props)
   end
 
-  @spec init(struct(), Keyword.t()) :: struct()
-  def init(%module{} = layer, opts \\ []) do
+  @spec init_layer(struct(), Keyword.t()) :: struct()
+  def init_layer(%module{} = layer, opts \\ []) do
     module.init_layer(layer, opts)
   end
 

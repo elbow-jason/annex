@@ -13,7 +13,7 @@ defmodule Annex.Layer.DenseTest do
   def fixture() do
     %Dense{
       rows: 2,
-      cols: 3,
+      columns: 3,
       neurons: [
         Neuron.new([-0.3333, 0.24, 0.1], 1.0),
         Neuron.new([0.7, -0.4, -0.9], 1.0)
@@ -55,7 +55,7 @@ defmodule Annex.Layer.DenseTest do
     assert dense == %Dense{
              input: input,
              output: output,
-             cols: 3,
+             columns: 3,
              neurons: [
                %Neuron{
                  bias: 1.0,
