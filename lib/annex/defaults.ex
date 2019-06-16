@@ -1,4 +1,9 @@
 defmodule Annex.Defaults do
+  @moduledoc """
+  Defaults handles the access to compile-time configuration values for
+  default values of Annex.
+  """
+
   alias Annex.Cost.MeanSquaredError
 
   @spec get_defaults :: Keyword.t()

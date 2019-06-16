@@ -1,10 +1,19 @@
 defmodule Annex.Cost do
+  @moduledoc """
+  The Cost module defines the types, callbacks, and helper functions for calculating
+  a the loss and gradient of the lossd, for gradient descent, of a network.
+
+  The default Cost for Annex is Annex.Cost.MeanSquaredError.
+  """
+
   @type calculate_function :: (any() -> float())
   @type derivative_function :: (any(), any(), any() -> float())
   @type mapping :: %{calculate: calculate_function(), derivative: derivative_function()}
 
   @callback calculate(any()) :: float()
   @callback derivative(any(), any(), any()) :: float()
+
+  @type t :: mapping() | module()
 
   @spec calculate(module() | mapping, any()) :: float()
   def calculate(cost, error), do: get_calculate(cost).(error)

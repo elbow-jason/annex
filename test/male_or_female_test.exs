@@ -25,13 +25,14 @@ defmodule Annex.SequenceMOrFTest do
       [1.0]
     ]
 
-    assert {:ok, _, %Sequence{} = seq} =
-             Annex.sequence([
+    assert {:ok, %Sequence{} = seq, _loss} =
+             [
                Annex.dense(2, 2),
                Annex.activation(:sigmoid),
                Annex.dense(1, 2),
                Annex.activation(:sigmoid)
-             ])
+             ]
+             |> Annex.sequence()
              |> Annex.train(data, labels,
                name: "male or female based on normalized weight and height",
                halt_condition: {:epochs, 50_000}

@@ -1,4 +1,9 @@
 defmodule Annex.Layer.Sequence do
+  @moduledoc """
+  The Sequence layer is the container and orchestrator of other layers and is
+  used to define a list of Layers that compose a deep neural network.
+  """
+
   alias Annex.{
     Cost,
     Defaults,

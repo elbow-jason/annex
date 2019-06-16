@@ -2,8 +2,8 @@ defmodule Annex.Layer.DropoutTest do
   use ExUnit.Case
 
   alias Annex.{
-    Layer.Dropout,
-    Layer
+    Layer,
+    Layer.Dropout
   }
 
   describe "build/1" do

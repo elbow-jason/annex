@@ -1,4 +1,11 @@
 defmodule Annex.Layer.Backprop do
+  @moduledoc """
+  Backprop is a module that contains helper functions for manipulating the
+  Keyword list that is passed up through a Sequence during the backprop phase.
+
+  The Backprop module is not a Layer implementing module.
+  """
+
   alias Annex.{
     Defaults
   }

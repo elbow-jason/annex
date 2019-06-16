@@ -23,13 +23,14 @@ defmodule Annex.AndTest do
   ]
 
   test "and works" do
-    assert {:ok, loss, %Sequence{} = seq} =
-             Annex.sequence([
+    assert {:ok, %Sequence{} = seq, loss} =
+             [
                Annex.dense(6, 3),
                Annex.activation(:tanh),
                Annex.dense(1, 6),
                Annex.activation(:sigmoid)
-             ])
+             ]
+             |> Annex.sequence()
              |> Annex.train(@data, @labels,
                learning_rate: 0.05,
                name: "AND operation",
