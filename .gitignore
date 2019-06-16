@@ -24,3 +24,4 @@ annex-*.tar
 
 .elixir_ls/
 .vscode/
+*.plt
