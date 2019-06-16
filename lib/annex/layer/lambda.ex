@@ -9,8 +9,10 @@ defmodule Annex.Layer.Lambda do
 
   Technically, any layer could be implemented as a `Lambda` layer.
   """
-  alias Annex.Layer.Lambda
-  alias Annex.Layer.Backprop
+  alias Annex.Layer.{
+    Backprop,
+    Lambda
+  }
 
   @type callback2(out) :: (t(), any() -> out)
   @type callback3(out) :: (t(), any(), any() -> out)

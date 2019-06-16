@@ -3,6 +3,7 @@ defmodule Annex.Layer.DenseTest do
 
   alias Annex.{
     Cost,
+    Cost.MeanSquaredError,
     Layer.Activation,
     Layer.Backprop,
     Layer.Dense,
@@ -10,7 +11,7 @@ defmodule Annex.Layer.DenseTest do
     Layer.Sequence
   }
 
-  def fixture() do
+  def fixture do
     %Dense{
       rows: 2,
       columns: 3,
@@ -40,7 +41,7 @@ defmodule Annex.Layer.DenseTest do
 
     assert output == [1.20667, 0.6699999999999999]
     error = Sequence.error(output, labels)
-    gradient = Annex.Cost.MeanSquaredError.derivative(error, input, labels)
+    gradient = MeanSquaredError.derivative(error, input, labels)
     negative_gradient = gradient * -1.0
     assert negative_gradient == 1.7533399999999997
 

@@ -1,5 +1,9 @@
 defmodule Annex.Examples.Iris do
-  alias Annex.Utils
+  alias Annex.{
+    Layer.Sequence,
+    Utils
+  }
+
   require Logger
 
   @floats ~w(sepal_length sepal_width petal_length petal_width)a
@@ -52,7 +56,7 @@ defmodule Annex.Examples.Iris do
     dataset
     |> Enum.map(fn item -> item[name] end)
     |> Utils.normalize()
-    |> Utils.zip(dataset)
+    |> Enum.zip(dataset)
     |> Enum.map(fn {normalized, item} ->
       Map.put(item, name, normalized)
     end)
@@ -72,7 +76,7 @@ defmodule Annex.Examples.Iris do
   end
 
   def run do
-    flower_data = load()
+    %Stream{} = flower_data = load()
     {train_set, test_set} = prep_data(flower_data)
 
     {train_data, train_labels} = train_set
@@ -87,12 +91,12 @@ defmodule Annex.Examples.Iris do
       """
     end)
 
-    {:ok, _output, seq} =
+    {:ok, %Sequence{} = seq, _output} =
       Annex.sequence([
         # Annex.dropout(0.001),
-        Annex.dense(100, input_dims: 4),
+        Annex.dense(100, 4),
         Annex.activation(:tanh),
-        Annex.dense(3, input_dims: 100),
+        Annex.dense(3, 100),
         Annex.activation(:sigmoid)
       ])
       |> Annex.train(train_data, train_labels,

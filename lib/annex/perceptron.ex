@@ -1,18 +1,28 @@
 defmodule Annex.Perceptron do
+  @moduledoc """
+  A simple perceptron Learner capable of making good predictions given a linearly separable
+  dataset and labels.
+  """
   alias Annex.{Perceptron, Utils}
+
+  @type t :: %Perceptron{
+          weights: list(float),
+          learning_rate: float(),
+          activation: (number() -> float()),
+          bias: float()
+        }
   defstruct [:weights, :learning_rate, :activation, :bias]
 
-  def new(inputs, activation, opts \\ []) when is_integer(inputs) and inputs > 0 do
+  def new(inputs, activation, opts \\ [])
+      when is_integer(inputs) and
+             inputs > 0 and
+             is_function(activation, 1) do
     %Perceptron{
       weights: get_weights(inputs, opts),
       bias: Keyword.get(opts, :bias, 0.0),
       learning_rate: Keyword.get(opts, :learning_rate, 0.05),
-      activation: get_activation(activation)
+      activation: activation
     }
-  end
-
-  defp get_activation(fun) when is_function(fun, 1) do
-    fun
   end
 
   defp get_weights(inputs, opts) do

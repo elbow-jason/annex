@@ -1,4 +1,11 @@
 defmodule Annex.Layer do
+  @moduledoc """
+  The Annex.Layer is the module that defines types, callbacks, and helper for Layers.
+
+  By implementing the Layer behaviour a struct/model can be used along side other
+  Layers to compose the layers of a deep neural network.
+  """
+
   alias Annex.{
     Layer.Backprop
   }

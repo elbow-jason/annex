@@ -1,9 +1,14 @@
 defmodule Annex do
+  @moduledoc """
+  Annex is a library for composing and running deep artificial
+  """
+
   alias Annex.{
     Layer,
     Layer.Activation,
     Layer.Dense,
     Layer.Dropout,
+    Layer.ListLayer,
     Layer.Sequence,
     Learner
   }
@@ -122,7 +127,8 @@ defmodule Annex do
 
   Returns the trained `learner` along with some measure of loss or performance.
   """
-  @spec train(struct(), any(), any(), Keyword.t()) :: {Learner.t(), any}
+  @spec train(struct(), Learner.data(), Learner.data(), Keyword.t()) ::
+          {:ok, Learner.t(), Learner.data()} | {:error, any()}
   def train(%_{} = learner, data, labels, options \\ []) do
     Learner.train(learner, data, labels, options)
   end
@@ -137,7 +143,7 @@ defmodule Annex do
   before using it to make predicitons. Chances are slim that an untrained
   Learner is capable of making accurate predictions.
   """
-  @spec predict(struct(), any()) :: any()
+  @spec predict(Learner.t(), Learner.data()) :: Learner.data()
   def predict(learner, data) do
     Learner.predict(learner, data)
   end

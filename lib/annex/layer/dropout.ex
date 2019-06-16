@@ -1,14 +1,14 @@
 defmodule Annex.Layer.Dropout do
+  @moduledoc """
+  Given a `frequency` the dropout layer randomly drops an input at the `frequency`.
+  """
   alias Annex.{
     Layer,
     Layer.Backprop,
     Layer.Dropout,
     Layer.ListLayer,
-    Type,
     Utils
   }
-
-  require Type
 
   @behaviour Layer
 
@@ -37,13 +37,12 @@ defmodule Annex.Layer.Dropout do
   end
 
   @spec feedforward(t(), ListLayer.t()) :: {t(), ListLayer.t()}
-  def feedforward(%Dropout{frequency: frequency} = layer, inputs)
-      when Type.is_list_of_floats(inputs) do
+  def feedforward(%Dropout{frequency: frequency} = layer, inputs) do
     {layer, drop(inputs, frequency)}
   end
 
   @spec drop(ListLayer.t(), float()) :: ListLayer.t()
-  def drop(inputs, frequency) when Type.is_list_of_floats(inputs) do
+  def drop(inputs, frequency) do
     Enum.map(inputs, fn value -> zeroize_by_frequency(frequency, value) end)
   end
 

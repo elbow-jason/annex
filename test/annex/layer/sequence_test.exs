@@ -1,7 +1,13 @@
 defmodule Annex.Layer.SequenceTest do
   use ExUnit.Case
 
-  alias Annex.Layer.{Sequence, Dense, Activation, Dropout, Backprop}
+  alias Annex.Layer.{
+    Activation,
+    Backprop,
+    Dense,
+    Dropout,
+    Sequence
+  }
 
   def generate_n_layers(n) when rem(n, 3) == 0 or n < 3 do
     # the n_layers should be a multiple of n layers.

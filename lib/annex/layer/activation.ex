@@ -1,4 +1,11 @@
 defmodule Annex.Layer.Activation do
+  @moduledoc """
+  The Activation layer is the Annex.Layer that is responsible for
+  applying an activation function to the data during the feedforward
+  and supplying the gradient function (derivative) of the activation
+  function to the Backprops during backpropagation.
+  """
+
   alias Annex.{
     Layer,
     Layer.Activation,

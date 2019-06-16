@@ -17,13 +17,14 @@ defmodule Annex.SequenceXorTest do
       [0.0]
     ]
 
-    assert {:ok, _loss, %Sequence{} = seq} =
-             Annex.sequence([
+    assert {:ok, %Sequence{} = seq, _loss} =
+             [
                Annex.dense(8, 2),
                Annex.activation(:tanh),
                Annex.dense(1, 8),
                Annex.activation(:sigmoid)
-             ])
+             ]
+             |> Annex.sequence()
              |> Annex.train(data, labels,
                name: "XOR operation",
                learning_rate: 0.05,

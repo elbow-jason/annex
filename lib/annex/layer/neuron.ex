@@ -1,4 +1,10 @@
 defmodule Annex.Layer.Neuron do
+  @moduledoc """
+  The Neuron itself is not a Layer, but a helper model for the Dense Layer.
+
+  It represents the unit of computation for an input.
+  """
+
   alias Annex.{Layer.Neuron, Utils}
 
   @type t :: %__MODULE__{

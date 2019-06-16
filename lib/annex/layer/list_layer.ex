@@ -1,4 +1,9 @@
 defmodule Annex.Layer.ListLayer do
+  @moduledoc """
+  ListLayer is a module for injecting some helper code for Layers that handle
+  take a list-of-floats for data.
+  """
+
   @type t :: [float(), ...]
 
   defmacro __using__(_) do

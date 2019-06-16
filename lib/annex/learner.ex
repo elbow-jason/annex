@@ -1,21 +1,29 @@
 defmodule Annex.Learner do
+  @moduledoc """
+  The Learner module defines the types, callbacks, and helper functions for a Learner.
+
+  A Learner is a model that is capable of supervised learning.
+  """
+
   alias Annex.{Utils}
   require Logger
 
-  @type learner :: struct()
+  @type t() :: t()
   @type options :: Keyword.t()
+  @type data :: any()
 
-  @callback init_learner(learner(), options()) :: {:ok, learner()} | {:error, any()}
-  @callback train(learner(), any(), any(), options()) :: {learner(), any()}
+  @callback init_learner(t(), options()) :: {:ok, t()} | {:error, any()}
+  @callback train(t(), data(), data(), options()) :: {t(), data()}
   @callback train_opts(options()) :: options()
-  @callback predict(learner(), Data.t()) :: Data.t()
+  @callback predict(t(), data()) :: data()
 
+  @spec predict(t(), data()) :: data()
   def predict(%module{} = learner, data) do
     module.predict(learner, data)
   end
 
-  @spec train(struct(), any(), any(), Keyword.t()) ::
-          {:ok, struct(), list(float())} | {:error, any()}
+  @spec train(t(), data(), data(), Keyword.t()) ::
+          {:ok, t(), list(float())} | {:error, any()}
   def train(%module{} = learner, all_inputs, all_labels, opts \\ []) do
     with(
       {:ok, learner} <- module.init_learner(learner, opts),
@@ -51,8 +59,9 @@ defmodule Annex.Learner do
     |> Utils.zip(all_labels)
     |> Stream.cycle()
     |> Stream.with_index(1)
-    |> Enum.reduce_while({nil, learner}, fn {{inputs, labels}, epoch}, {_, learner_acc} ->
-      {learner2, output} = module.train(learner_acc, inputs, labels, train_opts)
+    |> Enum.reduce_while({learner, nil}, fn {{inputs, labels}, epoch},
+                                            {learner_acc, _prev_output} ->
+      {%_{} = learner2, output} = module.train(learner_acc, inputs, labels, train_opts)
 
       _ = log.(learner2, output, epoch, opts)
 
@@ -63,11 +72,11 @@ defmodule Annex.Learner do
           :cont
         end
 
-      {halt_or_cont, {output, learner2}}
+      {halt_or_cont, {learner2, output}}
     end)
   end
 
-  @spec init_learner(learner, options()) :: {:ok, learner()} | {:error, any()}
+  @spec init_learner(t(), options()) :: {:ok, t()} | {:error, any()}
   def init_learner(%module{} = learner, options) do
     module.init_learner(learner, options)
   end

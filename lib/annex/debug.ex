@@ -1,4 +1,8 @@
 defmodule Annex.Debug do
+  @moduledoc """
+  A module for running checks and getting helpful messages.
+  """
+
   defmacro __using__(opts \\ []) do
     quote do
       opts = unquote(opts)
