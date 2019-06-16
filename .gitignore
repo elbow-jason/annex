@@ -24,7 +24,7 @@ annex-*.tar
 
 .elixir_ls/
 .vscode/
-*.plt
+*.plt*
 
 # dialyzer plt
 annex.plt
