@@ -65,8 +65,8 @@ defmodule Annex.Data do
     type.cast(data, shape)
   end
 
-  def cast(type, data, :any) when is_atom(type) do
-    type.cast(data, :any)
+  def cast(type, data, :defer) when is_atom(type) do
+    type.cast(data, :defer)
   end
 
   @doc """

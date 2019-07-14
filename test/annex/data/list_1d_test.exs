@@ -1,6 +1,4 @@
 defmodule Annex.Data.List1DTest do
-  use Annex.DataCase
-
   alias Annex.{
     Data,
     Data.List1D
@@ -16,6 +14,14 @@ defmodule Annex.Data.List1DTest do
     [1.0, 1.0, 1.0],
     [2.0, 2.0, 2.0]
   ]
+
+  @casts [
+    {@data_5, {5}, {5}},
+    {@data_6, {6}, {6}},
+    {@data_8, {8}, {8}}
+  ]
+
+  use Annex.DataCase, type: List1D, data: @casts
 
   describe "cast/2" do
     test "given a 1D list and a 1D shape of the same size" do

@@ -4,15 +4,22 @@ defmodule Annex.Data.List2D do
   """
 
   use Annex.Data
+  require Annex.Data.List1D
+  alias Annex.Data.List1D
 
   @type t :: [[float(), ...], ...]
 
   @doc """
-  Given flat `data` and a 2-D `shape` (in the form of `{rows, columns}`) returns
-  a list of lists, a 2-D list.
+  Given flat `data` and a valid 2-D `shape` (in the form of `{rows, columns}`)
+  or a 2D list of lists of floats and a valid 2-D shapereturns a list of
+  lists, a 2-D list of lists of floats.
   """
-  @spec cast(Data.flat_data(), Shape.t()) :: t()
-  def cast(data, {_rows, _columns} = shape) do
+  @spec cast(Data.flat_data() | t(), Shape.t()) :: t()
+  def cast(data, {_, _} = shape) when List1D.is_list1D(data) do
+    cast([data], shape)
+  end
+
+  def cast(data, {_, _} = shape) do
     flat_data =
       data
       |> type_check()
@@ -72,6 +79,8 @@ defmodule Annex.Data.List2D do
       raise ArgumentError,
         message: """
         #{inspect(Annex.Data.List2D)} requires data to be a list of lists of floats.
+
+        data: #{inspect(data)}
         """
     end
 

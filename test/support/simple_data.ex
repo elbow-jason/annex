@@ -12,11 +12,11 @@ defmodule AnnexHelpers.SimpleData do
   @type data :: [datum]
 
   @type t :: %__MODULE__{
-          data: data,
+          internal: data,
           shape: Shape.t()
         }
 
-  defstruct [:data, :shape]
+  defstruct [:internal, :shape]
 
   @spec shape(t()) :: Shape.t()
   def shape(%SimpleData{shape: shape}), do: shape
@@ -26,16 +26,16 @@ defmodule AnnexHelpers.SimpleData do
     %SimpleData{simple | shape: shape}
   end
 
-  def cast(data, shape) when is_list(data) do
+  def cast(internal, shape) when Data.is_flat_data(internal) do
     %SimpleData{
-      data: data,
+      internal: internal,
       shape: shape
     }
   end
 
   @spec to_flat_list(t()) :: Data.flat_data()
-  def to_flat_list(%SimpleData{data: data}) do
-    data
+  def to_flat_list(%SimpleData{internal: internal}) do
+    internal
     |> Enum.into([])
     |> List.flatten()
   end

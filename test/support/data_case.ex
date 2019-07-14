@@ -7,16 +7,40 @@ defmodule Annex.DataCase do
   use ExUnit.CaseTemplate
 
   alias Annex.{
-    Data,
     Data.List1D,
-    Data.Shape
+    DataAssertion
   }
 
-  using do
+  using kwargs do
     quote do
-      # use ExUnit.Case
-      import Annex.DataCase
+      @data_type Keyword.fetch!(unquote(kwargs), :type)
+      @datas_and_shapes Keyword.fetch!(unquote(kwargs), :data)
+      @pretty inspect(@data_type)
+      alias Annex.DataCase
+
+      test "Annex.DataCase: #{@pretty} to_flat_list/1 callback works" do
+        DataCase.test_to_flat_list(@data_type, @datas_and_shapes)
+      end
+
+      test "Annex.DataCase: #{@pretty} shape/1 callback works" do
+        DataCase.test_shape(@data_type, @datas_and_shapes)
+      end
+
+      test "Annex.DataCase: #{@pretty} cast/2 callback works" do
+        DataCase.test_cast(@data_type, @datas_and_shapes)
+      end
+
+      test "Annex.DataCase: #{@pretty} full conversion works" do
+        DataCase.test_conversion(@data_type, @datas_and_shapes)
+      end
     end
+  end
+
+  def run_all_assertions(type, datas_and_shapes) do
+    test_to_flat_list(type, datas_and_shapes)
+    test_shape(type, datas_and_shapes)
+    test_cast(type, datas_and_shapes)
+    test_conversion(type, datas_and_shapes)
   end
 
   @doc """
@@ -24,97 +48,38 @@ defmodule Annex.DataCase do
 
   This macro relies on the correct implementation of Annex.Data.List1D.
   """
-  defmacro test_conversion(type, list_of_datas) when is_list(list_of_datas) do
-    quote do
-      test "conversion of #{inspect(unquote(type))} works" do
-        Annex.DataCase.assert_many_conversion(unquote(type), unquote(list_of_datas))
-      end
-    end
+  def test_conversion(_type, []) do
+    []
   end
 
-  @doc """
-  Tests the implemenation of to_flat_list for a type.
-  """
-  defmacro test_to_flat_list(type, list_of_data) do
-    quote do
-      test "to_flat_list of #{inspect(unquote(type))} works" do
-        Annex.DataCase.assert_many_to_flat_list(unquote(type), unquote(list_of_data))
-      end
-    end
+  def test_conversion(type, [first | rest]) do
+    [test_conversion(type, first) | test_conversion(type, rest)]
   end
 
-  def assert_many_to_flat_list(type, list_of_data) do
-    Enum.each(list_of_data, fn data ->
-      assert_one_to_flat_list(type, data)
-    end)
-  end
-
-  def assert_one_to_flat_list(type, data) do
-    flattened = Data.to_flat_list(type, data)
-
-    assert is_list(flattened) == true
-
-    assert Enum.all?(flattened, &is_float/1), """
-      Expected Data.to_flat_list/2  to return a flat list of floats.
-      type: #{inspect(type)}
-      data: #{inspect(data)}
-    """
-  end
-
-  def assert_shape_is_valid(type, data) do
-    shape = Data.shape(type, data)
-
-    assert shape == :any or is_tuple(shape), """
-    For Annex.Data a shape must be a tuple of integers or the atom :any.
-
-    invalid_shape: #{inspect(shape)}
-    type: #{inspect(type)}
-    data: #{inspect(data)}
-    """
-
-    if is_tuple(shape) do
-      assert tuple_size(shape) > 0, """
-      For Annex.Data a shape tuple cannot be empty.
-
-      invalid_shape: #{inspect(shape)}
-      type: #{inspect(type)}
-      data: #{inspect(data)}
-      """
-
-      assert shape |> Tuple.to_list() |> Enum.all?(&is_integer/1), """
-      For Annex.Data a tuple shape have integer elements only.
-
-      invalid_shape: #{inspect(shape)}
-      type: #{inspect(type)}
-      data: #{inspect(data)}
-      """
-    end
-  end
-
-  def assert_many_conversion(type, list_of_datas) do
-    Enum.each(list_of_datas, fn data -> assert_one_conversion(type, data) end)
-  end
-
-  def assert_one_conversion(type, data) do
+  def test_conversion(type, {data, _expected_shape, _target_shape}) do
     # get the data's shape
-    assert_shape_is_valid(type, data)
-
-    shape = Data.shape(type, data)
-    # make sure to_flat_list works
-    assert_one_to_flat_list(type, data)
     # get the flat data
-    flat_data = Data.to_flat_list(type, data)
-
     # get the flat list's shape
-    list_shape = Data.shape(List1D, flat_data)
+    DataAssertion.shape_is_valid(type, data)
+    shape = DataAssertion.shape(type, data)
+
+    flat_data = DataAssertion.to_flat_list(type, data)
+    list_shape = DataAssertion.shape(List1D, flat_data)
 
     # the tested data type should be the same as the list type so conversion can
     # happen back and forth
-    assert Shape.product(shape) == Shape.product(list_shape), """
+    data_shape_product = DataAssertion.shape_product(shape)
+    list_shape_product = DataAssertion.shape_product(list_shape)
+
+    assert data_shape_product == list_shape_product, """
     The shape for #{inspect(type)} did not match the shape for the List1D.
 
-    expected_shape: #{inspect(list_shape)}
-    got_shape: #{inspect(shape)}
+    data_shape_product: #{inspect(data_shape_product)}
+    list_shape_product: #{inspect(list_shape_product)}
+
+    list_shape: #{inspect(list_shape)}
+    data_shape: #{inspect(shape)}
+
     data: #{inspect(data)}
     flat_data: #{inspect(flat_data)}
     """
@@ -123,23 +88,70 @@ defmodule Annex.DataCase do
     # the same shapes and data again.
     # exact comparision of the given data and the casted data cannot be relied upon
     # due to the unknown nature of the underlying data structure.
-    casted = Data.cast(type, flat_data, shape)
-    assert Data.shape(type, data) == Data.shape(type, casted)
-    assert Data.to_flat_list(type, data) == Data.to_flat_list(type, casted)
+    casted = DataAssertion.cast(type, flat_data, shape)
+    assert DataAssertion.shape(type, data) == DataAssertion.shape(type, casted)
+    assert DataAssertion.to_flat_list(type, data) == DataAssertion.to_flat_list(type, casted)
   end
 
-  defmacro test_cast(type, basic_pattern, datas_and_shapes \\ [])
-           when is_list(datas_and_shapes) do
-    quote do
-      flat_data = {[1.0, 2.0, 3.0], {3}}
-      any_data = {[2.0, 3.0, 4.0], :any}
-      all_data = [flat_data, any_data | unquote(datas_and_shapes)]
-
-      Enum.each(all_data, fn {data, shape} ->
-        result = Data.cast(unquote(type), data, shape)
-        assert match?(unquote(basic_pattern), result)
-        result
-      end)
-    end
+  @doc """
+  Tests the implemenation of to_flat_list for a type.
+  """
+  def test_to_flat_list(_type, []) do
+    []
   end
+
+  def test_to_flat_list(type, [first | rest]) do
+    [test_to_flat_list(type, first) | test_to_flat_list(type, rest)]
+  end
+
+  def test_to_flat_list(type, {data, _shape, _target_shape}) do
+    DataAssertion.to_flat_list(type, data)
+  end
+
+  @doc """
+  Tests the implementation of a type's cast/3 function.
+  """
+  def test_cast(_type, []) do
+    []
+  end
+
+  def test_cast(type, [first | rest]) do
+    [test_cast(type, first) | test_cast(type, rest)]
+  end
+
+  def test_cast(type, {data, _expected_shape, target_shape}) do
+    DataAssertion.cast(type, data, target_shape)
+  end
+
+  @doc """
+  Tests the implementation of a type's shape/1 function.
+  """
+  def test_shape(_type, []) do
+    []
+  end
+
+  def test_shape(type, [first | rest]) do
+    [test_shape(type, first) | test_shape(type, rest)]
+  end
+
+  def test_shape(type, {data, expected_shape, _target_shape}) do
+    assert DataAssertion.shape_is_valid(type, data) == true
+    result = DataAssertion.shape(type, data)
+
+    assert result == expected_shape, """
+    #{inspect(type)}.shape/1 failed to produce the expected shape.
+
+    expected_shape: #{inspect(expected_shape)}
+    invalid_result: #{inspect(result)}
+    """
+  end
+
+  # defp assert_many_conversion(type, datas_and_shapes) do
+  #   Enum.each(datas_and_shapes, fn {data, _shape, _target_shape} ->
+  #     assert_one_conversion(type, data)
+  #   end)
+  # end
+
+  # defp assert_one_conversion(type, data) do
+  # end
 end
