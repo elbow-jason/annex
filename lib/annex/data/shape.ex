@@ -1,4 +1,9 @@
 defmodule Annex.Data.Shape do
+  @moduledoc """
+  The Shape module encapsulates helper functions for use in determining how to
+  cast Data types on behalf of Annex.Layers.
+  """
+
   @type t :: :defer | tuple()
 
   def invert(:defer) do

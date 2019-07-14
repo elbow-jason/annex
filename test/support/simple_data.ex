@@ -4,10 +4,9 @@ defmodule AnnexHelpers.SimpleData do
 
   Assumes `data` is a list (because it's simple).
   """
-  alias AnnexHelpers.SimpleData
-  alias Annex.Data
+  use Annex.Data
 
-  @behaviour Data
+  alias AnnexHelpers.SimpleData
 
   @type datum :: float() | [datum]
   @type data :: [datum]
@@ -19,7 +18,7 @@ defmodule AnnexHelpers.SimpleData do
 
   defstruct [:data, :shape]
 
-  @spec shape(t()) :: Data.shape()
+  @spec shape(t()) :: Shape.t()
   def shape(%SimpleData{shape: shape}), do: shape
 
   @spec cast(t() | data(), Data.shape()) :: t()

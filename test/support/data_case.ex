@@ -52,7 +52,7 @@ defmodule Annex.DataCase do
   def assert_one_to_flat_list(type, data) do
     flattened = Data.to_flat_list(type, data)
 
-    assert is_list(flattened)
+    assert is_list(flattened) == true
 
     assert Enum.all?(flattened, &is_float/1), """
       Expected Data.to_flat_list/2  to return a flat list of floats.

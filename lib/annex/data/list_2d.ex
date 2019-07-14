@@ -1,4 +1,8 @@
 defmodule Annex.Data.List2D do
+  @moduledoc """
+  List2D is a 2 dimensional list of lists of floats.
+  """
+
   use Annex.Data
 
   @type t :: [[float(), ...], ...]
