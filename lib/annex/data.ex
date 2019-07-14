@@ -42,6 +42,12 @@ defmodule Annex.Data do
   """
 
   def cast(:defer, data, _) do
+    # defer if type is :defer
+    data
+  end
+
+  def cast(_type, data, :defer) do
+    # defer if shape is :defer
     data
   end
 
@@ -57,16 +63,8 @@ defmodule Annex.Data do
       """
   end
 
-  def cast(:defer, data, _) do
-    data
-  end
-
   def cast(type, data, shape) when is_tuple(shape) and is_atom(type) do
     type.cast(data, shape)
-  end
-
-  def cast(type, data, :defer) when is_atom(type) do
-    type.cast(data, :defer)
   end
 
   @doc """
