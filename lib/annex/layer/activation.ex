@@ -7,10 +7,11 @@ defmodule Annex.Layer.Activation do
   """
 
   alias Annex.{
+    Data.List1D,
+    Data.Shape,
     Layer,
     Layer.Activation,
-    Layer.Backprop,
-    Layer.ListLayer
+    Layer.Backprop
   }
 
   @type func_type :: :float | :list
@@ -25,8 +26,6 @@ defmodule Annex.Layer.Activation do
         }
 
   @behaviour Layer
-
-  use ListLayer
 
   defstruct [:activator, :derivative, :name, :output, :func_type]
 
@@ -75,22 +74,33 @@ defmodule Annex.Layer.Activation do
     end
   end
 
+  @impl Layer
+  @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
+  def init_layer(%Activation{} = layer, _opts) do
+    {:ok, layer}
+  end
+
+  @impl Layer
   @spec feedforward(t(), ListLayer.t()) :: {t(), ListLayer.t()}
   def feedforward(%Activation{} = layer, inputs) do
     output = generate_outputs(layer, inputs)
     {%Activation{layer | output: output}, output}
   end
 
+  @impl Layer
   @spec backprop(t(), ListLayer.t(), Backprop.t()) :: {t(), ListLayer.t(), Backprop.t()}
   def backprop(%Activation{} = layer, error, props) do
     derviative = get_derivative(layer)
     {layer, error, Backprop.put_derivative(props, derviative)}
   end
 
-  @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
-  def init_layer(%Activation{} = layer, _opts) do
-    {:ok, layer}
-  end
+  @impl Layer
+  @spec data_type :: List1D
+  def data_type, do: List1D
+
+  @impl Layer
+  @spec shapes(t()) :: {Shape.t(), Shape.t()}
+  def shapes(%Activation{}), do: {:defer, :defer}
 
   @spec generate_outputs(t(), ListLayer.t()) :: [any()]
   def generate_outputs(%Activation{} = layer, inputs) do
@@ -142,11 +152,6 @@ defmodule Annex.Layer.Activation do
 
   @spec tanh_deriv(float()) :: float()
   def tanh_deriv(x) do
-    tanh_squared =
-      x
-      |> :math.tanh()
-      |> :math.pow(2)
-
-    1.0 - tanh_squared
+    1.0 - (x |> :math.tanh() |> :math.pow(2))
   end
 end

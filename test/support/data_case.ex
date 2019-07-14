@@ -1,14 +1,20 @@
 defmodule Annex.DataCase do
+  @moduledoc """
+  Annex.DataCase is an ExUnit.CaseTemplate with helpers to validing the implementation of
+  Annex.Data behaviours.
+  """
+
   use ExUnit.CaseTemplate
 
   alias Annex.{
     Data,
-    Data.ListType
+    Data.List1D,
+    Data.Shape
   }
 
   using do
     quote do
-      use ExUnit.Case
+      # use ExUnit.Case
       import Annex.DataCase
     end
   end
@@ -16,7 +22,7 @@ defmodule Annex.DataCase do
   @doc """
   Tests that a type has can be correctly converted
 
-  This macro relies on the correct implementation of Data.ListType.
+  This macro relies on the correct implementation of Annex.Data.List1D.
   """
   defmacro test_conversion(type, list_of_datas) when is_list(list_of_datas) do
     quote do
@@ -99,30 +105,25 @@ defmodule Annex.DataCase do
     # get the flat data
     flat_data = Data.to_flat_list(type, data)
 
-    # turn the data into a list representation
-    list_data = Data.cast(ListType, flat_data, shape)
-    # get the list's shape
-    list_shape = Data.shape(ListType, list_data)
+    # get the flat list's shape
+    list_shape = Data.shape(List1D, flat_data)
 
     # the tested data type should be the same as the list type so conversion can
     # happen back and forth
-    assert shape == list_shape, """
-    The shape for #{inspect(type)} did not match the shape for the ListType.
+    assert Shape.product(shape) == Shape.product(list_shape), """
+    The shape for #{inspect(type)} did not match the shape for the List1D.
 
     expected_shape: #{inspect(list_shape)}
     got_shape: #{inspect(shape)}
     data: #{inspect(data)}
-    list_data: #{inspect(list_data)}
+    flat_data: #{inspect(flat_data)}
     """
-
-    list_flat_data = Data.to_flat_list(ListType, list_data)
-    assert flat_data == list_flat_data
 
     # casting the list_flat_data and list_shape into the give type should end up with
     # the same shapes and data again.
     # exact comparision of the given data and the casted data cannot be relied upon
     # due to the unknown nature of the underlying data structure.
-    casted = Data.cast(type, list_flat_data, list_shape)
+    casted = Data.cast(type, flat_data, shape)
     assert Data.shape(type, data) == Data.shape(type, casted)
     assert Data.to_flat_list(type, data) == Data.to_flat_list(type, casted)
   end

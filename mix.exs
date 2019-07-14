@@ -31,7 +31,7 @@ defmodule Annex.MixProject do
     ]
   end
 
-  def elixirc_paths(:dev), do: ["lib", "examples", "test/support"]
+  def elixirc_paths(:dev), do: ["lib", "examples"]
   def elixirc_paths(:test), do: ["lib", "examples", "test/support"]
   def elixirc_paths(_), do: ["lib"]
 

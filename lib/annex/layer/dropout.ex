@@ -3,6 +3,8 @@ defmodule Annex.Layer.Dropout do
   Given a `frequency` the dropout layer randomly drops an input at the `frequency`.
   """
   alias Annex.{
+    Data.List1D,
+    Data.Shape,
     Layer,
     Layer.Backprop,
     Layer.Dropout,
@@ -11,8 +13,6 @@ defmodule Annex.Layer.Dropout do
   }
 
   @behaviour Layer
-
-  use ListLayer
 
   @type t :: %__MODULE__{
           frequency: float()
@@ -26,23 +26,33 @@ defmodule Annex.Layer.Dropout do
     %Dropout{frequency: frequency}
   end
 
+  def frequency(%Dropout{frequency: f}), do: f
+
+  @impl Layer
   @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
   def init_layer(%Dropout{} = dropout, _opts \\ []) do
     {:ok, dropout}
   end
 
-  @spec backprop(t(), ListLayer.t(), Backprop.t()) :: {t(), ListLayer.t(), Backprop.t()}
-  def backprop(%Dropout{} = dropout, error, backprop) do
-    {dropout, error, backprop}
-  end
-
+  @impl Layer
   @spec feedforward(t(), ListLayer.t()) :: {t(), ListLayer.t()}
-  def feedforward(%Dropout{frequency: frequency} = layer, inputs) do
-    {layer, drop(inputs, frequency)}
+  def feedforward(%Dropout{} = layer, inputs) do
+    {layer, drop(inputs, frequency(layer))}
   end
 
-  @spec drop(ListLayer.t(), float()) :: ListLayer.t()
-  def drop(inputs, frequency) do
+  @impl Layer
+  @spec backprop(t(), ListLayer.t(), Backprop.t()) :: {t(), ListLayer.t(), Backprop.t()}
+  def backprop(%Dropout{} = dropout, error, backprop), do: {dropout, error, backprop}
+
+  @impl Layer
+  @spec data_type :: List1D
+  def data_type, do: List1D
+
+  @impl Layer
+  @spec shapes(t()) :: {Shape.t(), Shape.t()}
+  def shapes(%Dropout{}), do: {:defer, :defer}
+
+  defp drop(inputs, frequency) do
     Enum.map(inputs, fn value -> zeroize_by_frequency(frequency, value) end)
   end
 
