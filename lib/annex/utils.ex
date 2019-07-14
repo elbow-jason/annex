@@ -6,8 +6,6 @@ defmodule Annex.Utils do
 
   defguard is_pos_integer(x) when is_integer(x) and x > 0
 
-  alias Annex.Layer.ListLayer
-
   @doc """
   Generates a float between -1.0 and 1.0
   """
@@ -19,7 +17,7 @@ defmodule Annex.Utils do
   @doc """
   Generates a list of `n` floats between -1.0 and 1.0.
   """
-  @spec random_weights(integer()) :: ListLayer.t()
+  @spec random_weights(integer()) :: list(float())
   def random_weights(n) when n > 0 and is_integer(n) do
     Enum.map(1..n, fn _ -> random_float() end)
   end

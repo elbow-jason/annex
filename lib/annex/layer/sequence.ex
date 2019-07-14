@@ -6,10 +6,12 @@ defmodule Annex.Layer.Sequence do
 
   alias Annex.{
     Cost,
+    Data,
+    Data.List1D,
+    Data.Shape,
     Defaults,
     Layer,
     Layer.Backprop,
-    Layer.ListLayer,
     Layer.Sequence,
     Learner,
     Utils
@@ -19,8 +21,6 @@ defmodule Annex.Layer.Sequence do
 
   @behaviour Learner
   @behaviour Layer
-
-  use ListLayer
 
   @type t :: %__MODULE__{
           layers: list(Layer.t()),
@@ -71,6 +71,10 @@ defmodule Annex.Layer.Sequence do
   end
 
   @impl Layer
+  @spec data_type :: List1D
+  def data_type, do: List1D
+
+  @impl Layer
   @spec init_layer(Sequence.t(), any()) :: {:error, any()} | {:ok, Sequence.t()}
   def init_layer(seq, opts \\ [])
 
@@ -117,9 +121,9 @@ defmodule Annex.Layer.Sequence do
       seq
       |> get_layers()
       |> Enum.reduce({inputs, []}, fn layer, {input, layers} ->
-        prev_layer = List.first(layers) || seq
-        encoded_inputs = Layer.convert(input, prev_layer, layer)
-        {updated_layer, output} = Layer.feedforward(layer, encoded_inputs)
+        {input_shape, _} = Layer.shapes(layer)
+        converted_inputs = Layer.convert(layer, input, input_shape)
+        {updated_layer, output} = Layer.feedforward(layer, converted_inputs)
         {output, [updated_layer | layers]}
       end)
       |> case do
@@ -130,13 +134,6 @@ defmodule Annex.Layer.Sequence do
     {%Sequence{seq | layers: layers}, output}
   end
 
-  @impl Learner
-  @spec predict(Sequence.t(), any()) :: any()
-  def predict(%Sequence{} = seq, data) do
-    {_, prediction} = Layer.feedforward(seq, data)
-    prediction
-  end
-
   @impl Layer
   @spec backprop(Sequence.t(), any(), keyword()) :: {Sequence.t(), any(), keyword()}
   def backprop(%Sequence{} = seq, seq_losses, backprops) do
@@ -145,27 +142,49 @@ defmodule Annex.Layer.Sequence do
       |> get_layers()
       |> Enum.reverse()
       |> Enum.reduce({[], seq_losses, backprops}, fn layer, {layers, losses, props} ->
-        prev_layer = List.first(layers) || seq
-        encoded_losses = Layer.convert(losses, prev_layer, layer)
-        {updated_layer, next_losses, next_props} = Layer.backprop(layer, encoded_losses, props)
+        {_, backprop_shape} = Layer.shapes(layer)
+        converted_losses = Layer.convert(layer, losses, backprop_shape)
+        {updated_layer, next_losses, next_props} = Layer.backprop(layer, converted_losses, props)
         {[updated_layer | layers], next_losses, next_props}
       end)
 
     {put_layers(seq, layers), final_losses, updated_backprop}
   end
 
+  @impl Layer
+  @spec shapes(t()) :: {Shape.t(), Shape.t()}
+  def shapes(%Sequence{} = seq) do
+    layers = get_layers(seq)
+
+    {input_shape, _} =
+      layers
+      |> List.first()
+      |> Layer.shapes()
+
+    {_, backprop_shape} =
+      layers
+      |> List.last()
+      |> Layer.shapes()
+
+    {input_shape, backprop_shape}
+  end
+
+  @impl Learner
+  @spec predict(Sequence.t(), any()) :: any()
+  def predict(%Sequence{} = seq, data) do
+    {_, prediction} = Layer.feedforward(seq, data)
+    prediction
+  end
+
   @impl Learner
   @spec train(t(), any(), any(), Keyword.t()) :: {t(), float()}
   def train(%Sequence{} = seq1, data, labels, _opts) do
     {%Sequence{} = seq2, prediction} = Layer.feedforward(seq1, data)
+    # data_type = Layer.data_type(seq1)
 
-    last_layer =
-      seq2
-      |> get_layers()
-      |> List.last()
+    prediction = Data.to_flat_list(data_type(), prediction)
+    labels = Data.to_flat_list(data_type(), labels)
 
-    labels = Layer.convert(labels, seq2, seq2)
-    prediction = Layer.convert(prediction, last_layer, seq2)
     error = error(prediction, labels)
 
     cost = get_cost(seq1)

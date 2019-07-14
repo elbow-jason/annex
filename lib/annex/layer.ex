@@ -7,18 +7,18 @@ defmodule Annex.Layer do
   """
 
   alias Annex.{
+    Data,
+    Data.Shape,
     Layer.Backprop
   }
 
   @type t() :: struct()
-  @type data :: any()
 
-  @callback feedforward(struct(), data()) :: {struct(), data()}
-  @callback backprop(struct(), data(), Backprop.t()) :: {struct(), data(), Backprop.t()}
-  @callback init_layer(struct(), Keyword.t()) :: {:ok, struct()} | {:error, any()}
-  @callback encode(struct(), list(float)) :: any()
-  @callback decode(struct(), any()) :: list(float)
-  @callback encoded?(struct(), any) :: boolean()
+  @callback feedforward(t(), Data.data()) :: {struct(), Data.data()}
+  @callback backprop(t(), Data.data(), Backprop.t()) :: {t(), Data.data(), Backprop.t()}
+  @callback init_layer(t(), Keyword.t()) :: {:ok, t()} | {:error, any()}
+  @callback data_type() :: Data.type()
+  @callback shapes(t()) :: {Shape.t(), Shape.t()}
 
   @spec feedforward(struct(), any()) :: {struct(), any()}
   def feedforward(%module{} = layer, inputs) do
@@ -35,13 +35,36 @@ defmodule Annex.Layer do
     module.init_layer(layer, opts)
   end
 
-  @spec convert(any(), struct(), struct()) :: any()
-  def convert(data, %decoder{} = decoder_layer, %encoder{} = encoder_layer) do
-    if encoder.encoded?(encoder_layer, data) do
-      data
-    else
-      decoded = decoder.decode(decoder_layer, data)
-      encoder.encode(encoder_layer, decoded)
-    end
+  @spec data_type(atom | struct()) :: Data.type()
+  def data_type(%module{}), do: data_type(module)
+  def data_type(module) when is_atom(module), do: module.data_type()
+
+  def shapes(%module{} = layer), do: module.shapes(layer)
+
+  @spec convert(t(), Data.data(), Shape.t()) :: Data.data()
+  def convert(layer, data, shape) do
+    layer
+    |> data_type()
+    |> Data.convert(data, shape)
   end
+
+  # defp do_convert(layer_shape, data_type, data) do
+  #   with(
+  #     {:ok, data_shape} <- fetch_data_shape(data_type, data),
+  #     {:fit?, false} <- {:fit?, Shape.match?(data_shape, layer_shape)}
+  #   ) do
+  #     data
+  #   else
+  #     _ ->
+  #       Data.cast(data_type, data, layer_shape)
+  #   end
+  # end
+
+  # defp fetch_data_shape(data_type, data) do
+  #   if Data.is_type?(data_type, data) do
+  #     {:ok, Data.shape(data_type, data)}
+  #   else
+  #     :error
+  #   end
+  # end
 end

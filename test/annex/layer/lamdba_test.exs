@@ -12,16 +12,16 @@ defmodule Annex.Layer.LambdaTest do
       output
     end
 
-    on_encoded? = fn lambda, data ->
-      do_send.([lambda, data], false)
-    end
+    # on_encoded? = fn lambda, data ->
+    #   do_send.([lambda, data], false)
+    # end
 
-    on_encode = fn lambda, data ->
-      do_send.([lambda, data], data)
-    end
+    # on_encode = fn lambda, data ->
+    #   do_send.([lambda, data], data)
+    # end
 
-    on_decode = fn lambda, data ->
-      do_send.([lambda, data], data)
+    on_shapes = fn lambda ->
+      do_send.([lambda], {:any, :any})
     end
 
     on_init_layer = fn lambda, opts ->
@@ -37,9 +37,7 @@ defmodule Annex.Layer.LambdaTest do
     end
 
     %Lambda{
-      on_encoded?: on_encoded?,
-      on_encode: on_encode,
-      on_decode: on_decode,
+      on_shapes: on_shapes,
       on_init_layer: on_init_layer,
       on_feedforward: on_feedforward,
       on_backprop: on_backprop
@@ -62,44 +60,10 @@ defmodule Annex.Layer.LambdaTest do
     {:ok, sender: sender, nils: nils}
   end
 
-  describe "on_encoded?" do
+  describe "on_shapes" do
     test "works with functions", %{sender: sender} do
-      data = [1.0, 2.0, 3.0]
-      assert Lambda.encoded?(sender, data) == false
-      assert_receive({:yes, [^sender, ^data], false}, 50)
-    end
-
-    test "works with nil and defaults to true", %{nils: nils} do
-      data = [1.2, 1.3]
-      assert Lambda.encoded?(nils, data) == true
-    end
-  end
-
-  describe "on_encode" do
-    test "works with functions", %{sender: sender} do
-      data = [1.0, 2.0, 3.0]
-      assert Lambda.encode(sender, data) == data
-      assert_receive({:yes, [^sender, ^data], ^data}, 50)
-    end
-
-    test "works with nil", %{nils: nils} do
-      data = [1.0, 2.0, 3.0]
-      assert Lambda.encode(nils, data) == data
-      assert_no_receive(50)
-    end
-  end
-
-  describe "on_decode" do
-    test "works with functions", %{sender: sender} do
-      data = [1.0, 2.0, 3.0]
-      assert Lambda.decode(sender, data) == data
-      assert_receive({:yes, [^sender, ^data], ^data}, 50)
-    end
-
-    test "works with nil", %{nils: nils} do
-      data = [1.0, 2.0, 3.0]
-      assert Lambda.decode(nils, data) == data
-      assert_no_receive(50)
+      assert Lambda.shapes(sender) == {:any, :any}
+      assert_receive({:yes, [^sender], {:any, :any}}, 50)
     end
   end
 
