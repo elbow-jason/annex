@@ -131,14 +131,4 @@ defmodule Annex.Data do
   end
 
   defp unwrap([unwrapped]), do: unwrapped
-
-  # defp do_shape([first | _] = dim, acc) do
-  #   do_shape(first, [length(dim) | acc])
-  # end
-
-  # defp do_shape(_, acc) do
-  #   acc
-  #   |> Enum.reverse()
-  #   |> List.to_tuple()
-  # end
 end

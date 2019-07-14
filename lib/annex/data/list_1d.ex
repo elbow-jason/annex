@@ -34,7 +34,7 @@ defmodule Annex.Data.List1D do
   def to_flat_list(data) when is_list1D(data), do: data
 
   @impl Data
-  @spec shape(t()) :: Data.shape()
+  @spec shape(t()) :: Shape.t()
   def shape(data) when is_list1D(data), do: {length(data)}
 
   @impl Data

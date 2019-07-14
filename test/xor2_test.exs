@@ -28,7 +28,7 @@ defmodule Annex.SequenceXor2Test do
       |> Annex.train(data, labels,
         name: "xor2",
         learning_rate: 0.02,
-        halt_condition: {:epochs, 60_000}
+        halt_condition: {:epochs, 100_000}
       )
 
     [pred_yes, pred_no] = Annex.predict(seq, [0.0, 0.0])

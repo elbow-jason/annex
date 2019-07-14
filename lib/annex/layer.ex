@@ -35,7 +35,7 @@ defmodule Annex.Layer do
     module.init_layer(layer, opts)
   end
 
-  @spec data_type(atom | struct()) :: Data.t()
+  @spec data_type(atom | struct()) :: Data.type()
   def data_type(%module{}), do: data_type(module)
   def data_type(module) when is_atom(module), do: module.data_type()
 

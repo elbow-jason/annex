@@ -13,7 +13,7 @@ defmodule AnnexHelpers.SimpleData do
 
   @type t :: %__MODULE__{
           data: data,
-          shape: Data.shape()
+          shape: Shape.t()
         }
 
   defstruct [:data, :shape]
@@ -21,7 +21,7 @@ defmodule AnnexHelpers.SimpleData do
   @spec shape(t()) :: Shape.t()
   def shape(%SimpleData{shape: shape}), do: shape
 
-  @spec cast(t() | data(), Data.shape()) :: t()
+  @spec cast(t() | data(), Shape.t()) :: t()
   def cast(%SimpleData{} = simple, shape) do
     %SimpleData{simple | shape: shape}
   end

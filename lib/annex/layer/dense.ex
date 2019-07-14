@@ -11,7 +11,6 @@ defmodule Annex.Layer.Dense do
     Layer,
     Layer.Backprop,
     Layer.Dense,
-    Layer.ListLayer,
     Layer.Neuron,
     Utils
   }
@@ -108,7 +107,7 @@ defmodule Annex.Layer.Dense do
   end
 
   @impl Layer
-  @spec feedforward(t(), ListLayer.t()) :: {t(), ListLayer.t()}
+  @spec feedforward(t(), List1D.t()) :: {t(), List1D.t()}
   def feedforward(%Dense{} = layer, input) do
     output =
       layer
@@ -124,7 +123,7 @@ defmodule Annex.Layer.Dense do
   end
 
   @impl Layer
-  @spec backprop(t(), ListLayer.t(), Backprop.t()) :: {t(), ListLayer.t(), Backprop.t()}
+  @spec backprop(t(), List1D.t(), Backprop.t()) :: {t(), List1D.t(), Backprop.t()}
   def backprop(%Dense{} = layer, error, props) do
     learning_rate = Backprop.get_learning_rate(props)
     derivative = Backprop.get_derivative(props)

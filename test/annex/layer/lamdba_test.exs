@@ -62,7 +62,6 @@ defmodule Annex.Layer.LambdaTest do
 
   describe "on_shapes" do
     test "works with functions", %{sender: sender} do
-      data = [1.0, 2.0, 3.0]
       assert Lambda.shapes(sender) == {:any, :any}
       assert_receive({:yes, [^sender], {:any, :any}}, 50)
     end

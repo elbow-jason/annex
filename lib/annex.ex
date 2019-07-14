@@ -4,11 +4,11 @@ defmodule Annex do
   """
 
   alias Annex.{
+    Data.List1D,
     Layer,
     Layer.Activation,
     Layer.Dense,
     Layer.Dropout,
-    Layer.ListLayer,
     Layer.Sequence,
     Learner
   }
@@ -78,7 +78,7 @@ defmodule Annex do
   Given a number of `rows`, `columns`, some `weights`,
   and some `biases` returns a built `Dense` layer.
   """
-  @spec dense(pos_integer(), pos_integer(), ListLayer.t(), ListLayer.t()) :: Dense.t()
+  @spec dense(pos_integer(), pos_integer(), List1D.t(), List1D.t()) :: Dense.t()
   def dense(rows, columns, weights, biases) do
     Dense.build(rows, columns, weights, biases)
   end

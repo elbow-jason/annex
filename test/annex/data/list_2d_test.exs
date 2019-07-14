@@ -6,100 +6,96 @@ defmodule Annex.Data.List2DTest do
     Data.List2D
   }
 
-  # @data_5 [1.0, 2.0, 3.0, 4.0, 5.0]
+  require List2D
 
-  # @data_6 [1.0, 1.0, 1.0, 2.0, 2.0, 2.0]
+  @data_2_by_3 [
+    [1.0, 1.0, 1.0],
+    [2.0, 2.0, 2.0]
+  ]
 
-  # @data_8 [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+  @data_4_by_2 [
+    [1.0, 2.0],
+    [3.0, 4.0],
+    [5.0, 6.0],
+    [7.0, 8.0]
+  ]
 
-  # @data_2_by_3 [
-  #   [1.0, 1.0, 1.0],
-  #   [2.0, 2.0, 2.0]
-  # ]
+  describe "cast/2" do
+    test "given a 2D list of floats and the same shape returns the same 2D list" do
+      assert Data.shape(List2D, @data_2_by_3) == {2, 3}
+      assert List2D.cast(@data_2_by_3, {2, 3}) == @data_2_by_3
+    end
 
-  # @data_2_by_2_by_2 [
-  #   [
-  #     [1.0, 2.0],
-  #     [3.0, 4.0]
-  #   ],
-  #   [
-  #     [5.0, 6.0],
-  #     [7.0, 8.0]
-  #   ]
-  # ]
+    test "works for 2D where the dimensions is the count of the data items" do
+      assert List2D.cast(@data_2_by_3, {3, 2}) == [[1.0, 1.0], [1.0, 2.0], [2.0, 2.0]]
+    end
 
-  # @data_4_by_2 [
-  #   [1.0, 2.0],
-  #   [3.0, 4.0],
-  #   [5.0, 6.0],
-  #   [7.0, 8.0]
-  # ]
+    test "raises for other than 2D list of floats" do
+      raises = fn data ->
+        assert_raise(ArgumentError, fn -> List2D.cast(data, {10, 10}) end)
+      end
 
-  # describe "cast/2" do
-  #   test "given a flat list and :defer returns a flat list" do
-  #     assert List1D.cast([1.0, 1.0, 1.0, 2.0, 2.0, 2.0], :defer) == [1.0, 1.0, 1.0, 2.0, 2.0, 2.0]
-  #   end
+      raises.([[1]])
+      raises.(:other)
+      raises.("etc")
+    end
+  end
 
-  #   test "works for a single dimension where the dimension is the count of the data items" do
-  #     assert List1D.cast(@data_2_by_3, {6}) == [1.0, 1.0, 1.0, 2.0, 2.0, 2.0]
-  #   end
+  describe "to_flat_list/1" do
+    test "can handle nested lists" do
+      assert List2D.to_flat_list(@data_2_by_3) == [1.0, 1.0, 1.0, 2.0, 2.0, 2.0]
+      assert List2D.to_flat_list(@data_4_by_2) == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+    end
 
-  #   test "works for a two dimensions where the dimensions is the count of the data items" do
-  #     assert List1D.cast(@data_2_by_3, {3, 2}) == [[1.0, 1.0], [1.0, 2.0], [2.0, 2.0]]
-  #   end
+    test "raises for other than 2D list of floats" do
+      raises = fn data ->
+        assert_raise(ArgumentError, fn -> List2D.to_flat_list(data) end)
+      end
 
-  #   test "raises for empty dimensions {}" do
-  #     assert_raise(Enum.EmptyError, fn ->
-  #       ListType.cast(@data_2_by_3, {})
-  #     end)
-  #   end
-  # end
+      raises.([[1]])
+      raises.(:other)
+      raises.("etc")
+    end
+  end
 
-  # describe "to_flat_list/1" do
-  #   test "can handle flat lists" do
-  #     flat_list = [1.0, 2.0, 3.0]
-  #     assert ListType.to_flat_list(flat_list) == flat_list
-  #   end
+  describe "" do
+    test "is correctly ordered for nested lists" do
+      assert List2D.shape(@data_2_by_3) == {2, 3}
+      assert List2D.shape(@data_4_by_2) == {4, 2}
+    end
 
-  #   test "can handle nested lists" do
-  #     assert ListType.to_flat_list(@data_2_by_3) == [1.0, 1.0, 1.0, 2.0, 2.0, 2.0]
-  #   end
-  # end
+    test "raises for other than 2D list" do
+      raises = fn data ->
+        assert_raise(ArgumentError, fn -> List2D.shape(data) end)
+      end
 
-  # describe "shape/1" do
-  #   test "is correct for flat lists" do
-  #     assert ListType.shape(@data_5) == {5}
-  #   end
+      raises.("bad thing")
+      raises.('bad thing')
+      raises.(:not_valid)
+    end
+  end
 
-  #   test "is correctly ordered for nested lists" do
-  #     assert ListType.shape(@data_2_by_3) == {2, 3}
-  #   end
-  # end
+  describe "is_type?/1" do
+    test "is true for float containing nested list" do
+      assert List2D.is_type?(@data_2_by_3) == true
+    end
 
-  # describe "is_type?/1" do
-  #   test "is true for float containing nested list" do
-  #     assert ListType.is_type?(@data_2_by_2_by_2) == true
-  #   end
-
-  #   test "is true for float containing flat lists" do
-  #     assert ListType.is_type?(@data_5) == true
-  #   end
-
-  #   test "is false for non list of float containing types" do
-  #     assert ListType.is_type?(:nope) == false
-  #     assert ListType.is_type?([:nope]) == false
-  #     assert ListType.is_type?([1]) == false
-  #     assert ListType.is_type?([[1]]) == false
-  #     assert ListType.is_type?(1) == false
-  #     assert ListType.is_type?(1.0) == false
-  #     assert ListType.is_type?("1.0") == false
-  #     assert ListType.is_type?('1.0') == false
-  #     assert ListType.is_type?(true) == false
-  #     assert ListType.is_type?(false) == false
-  #     assert ListType.is_type?(%URI{}) == false
-  #     assert ListType.is_type?(%{}) == false
-  #   end
-  # end
+    test "is false for other than 2D list" do
+      assert List2D.is_type?([1.0, 2.0, 3.0]) == false
+      assert List2D.is_type?(:nope) == false
+      assert List2D.is_type?([:nope]) == false
+      assert List2D.is_type?([1]) == false
+      assert List2D.is_type?([[1]]) == false
+      assert List2D.is_type?(1) == false
+      assert List2D.is_type?(1.0) == false
+      assert List2D.is_type?("1.0") == false
+      assert List2D.is_type?('1.0') == false
+      assert List2D.is_type?(true) == false
+      assert List2D.is_type?(false) == false
+      assert List2D.is_type?(%URI{}) == false
+      assert List2D.is_type?(%{}) == false
+    end
+  end
 
   # describe "Data Behaviour" do
   #   test "shape/1 works" do
