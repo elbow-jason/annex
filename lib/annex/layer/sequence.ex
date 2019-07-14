@@ -180,10 +180,15 @@ defmodule Annex.Layer.Sequence do
   @spec train(t(), any(), any(), Keyword.t()) :: {t(), float()}
   def train(%Sequence{} = seq1, data, labels, _opts) do
     {%Sequence{} = seq2, prediction} = Layer.feedforward(seq1, data)
-    # data_type = Layer.data_type(seq1)
 
-    prediction = Data.to_flat_list(data_type(), prediction)
-    labels = Data.to_flat_list(data_type(), labels)
+    prediction_data_type =
+      seq1
+      |> get_layers()
+      |> List.last()
+      |> Layer.data_type()
+
+    prediction = Data.to_flat_list(prediction_data_type, prediction)
+    labels = Data.to_flat_list(labels)
 
     error = error(prediction, labels)
 

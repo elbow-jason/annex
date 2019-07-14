@@ -77,6 +77,13 @@ defmodule Annex.Data do
   def to_flat_list(:defer, data), do: to_flat_list(:defer, Enum.into(data, []))
   def to_flat_list(type, data), do: type.to_flat_list(data)
 
+  @spec to_flat_list(Data.data()) :: Data.flat_data()
+  def to_flat_list(data) do
+    data
+    |> Enum.into([])
+    |> List.flatten()
+  end
+
   @doc """
   Given an Annex.Data `type` and the `data` returns the shape of the data.
 
