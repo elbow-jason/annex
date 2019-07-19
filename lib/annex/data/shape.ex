@@ -4,7 +4,8 @@ defmodule Annex.Data.Shape do
   cast Data types on behalf of Annex.Layers.
   """
 
-  @type t :: :defer | tuple()
+  @type t :: tuple()
+  @type defer :: :defer
 
   def invert(:defer) do
     :defer

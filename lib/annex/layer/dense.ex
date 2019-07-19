@@ -3,16 +3,17 @@ defmodule Annex.Layer.Dense do
   `rows` are the number outputs and `columns` are the number of inputs.
   """
 
-  use Annex.Debug
+  use Annex.Debug, debug: true
 
   alias Annex.{
-    Data.List1D,
+    # Data.List1D,
     Data.Shape,
+    Data.DMatrix,
     Layer,
     Layer.Backprop,
-    Layer.Dense,
-    Layer.Neuron,
-    Utils
+    Layer.Dense
+    # Layer.Neuron,
+    # Utils
   }
 
   import Annex.Utils, only: [is_pos_integer: 1]
@@ -20,7 +21,8 @@ defmodule Annex.Layer.Dense do
   @behaviour Layer
 
   @type t :: %__MODULE__{
-          neurons: list(Neuron.t()),
+          weights: DMatrix.t(),
+          biases: DMatrix.t(),
           rows: pos_integer(),
           columns: pos_integer() | nil,
           input: list(float()),
@@ -28,7 +30,8 @@ defmodule Annex.Layer.Dense do
           initialized?: boolean()
         }
 
-  defstruct neurons: [],
+  defstruct weights: nil,
+            biases: nil,
             rows: nil,
             columns: nil,
             input: [],
@@ -51,42 +54,47 @@ defmodule Annex.Layer.Dense do
     debug_assert "Dense rows must be a positive integer", do: rows > 0
     debug_assert "Dense columns must be a positive integer", do: is_integer(columns)
     debug_assert "Dense columns must be a positive integer", do: columns > 0
-    debug_assert "Dense weights must be a list of floats", do: is_list(data)
-    debug_assert "Dense weights must be a list of floats", do: Enum.all?(data, &is_float/1)
-    debug_assert "Dense biases must be a list of floats", do: is_list(biases)
-    debug_assert "Dense biases must be a list of floats", do: Enum.all?(data, &is_float/1)
 
-    neurons =
-      weights
-      |> Enum.chunk_every(columns)
-      |> Enum.zip(biases)
-      |> Enum.map(fn {weights, bias} -> Neuron.new(weights, bias) end)
+    debug_assert "Dense weights must be a list of floats" do
+      is_list(weights) || DMatrix.is_type?(weights)
+    end
+
+    debug_assert "Dense weights must be a list of floats" do
+      Enum.all?(weights, &is_float/1)
+    end
+
+    debug_assert "Dense biases must be a list of floats" do
+      is_list(biases) || DMatrix.is_type?(biases)
+    end
+
+    debug_assert "Dense biases must be a list of floats", do: Enum.all?(biases, &is_float/1)
+
+    debug_assert "Dense biases must be the same length as the count of rows" do
+      length(biases) == rows
+    end
 
     %Dense{
-      neurons: neurons,
+      biases: DMatrix.build(biases, rows, 1),
+      weights: DMatrix.build(weights, rows, columns),
       rows: rows,
       columns: columns,
       initialized?: true
     }
   end
 
-  defp put_neurons(%Dense{} = dense, neurons) do
-    %Dense{dense | neurons: neurons}
-  end
-
-  defp get_neurons(%Dense{neurons: neurons}), do: neurons
-
-  defp put_output(%Dense{} = dense, output) when is_list(output) do
+  defp put_output(%Dense{} = dense, output) do
     %Dense{dense | output: output}
   end
 
-  defp get_output(%Dense{output: o}) when is_list(o), do: o
+  defp get_output(%Dense{output: o}), do: o
+
+  defp get_weights(%Dense{weights: weights}), do: IO.inspect(weights, label: :GET_WEEEEIGHTS)
+
+  defp get_biases(%Dense{biases: biases}), do: biases
 
   defp put_input(%Dense{} = dense, input) do
     %Dense{dense | input: input}
   end
-
-  defp get_input(%Dense{input: input}) when is_list(input), do: input
 
   @spec rows(t()) :: pos_integer()
   def rows(%Dense{rows: n}), do: n
@@ -99,7 +107,17 @@ defmodule Annex.Layer.Dense do
   def init_layer(layer, opts \\ [])
 
   def init_layer(%Dense{initialized?: false} = layer, _opts) do
-    {:ok, %Dense{put_random_neurons(layer) | initialized?: true}}
+    rows = rows(layer)
+    columns = columns(layer)
+
+    initialized = %Dense{
+      layer
+      | weights: DMatrix.new_random(rows, columns),
+        biases: DMatrix.ones(rows, 1),
+        initialized?: true
+    }
+
+    {:ok, initialized}
   end
 
   def init_layer(%Dense{initialized?: true} = layer, _opts) do
@@ -107,12 +125,13 @@ defmodule Annex.Layer.Dense do
   end
 
   @impl Layer
-  @spec feedforward(t(), List1D.t()) :: {t(), List1D.t()}
+  @spec feedforward(t(), DMatrix.t()) :: {t(), DMatrix.t()}
   def feedforward(%Dense{} = layer, input) do
     output =
       layer
-      |> get_neurons()
-      |> Enum.map(fn neuron -> Neuron.feedforward(neuron, input) end)
+      |> get_weights()
+      |> DMatrix.dot(input)
+      |> DMatrix.add(get_biases(layer))
 
     updated_layer =
       layer
@@ -123,37 +142,51 @@ defmodule Annex.Layer.Dense do
   end
 
   @impl Layer
-  @spec backprop(t(), List1D.t(), Backprop.t()) :: {t(), List1D.t(), Backprop.t()}
-  def backprop(%Dense{} = layer, error, props) do
+  # @spec backprop(t(), DMatrix.t(), Backprop.t()) :: {t(), DMatrix.t(), Backprop.t()}
+  @spec backprop(t(), DMatrix.t(), keyword) :: {t(), DMatrix.t(), keyword}
+  def backprop(%Dense{} = dense, error, props) do
     learning_rate = Backprop.get_learning_rate(props)
     derivative = Backprop.get_derivative(props)
-    negative_gradient = Backprop.get_negative_gradient(props)
+    # negative_gradient = Backprop.get_negative_gradient(props)
 
-    output = get_output(layer)
-    input = get_input(layer)
+    output = get_output(dense)
 
-    {neuron_error, neurons} =
-      layer
-      |> get_neurons()
-      |> Utils.zip(error)
-      |> Utils.zip(output)
-      |> Enum.map(fn {{neuron, local_error}, neuron_output} ->
-        sum_deriv = derivative.(neuron_output)
-        Neuron.backprop(neuron, input, sum_deriv, negative_gradient, local_error, learning_rate)
-      end)
-      |> Enum.unzip()
+    weights = get_weights(dense)
+    biases = get_biases(dense)
 
-    next_error =
-      neuron_error
-      |> Utils.transpose()
-      |> Enum.map(&Enum.sum/1)
+    weights_t = DMatrix.transpose(weights)
 
-    {put_neurons(layer, neurons), next_error, props}
+    adjusted_error = DMatrix.multiply(error, learning_rate)
+
+    gradients =
+      output
+      |> DMatrix.map(derivative)
+      |> DMatrix.dot(adjusted_error)
+
+    weight_deltas = DMatrix.dot(weights_t, gradients)
+
+    IO.inspect(weights, label: :weights_asdasdasd)
+    IO.inspect(weight_deltas, label: :weight_deltas_asdasdasd)
+
+    updated_weights = DMatrix.add(weights, weight_deltas)
+    updated_biases = DMatrix.add(biases, gradients)
+    next_error = DMatrix.multiply(weights_t, error)
+
+    updated_dense = %Dense{
+      dense
+      | input: nil,
+        output: nil,
+        weights: updated_weights,
+        biases: updated_biases
+    }
+
+    # {layer, next_error, props}
+    {updated_dense, next_error, props}
   end
 
   @impl Layer
-  @spec data_type :: List1D
-  def data_type, do: List1D
+  @spec data_type :: DMatrix
+  def data_type, do: DMatrix
 
   @impl Layer
   @spec shapes(t()) :: {Shape.t(), Shape.t()}
@@ -161,11 +194,6 @@ defmodule Annex.Layer.Dense do
     {{columns(dense)}, {rows(dense)}}
   end
 
-  defp random_neurons(rows, columns) do
-    Enum.map(1..rows, fn _ -> Neuron.new_random(columns) end)
-  end
-
-  defp put_random_neurons(%Dense{rows: rows, columns: columns} = layer) do
-    put_neurons(layer, random_neurons(rows, columns))
+  defp put_random_weights(%Dense{rows: rows, columns: columns} = layer) do
   end
 end

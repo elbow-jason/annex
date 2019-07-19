@@ -15,6 +15,8 @@ defmodule Annex.Debug do
       annex_debug = debug_was_passed? || debug_was_configured? || false
       :ok = Module.put_attribute(__MODULE__, :annex_debug, annex_debug)
       import Annex.Debug, only: [debug: 1, debug_assert: 2]
+
+      def __annex__(:debug), do: @annex_debug
     end
   end
 

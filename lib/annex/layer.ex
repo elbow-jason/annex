@@ -18,7 +18,7 @@ defmodule Annex.Layer do
   @callback backprop(t(), Data.data(), Backprop.t()) :: {t(), Data.data(), Backprop.t()}
   @callback init_layer(t(), Keyword.t()) :: {:ok, t()} | {:error, any()}
   @callback data_type() :: Data.type()
-  @callback shapes(t()) :: {Shape.t(), Shape.t()}
+  @callback shapes(t()) :: {Shape.t() | Shape.defer(), Shape.t() | Shape.defer()}
 
   @spec feedforward(struct(), any()) :: {struct(), any()}
   def feedforward(%module{} = layer, inputs) do

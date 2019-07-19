@@ -98,8 +98,9 @@ defmodule Annex.Layer.Activation do
   @spec data_type :: List1D
   def data_type, do: List1D
 
+  # @spec shapes(t()) :: {Shape.t(), Shape.t()}
   @impl Layer
-  @spec shapes(t()) :: {Shape.t(), Shape.t()}
+  @spec shapes(t()) :: {Shape.defer(), Shape.defer()}
   def shapes(%Activation{}), do: {:defer, :defer}
 
   @spec generate_outputs(t(), List1D.t()) :: [any()]

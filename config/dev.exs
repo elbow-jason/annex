@@ -1,5 +1,7 @@
 use Mix.Config
 
+config :annex, Annex.Data.DTensor, debug: true
+
 config :git_hooks,
   hooks: [
     pre_commit: [
