@@ -28,7 +28,8 @@ defmodule Annex.SequenceXorTest do
              |> Annex.train(data, labels,
                name: "XOR operation",
                learning_rate: 0.05,
-               halt_condition: {:epochs, 80_000}
+               halt_condition: {:epochs, 8_000},
+               log_interval: 1_000
              )
 
     [zero_zero] = Annex.predict(seq, [0.0, 0.0])

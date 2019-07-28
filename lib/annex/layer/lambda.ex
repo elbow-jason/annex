@@ -19,34 +19,29 @@ defmodule Annex.Layer.Lambda do
 
   @type callback2(out) :: (t(), any() -> out)
   @type callback3(out) :: (t(), any(), any() -> out)
+  @type data_type :: Data.type() | nil
 
   @type t :: %Lambda{
           on_init_layer: callback2({:ok, t()} | {:error, any()}) | nil,
           on_feedforward: callback2({t(), any()}) | nil,
           on_backprop: callback3({t(), any(), Backprop.t()}) | nil,
-          on_shapes: (t() -> {Shape.t(), Shape.t()}) | nil,
+          on_shape: (t() -> Shape.t() | nil),
           data_type: Data.type() | nil,
-          in_shape: Shape.t(),
-          out_shape: Shape.t(),
+          shape: Shape.t() | nil,
           state: any()
         }
 
-  defstruct in_shape: :defer,
-            out_shape: :defer,
+  defstruct shape: nil,
             data_type: nil,
             on_init_layer: nil,
             on_feedforward: nil,
             on_backprop: nil,
-            on_shapes: nil,
+            on_shape: nil,
             state: nil
 
   def get_state(%Lambda{state: state}), do: state
 
   def put_state(%Lambda{} = lambda, state), do: %Lambda{lambda | state: state}
-
-  def in_shape(%Lambda{in_shape: s}), do: s
-
-  def out_shape(%Lambda{out_shape: s}), do: s
 
   def update_state(%Lambda{} = lambda, func) when is_function(func, 1) do
     state =
@@ -78,13 +73,13 @@ defmodule Annex.Layer.Lambda do
   end
 
   @impl Layer
-  @spec data_type :: :defer
-  def data_type, do: :defer
+  @spec data_type(t()) :: Data.type() | nil
+  def data_type(%Lambda{data_type: data_type}), do: data_type
 
   @impl Layer
-  @spec shapes(t()) :: {Shape.t(), Shape.t()}
-  def shapes(%Lambda{} = lambda) do
-    apply_callback(lambda, :on_shapes, [lambda], {in_shape(lambda), out_shape(lambda)})
+  @spec shape(t()) :: Shape.t() | nil
+  def shape(%Lambda{shape: shape} = lambda) do
+    apply_callback(lambda, :on_shape, [lambda], shape)
   end
 
   defp apply_callback(%Lambda{} = lambda, key, args, returning) do

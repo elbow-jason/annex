@@ -12,6 +12,7 @@ defmodule Annex.Data.DMatrix do
   @type t :: %__MODULE__{tensor: Matrix.t()}
   @type rows :: pos_integer()
   @type columns :: pos_integer()
+  @type op :: :dot | :add | :subtract | :multiply
 
   defstruct [:tensor]
 
@@ -39,6 +40,12 @@ defmodule Annex.Data.DMatrix do
     end
   end
 
+  def cast(%DMatrix{} = dmatrix, {columns}) do
+    dmatrix
+    |> to_flat_list()
+    |> cast({1, columns})
+  end
+
   @impl Data
   @spec is_type?(any) :: boolean
   def is_type?(%DMatrix{}), do: true
@@ -59,6 +66,19 @@ defmodule Annex.Data.DMatrix do
     |> tensor()
     |> Map.fetch!(:dimensions)
     |> List.to_tuple()
+  end
+
+  @impl Data
+  @spec apply_op(t(), Data.op(), Data.args()) :: t()
+  def apply_op(data, op, extra_args) when is_list(extra_args) do
+    case {op, extra_args} do
+      {:dot, [right]} -> dot(data, right)
+      {:add, [right]} -> add(data, right)
+      {:subtract, [right]} -> subtract(data, right)
+      {:multiply, [right]} -> multiply(data, right)
+      {:transpose, []} -> transpose(data)
+      {_, [func]} when is_function(func, 1) -> map(data, func)
+    end
   end
 
   @spec new_random(rows(), columns()) :: t()
@@ -133,13 +153,31 @@ defmodule Annex.Data.DMatrix do
 
   @spec dot(t(), t()) :: t()
   def dot(%DMatrix{} = left, %DMatrix{} = right) do
+    debug_assert "left DMatrix must be 2D" do
+      left_shape = shape(left)
+      tuple_size(left_shape) == 2
+    end
+
+    debug_assert "right DMatrix must be 2D" do
+      right_shape = shape(right)
+      tuple_size(right_shape) == 2
+    end
+
+    debug_assert "DMatrix.dot/2 - left columns must the the same as right rows" do
+      {_, left_columns} = shape(left)
+      {right_rows, _} = shape(right)
+
+      left_columns == right_rows
+    end
+
     apply_tensor(left, right, &Matrix.product/2)
   end
 
   def dot(%DMatrix{} = left, data) when Data.is_flat_data(data) do
     {_, columns} = shape(left)
     # build it so that dot can be performed.
-    # in the future we might need to cast the shape with the given rows as well...
+    # in the future we might need to cast the shape with the
+    # given rows as well...
     right = DMatrix.build(data, columns, 1)
     apply_tensor(left, right, &Matrix.product/2)
   end
@@ -153,11 +191,17 @@ defmodule Annex.Data.DMatrix do
     {rows, columns} = shape(left)
     # build it the same shape for multiply
     right = DMatrix.build(data, rows, columns)
-    IO.inspect({left, right}, label: :MULTIPLY_LEFT_AND_RIGHT)
+
     multiply(left, right)
   end
 
   def multiply(%DMatrix{} = left, %DMatrix{} = right) do
+    debug_assert "shapes must match for mutltiply" do
+      left_shape = shape(left)
+      right_shape = shape(right)
+      left_shape == right_shape
+    end
+
     apply_tensor(left, right, &Matrix.mult_matrix/2)
   end
 
@@ -167,6 +211,12 @@ defmodule Annex.Data.DMatrix do
   end
 
   def add(%DMatrix{} = left, %DMatrix{} = right) do
+    debug_assert "shapes must match for add" do
+      left_shape = shape(left)
+      right_shape = shape(right)
+      left_shape == right_shape
+    end
+
     apply_tensor(left, right, &Matrix.add_matrix/2)
   end
 
@@ -176,6 +226,12 @@ defmodule Annex.Data.DMatrix do
   end
 
   def subtract(%DMatrix{} = left, %DMatrix{} = right) do
+    debug_assert "shapes must match for subtract" do
+      left_shape = shape(left)
+      right_shape = shape(right)
+      left_shape == right_shape
+    end
+
     apply_tensor(left, right, &Matrix.sub_matrix/2)
   end
 
@@ -213,14 +269,36 @@ defmodule Annex.Data.DMatrix do
     |> from_tensor()
   end
 
+  defimpl Inspect do
+    def inspect(dmatrix, _) do
+      "#DMatrix<#{do_shape(dmatrix)}, #{do_values(dmatrix)}>"
+    end
+
+    defp do_shape(dmatrix) do
+      dmatrix
+      |> DMatrix.shape()
+      |> inspect()
+    end
+
+    def do_values(dmatrix) do
+      dmatrix
+      |> DMatrix.to_list_of_lists()
+      |> inspect()
+    end
+  end
+
   defimpl Enumerable do
     alias Annex.Data.DMatrix
 
+    @spec count(DMatrix.t()) :: {:ok, pos_integer}
     def count(dmatrix) do
-      dmatrix
-      |> DMatrix.tensor()
-      |> DMatrix.shape()
-      |> Shape.product()
+      product =
+        dmatrix
+        |> DMatrix.tensor()
+        |> DMatrix.shape()
+        |> Shape.product()
+
+      {:ok, product}
     end
 
     def member?(_dmatrix, _element), do: {:error, __MODULE__}
@@ -228,7 +306,8 @@ defmodule Annex.Data.DMatrix do
     def reduce(dmatrix, acc, fun) do
       dmatrix
       |> DMatrix.tensor()
-      |> Tensor.slices()
+      |> Matrix.to_list()
+      |> List.flatten()
       |> do_reduce(acc, fun)
     end
 

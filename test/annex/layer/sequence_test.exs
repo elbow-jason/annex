@@ -1,6 +1,8 @@
 defmodule Annex.Layer.SequenceTest do
   use ExUnit.Case
 
+  alias Annex.Layer
+
   alias Annex.Layer.{
     Activation,
     Backprop,
@@ -8,6 +10,8 @@ defmodule Annex.Layer.SequenceTest do
     Dropout,
     Sequence
   }
+
+  alias Annex.Data.DMatrix
 
   def generate_n_layers(n) when rem(n, 3) == 0 or n < 3 do
     # the n_layers should be a multiple of n layers.
@@ -46,6 +50,10 @@ defmodule Annex.Layer.SequenceTest do
     assert_in_order(layers)
   end
 
+  def assert_in_order(layers) when is_map(layers) do
+    assert MapArray.to_list(layers)
+  end
+
   def assert_in_order(layers) when is_list(layers) do
     assert all_in_order?(layers), "Layers were not in order: #{inspect(layers)}"
   end
@@ -56,7 +64,7 @@ defmodule Annex.Layer.SequenceTest do
     assert_in_order(layers)
     seq = seq_transform.(layers)
     seq_layers = Sequence.get_layers(seq)
-    assert length(seq_layers) == n
+    assert MapArray.len(seq_layers) == n
     assert_in_order(seq_layers)
   end
 
@@ -118,6 +126,30 @@ defmodule Annex.Layer.SequenceTest do
 
       assert {%Sequence{} = seq4, _, _} = Sequence.backprop(seq3, [1.0], props)
       assert_in_order(seq4)
+    end
+  end
+
+  describe "feedforward and backprop works for simple sequence" do
+    setup do
+      dense = Annex.dense(2, 3, [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], [1.0, 1.0])
+      seq = Sequence.build([dense])
+      assert {:ok, seq} = Layer.init_layer(seq, [])
+      {:ok, seq: seq}
+    end
+
+    test "works", %{seq: seq1} do
+      assert %Sequence{} = seq1
+      {seq2, pred} = Sequence.feedforward(seq1, [1.0, 2.0, 3.0])
+      assert pred == DMatrix.build([[15.0], [33.0]])
+      input = DMatrix.build([[1.0], [2.0], [3.0]])
+      %{0 => dense1} = Sequence.get_layers(seq1)
+      %{0 => dense2} = Sequence.get_layers(seq2)
+
+      assert %Dense{
+               dense1
+               | input: input,
+                 output: pred
+             } == dense2
     end
   end
 end

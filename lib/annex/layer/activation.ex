@@ -5,14 +5,12 @@ defmodule Annex.Layer.Activation do
   and supplying the gradient function (derivative) of the activation
   function to the Backprops during backpropagation.
   """
+  use Annex.Debug, debug: true
 
-  alias Annex.{
-    Data.List1D,
-    Data.Shape,
-    Layer,
-    Layer.Activation,
-    Layer.Backprop
-  }
+  alias Annex.Data
+  alias Annex.Layer
+  alias Annex.Layer.Activation
+  alias Annex.Layer.Backprop
 
   @type func_type :: :float | :list
 
@@ -22,12 +20,24 @@ defmodule Annex.Layer.Activation do
           activator: (number -> number),
           derivative: (number -> number),
           func_type: func_type(),
-          name: atom()
+          name: atom(),
+          initialized?: boolean()
         }
+
+  @type data_type :: Data.type()
+  @type data :: Data.data()
 
   @behaviour Layer
 
-  defstruct [:activator, :derivative, :name, :output, :func_type]
+  defstruct [
+    :activator,
+    :derivative,
+    :name,
+    :outputs,
+    :inputs,
+    :func_type,
+    initialized?: false
+  ]
 
   @spec build(:relu | :sigmoid | :tanh | {:relu, number()}) :: t()
   def build(name) do
@@ -76,44 +86,63 @@ defmodule Annex.Layer.Activation do
 
   @impl Layer
   @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
-  def init_layer(%Activation{} = layer, _opts) do
-    {:ok, layer}
+  def init_layer(%Activation{} = activation1, _opts) do
+    activation2 = %Activation{activation1 | initialized?: true}
+
+    {:ok, activation2}
   end
 
   @impl Layer
-  @spec feedforward(t(), List1D.t()) :: {t(), List1D.t()}
+  @spec feedforward(t(), data()) :: {t(), data()}
   def feedforward(%Activation{} = layer, inputs) do
-    output = generate_outputs(layer, inputs)
-    {%Activation{layer | output: output}, output}
+    outputs = generate_outputs(layer, inputs)
+    {%Activation{layer | outputs: outputs, inputs: inputs}, outputs}
   end
 
   @impl Layer
-  @spec backprop(t(), List1D.t(), Backprop.t()) :: {t(), List1D.t(), Backprop.t()}
+  @spec backprop(t(), Data.data(), Backprop.t()) :: {t(), Data.data(), Backprop.t()}
   def backprop(%Activation{} = layer, error, props) do
-    derviative = get_derivative(layer)
-    {layer, error, Backprop.put_derivative(props, derviative)}
+    derivative = get_derivative(layer)
+
+    # name = get_name(layer)
+    # next_error =
+    #   layer
+    #   |> get_inputs()
+    #   |> Data.apply_op({:derivative, name}, [derivative])
+    #   |> Data.apply_op(:multiply, [error])
+
+    {layer, error, Backprop.put_derivative(props, derivative)}
   end
 
   @impl Layer
-  @spec data_type :: List1D
-  def data_type, do: List1D
+  @spec data_type(t()) :: nil
+  def data_type(%Activation{}), do: nil
 
-  # @spec shapes(t()) :: {Shape.t(), Shape.t()}
+  @doc """
+  Activation has no shape.
+  """
   @impl Layer
-  @spec shapes(t()) :: {Shape.defer(), Shape.defer()}
-  def shapes(%Activation{}), do: {:defer, :defer}
+  @spec shape(t()) :: nil
+  def shape(%Activation{}), do: nil
 
-  @spec generate_outputs(t(), List1D.t()) :: [any()]
+  @spec generate_outputs(t(), Data.data()) :: Data.data()
   def generate_outputs(%Activation{} = layer, inputs) do
     activation = get_activator(layer)
-    Enum.map(inputs, activation)
+    name = get_name(layer)
+    Data.apply_op(inputs, name, [activation])
   end
 
-  @spec get_activator(Activation.t()) :: (number() -> number())
+  @spec get_activator(t()) :: (number() -> number())
   def get_activator(%Activation{activator: act}), do: act
 
-  @spec get_derivative(Activation.t()) :: (number() -> number())
+  @spec get_derivative(t()) :: any()
   def get_derivative(%Activation{derivative: deriv}), do: deriv
+
+  @spec get_name(t()) :: any()
+  def get_name(%Activation{name: name}), do: name
+
+  @spec get_inputs(t()) :: Data.data()
+  def get_inputs(%Activation{inputs: inputs}), do: inputs
 
   @spec relu(float()) :: float()
   def relu(n), do: max(n, 0.0)
@@ -139,7 +168,7 @@ defmodule Annex.Layer.Activation do
     fx * (1.0 - fx)
   end
 
-  @spec softmax(List1D.t()) :: List1D.t()
+  @spec softmax(data()) :: data()
   def softmax(values) when is_list(values) do
     exps = Enum.map(values, fn vx -> :math.exp(vx) end)
     exps_sum = Enum.sum(exps)
@@ -154,5 +183,12 @@ defmodule Annex.Layer.Activation do
   @spec tanh_deriv(float()) :: float()
   def tanh_deriv(x) do
     1.0 - (x |> :math.tanh() |> :math.pow(2))
+  end
+
+  defimpl Inspect do
+    @spec inspect(Activation.t(), any) :: String.t()
+    def inspect(%Activation{name: name}, _) do
+      "#Activation<[#{Kernel.inspect(name)}]>"
+    end
   end
 end

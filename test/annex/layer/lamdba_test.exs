@@ -20,7 +20,7 @@ defmodule Annex.Layer.LambdaTest do
     #   do_send.([lambda, data], data)
     # end
 
-    on_shapes = fn lambda ->
+    on_shape = fn lambda ->
       do_send.([lambda], {:any, :any})
     end
 
@@ -37,7 +37,7 @@ defmodule Annex.Layer.LambdaTest do
     end
 
     %Lambda{
-      on_shapes: on_shapes,
+      on_shape: on_shape,
       on_init_layer: on_init_layer,
       on_feedforward: on_feedforward,
       on_backprop: on_backprop
@@ -60,9 +60,9 @@ defmodule Annex.Layer.LambdaTest do
     {:ok, sender: sender, nils: nils}
   end
 
-  describe "on_shapes" do
+  describe "on_shape" do
     test "works with functions", %{sender: sender} do
-      assert Lambda.shapes(sender) == {:any, :any}
+      assert Lambda.shape(sender) == {:any, :any}
       assert_receive({:yes, [^sender], {:any, :any}}, 50)
     end
   end

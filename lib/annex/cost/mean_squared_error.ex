@@ -16,13 +16,13 @@ defmodule Annex.Cost.MeanSquaredError do
   the higher the penalty by a power of 2.
   """
 
-  alias Annex.{Cost, Utils}
+  alias Annex.{Cost, Data.List1D, Utils}
 
   @behaviour Cost
 
   def calculate(labels, predictions) do
     labels
-    |> Utils.subtract(predictions)
+    |> List1D.subtract(predictions)
     |> calculate()
   end
 

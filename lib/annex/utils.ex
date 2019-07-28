@@ -137,8 +137,4 @@ defmodule Annex.Utils do
       sum -> Enum.map(data, fn item -> item / sum end)
     end
   end
-
-  def subtract(a, b) do
-    zipmap(a, b, fn ax, bx -> ax - bx end)
-  end
 end

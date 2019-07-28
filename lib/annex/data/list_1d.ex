@@ -4,12 +4,18 @@ defmodule Annex.Data.List1D do
   """
   use Annex.Data
 
+  alias Annex.Utils
+
   @type t() :: [float(), ...]
 
   defguard is_list1D(data) when Data.is_flat_data(data)
 
   @impl Data
   @spec cast(any, {pos_integer()}) :: t()
+
+  def cast(data, {1, n}), do: cast(data, {n})
+  def cast(data, {n, 1}), do: cast(data, {n})
+
   def cast(data, {n} = shape) when is_list1D(data) and is_integer(n) do
     elements_count = length(data)
 
@@ -40,4 +46,18 @@ defmodule Annex.Data.List1D do
   @impl Data
   @spec is_type?(Data.data()) :: boolean
   def is_type?(data), do: is_list1D(data)
+
+  @impl Data
+  @spec apply_op(Data.flat_data(), Data.op(), Data.args()) :: Data.flat_data()
+  def apply_op(data, op, args) do
+    case {op, args} do
+      {:map, [func]} -> Enum.map(data, func)
+      {:subtract, [right]} -> subtract(data, right)
+    end
+  end
+
+  @spec subtract(t(), t()) :: t()
+  def subtract(a, b) do
+    Utils.zipmap(a, b, fn ax, bx -> ax - bx end)
+  end
 end

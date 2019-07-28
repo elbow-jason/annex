@@ -35,7 +35,8 @@ defmodule Annex.SequenceMOrFTest do
              |> Annex.sequence()
              |> Annex.train(data, labels,
                name: "male or female based on normalized weight and height",
-               halt_condition: {:epochs, 50_000}
+               halt_condition: {:epochs, 8_000},
+               log_interval: 1_000
              )
 
     [alice_pred] = Annex.predict(seq, [-2.0, -1.0])

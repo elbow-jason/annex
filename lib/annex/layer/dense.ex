@@ -4,29 +4,32 @@ defmodule Annex.Layer.Dense do
   """
 
   use Annex.Debug, debug: true
+  alias Annex.Data.DMatrix
+
+  require Annex.Data
 
   alias Annex.{
-    # Data.List1D,
+    Data,
     Data.Shape,
     Data.DMatrix,
     Layer,
     Layer.Backprop,
     Layer.Dense
-    # Layer.Neuron,
-    # Utils
   }
 
   import Annex.Utils, only: [is_pos_integer: 1]
 
   @behaviour Layer
 
+  @type data_type :: DMatrix.t()
+
   @type t :: %__MODULE__{
-          weights: DMatrix.t(),
-          biases: DMatrix.t(),
-          rows: pos_integer(),
+          weights: data_type() | nil,
+          biases: data_type() | nil,
+          rows: pos_integer() | nil,
           columns: pos_integer() | nil,
-          input: list(float()),
-          output: list(float()),
+          input: data_type() | nil,
+          output: data_type() | nil,
           initialized?: boolean()
         }
 
@@ -34,8 +37,8 @@ defmodule Annex.Layer.Dense do
             biases: nil,
             rows: nil,
             columns: nil,
-            input: [],
-            output: [],
+            input: nil,
+            output: nil,
             initialized?: false
 
   def build(rows, columns) when is_pos_integer(rows) and is_pos_integer(columns) do
@@ -70,7 +73,7 @@ defmodule Annex.Layer.Dense do
     debug_assert "Dense biases must be a list of floats", do: Enum.all?(biases, &is_float/1)
 
     debug_assert "Dense biases must be the same length as the count of rows" do
-      length(biases) == rows
+      is_list(biases) && length(biases) == rows
     end
 
     %Dense{
@@ -82,19 +85,13 @@ defmodule Annex.Layer.Dense do
     }
   end
 
-  defp put_output(%Dense{} = dense, output) do
-    %Dense{dense | output: output}
-  end
-
   defp get_output(%Dense{output: o}), do: o
 
-  defp get_weights(%Dense{weights: weights}), do: IO.inspect(weights, label: :GET_WEEEEIGHTS)
+  defp get_weights(%Dense{weights: weights}), do: weights
 
   defp get_biases(%Dense{biases: biases}), do: biases
 
-  defp put_input(%Dense{} = dense, input) do
-    %Dense{dense | input: input}
-  end
+  defp get_input(%Dense{input: input}), do: input
 
   @spec rows(t()) :: pos_integer()
   def rows(%Dense{rows: n}), do: n
@@ -106,71 +103,159 @@ defmodule Annex.Layer.Dense do
   @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
   def init_layer(layer, opts \\ [])
 
-  def init_layer(%Dense{initialized?: false} = layer, _opts) do
-    rows = rows(layer)
-    columns = columns(layer)
+  def init_layer(%Dense{initialized?: true} = layer, _opts) do
+    {:ok, layer}
+  end
+
+  def init_layer(%Dense{initialized?: false} = dense, opts) do
+    previous_layer = Keyword.get(opts, :previous_layer)
+    next_layer = Keyword.get(opts, :next_layer)
+    rows = resolve_init_rows(dense, opts)
+    columns = columns(dense)
+
+    debug_assert "rows is a positive integer" do
+      is_pos_integer(rows) == true
+    end
+
+    debug_assert "columns is a positive integer" do
+      is_pos_integer(rows) == true
+    end
 
     initialized = %Dense{
-      layer
-      | weights: DMatrix.new_random(rows, columns),
-        biases: DMatrix.ones(rows, 1),
+      dense
+      | weights: resolve_init_weights(dense, rows, columns),
+        biases: resolve_init_biases(dense, rows),
         initialized?: true
     }
 
     {:ok, initialized}
   end
 
-  def init_layer(%Dense{initialized?: true} = layer, _opts) do
-    {:ok, layer}
+  defp resolve_init_weights(%Dense{} = dense, rows, columns) do
+    dense
+    |> get_weights()
+    |> build_dmatrix(rows, columns, fn ->
+      DMatrix.new_random(rows, columns)
+    end)
+  end
+
+  defp resolve_init_biases(%Dense{} = dense, rows) do
+    dense
+    |> get_biases()
+    |> build_dmatrix(rows, 1, fn ->
+      DMatrix.ones(rows, 1)
+    end)
+  end
+
+  defp build_dmatrix(item, rows, columns, builder) do
+    case item do
+      nil ->
+        builder.()
+
+      %DMatrix{} = matrix ->
+        debug_assert "matrix shape matches rows and columns" do
+          shape = DMatrix.shape(matrix)
+          shape == {rows, columns}
+        end
+
+        matrix
+
+      data when Data.is_flat_data(data) ->
+        DMatrix.build(data, rows, columns)
+    end
+  end
+
+  def resolve_init_rows(%Dense{rows: rows}, _opts) when is_pos_integer(rows) do
+    rows
+  end
+
+  def resolve_init_rows(%Dense{rows: nil}, opts) do
+    prev_layer = Keyword.get(opts, :prev_layer)
+
+    debug_assert "rows must be specified if there is no previous layer" do
+      prev_layer != nil
+    end
+
+    resolve_init_rows_from_layer(prev_layer)
+  end
+
+  defp resolve_init_rows_from_layer(layer) do
+    layer
+    |> Layer.shape()
+    |> case do
+      {n} when is_pos_integer(n) -> n
+      {n, _} when is_pos_integer(n) -> n
+    end
   end
 
   @impl Layer
   @spec feedforward(t(), DMatrix.t()) :: {t(), DMatrix.t()}
-  def feedforward(%Dense{} = layer, input) do
+  def feedforward(%Dense{} = dense, inputs) do
+    debug_assert "Dense.feedforward/2 input must be dottable with the weights" do
+      weights = get_weights(dense)
+      {_, dense_columns} = Data.shape(DMatrix, weights)
+      {inputs_rows, _} = Data.shape(DMatrix, inputs)
+      dense_columns == inputs_rows
+    end
+
     output =
-      layer
+      dense
       |> get_weights()
-      |> DMatrix.dot(input)
-      |> DMatrix.add(get_biases(layer))
+      |> DMatrix.dot(inputs)
+      |> DMatrix.add(get_biases(dense))
 
-    updated_layer =
-      layer
-      |> put_input(input)
-      |> put_output(output)
+    updated_dense = %Dense{
+      dense
+      | input: inputs,
+        output: output
+    }
 
-    {updated_layer, output}
+    {updated_dense, output}
   end
 
   @impl Layer
-  # @spec backprop(t(), DMatrix.t(), Backprop.t()) :: {t(), DMatrix.t(), Backprop.t()}
-  @spec backprop(t(), DMatrix.t(), keyword) :: {t(), DMatrix.t(), keyword}
-  def backprop(%Dense{} = dense, error, props) do
+  @spec backprop(t(), data_type(), Backprop.t()) :: {t(), data_type(), Backprop.t()}
+  def backprop(%Dense{} = dense, %DMatrix{} = error, props) do
     learning_rate = Backprop.get_learning_rate(props)
     derivative = Backprop.get_derivative(props)
-    # negative_gradient = Backprop.get_negative_gradient(props)
-
     output = get_output(dense)
 
+    debug_assert "backprop error must have the same shape as output" do
+      output_shape = Data.shape(DMatrix, output)
+      error_shape = Data.shape(DMatrix, error)
+      output_shape == error_shape
+    end
+
     weights = get_weights(dense)
+    input = get_input(dense)
+
     biases = get_biases(dense)
-
-    weights_t = DMatrix.transpose(weights)
-
-    adjusted_error = DMatrix.multiply(error, learning_rate)
 
     gradients =
       output
       |> DMatrix.map(derivative)
-      |> DMatrix.dot(adjusted_error)
+      |> DMatrix.multiply(error)
+      |> DMatrix.multiply(learning_rate)
 
-    weight_deltas = DMatrix.dot(weights_t, gradients)
+    input_T = DMatrix.transpose(input)
 
-    IO.inspect(weights, label: :weights_asdasdasd)
-    IO.inspect(weight_deltas, label: :weight_deltas_asdasdasd)
+    debug_assert "gradients must be dottable with input_T" do
+      {_, gradients_cols} = Data.shape(DMatrix, gradients)
+      {input_rows, _} = Data.shape(DMatrix, input_T)
 
-    updated_weights = DMatrix.add(weights, weight_deltas)
-    updated_biases = DMatrix.add(biases, gradients)
-    next_error = DMatrix.multiply(weights_t, error)
+      gradients_cols == input_rows
+    end
+
+    weight_deltas = DMatrix.dot(gradients, input_T)
+
+    updated_weights = DMatrix.subtract(weights, weight_deltas)
+
+    updated_biases = DMatrix.subtract(biases, gradients)
+
+    next_error =
+      weights
+      |> DMatrix.transpose()
+      |> DMatrix.dot(error)
 
     updated_dense = %Dense{
       dense
@@ -180,20 +265,27 @@ defmodule Annex.Layer.Dense do
         biases: updated_biases
     }
 
-    # {layer, next_error, props}
     {updated_dense, next_error, props}
   end
 
   @impl Layer
-  @spec data_type :: DMatrix
-  def data_type, do: DMatrix
+  @spec data_type(t()) :: DMatrix
+  def data_type(_), do: DMatrix
 
   @impl Layer
-  @spec shapes(t()) :: {Shape.t(), Shape.t()}
-  def shapes(%Dense{} = dense) do
-    {{columns(dense)}, {rows(dense)}}
+  @spec shape(t()) :: Shape.t()
+  def shape(%Dense{} = dense) do
+    {rows(dense), columns(dense)}
   end
 
-  defp put_random_weights(%Dense{rows: rows, columns: columns} = layer) do
+  defimpl Inspect do
+    def inspect(dense, _) do
+      shape =
+        dense
+        |> Dense.shape()
+        |> Kernel.inspect()
+
+      "#Dense<[#{shape}]>"
+    end
   end
 end
