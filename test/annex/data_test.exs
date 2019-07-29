@@ -2,6 +2,7 @@ defmodule Annex.DataTest do
   alias Annex.{
     AnnexError,
     Data,
+    Data.DMatrix,
     Layer.Dense
   }
 
