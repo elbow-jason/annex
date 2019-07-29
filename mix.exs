@@ -52,7 +52,9 @@ defmodule Annex.MixProject do
       {:dialyxir, "~> 1.0.0-rc.6", only: :dev, runtime: false},
       {:earmark, "~> 1.3.2", only: :dev, runtime: false},
       {:nimble_csv, "~> 0.6.0", only: [:dev, :test]},
-      {:ex_doc, "~> 0.20.2", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.20.2", only: :dev, runtime: false},
+      {:tensor, "~> 2.1"},
+      {:map_array, github: "elbow-jason/map_array", rev: "a9c3077"}
     ]
   end
 

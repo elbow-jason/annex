@@ -17,8 +17,8 @@ defmodule Annex.Layer do
   @callback feedforward(t(), Data.data()) :: {struct(), Data.data()}
   @callback backprop(t(), Data.data(), Backprop.t()) :: {t(), Data.data(), Backprop.t()}
   @callback init_layer(t(), Keyword.t()) :: {:ok, t()} | {:error, any()}
-  @callback data_type() :: Data.type()
-  @callback shapes(t()) :: {Shape.t(), Shape.t()}
+  @callback data_type(t()) :: Data.type() | nil
+  @callback shape(t()) :: Shape.t() | nil
 
   @spec feedforward(struct(), any()) :: {struct(), any()}
   def feedforward(%module{} = layer, inputs) do
@@ -30,41 +30,41 @@ defmodule Annex.Layer do
     module.backprop(layer, error, props)
   end
 
-  @spec init_layer(struct(), Keyword.t()) :: struct()
-  def init_layer(%module{} = layer, opts \\ []) do
+  @spec init_layer(struct(), Keyword.t()) :: {:ok, struct()} | {:error, any()}
+  def init_layer(%module{} = layer, opts) do
     module.init_layer(layer, opts)
   end
 
   @spec data_type(atom | struct()) :: Data.type()
-  def data_type(%module{}), do: data_type(module)
-  def data_type(module) when is_atom(module), do: module.data_type()
+  def data_type(%module{} = layer), do: module.data_type(layer)
 
-  def shapes(%module{} = layer), do: module.shapes(layer)
+  @spec shape(t()) :: Shape.t() | nil
+  def shape(%module{} = layer), do: module.shape(layer)
 
-  @spec convert(t(), Data.data(), Shape.t()) :: Data.data()
+  @spec convert(t(), Data.data(), Shape.t()) :: {:ok, Data.data()} | {:error, any()}
   def convert(layer, data, shape) do
     layer
     |> data_type()
     |> Data.convert(data, shape)
   end
 
-  # defp do_convert(layer_shape, data_type, data) do
-  #   with(
-  #     {:ok, data_shape} <- fetch_data_shape(data_type, data),
-  #     {:fit?, false} <- {:fit?, Shape.match?(data_shape, layer_shape)}
-  #   ) do
-  #     data
-  #   else
-  #     _ ->
-  #       Data.cast(data_type, data, layer_shape)
-  #   end
-  # end
+  @spec forward_shape(t()) :: {pos_integer, :any} | nil
+  def forward_shape(layer) do
+    layer
+    |> shape()
+    |> case do
+      nil -> nil
+      shape -> {Shape.resolve_columns(shape), :any}
+    end
+  end
 
-  # defp fetch_data_shape(data_type, data) do
-  #   if Data.is_type?(data_type, data) do
-  #     {:ok, Data.shape(data_type, data)}
-  #   else
-  #     :error
-  #   end
-  # end
+  @spec backward_shape(t()) :: {:any, pos_integer} | nil
+  def backward_shape(layer) do
+    layer
+    |> shape()
+    |> case do
+      nil -> nil
+      shape -> {:any, Shape.resolve_rows(shape)}
+    end
+  end
 end

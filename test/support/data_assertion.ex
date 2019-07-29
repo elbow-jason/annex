@@ -10,22 +10,6 @@ defmodule Annex.DataAssertion do
     Data.Shape
   }
 
-  def cast(type, data, :defer) do
-    casted = Data.cast(type, data, :defer)
-
-    assert casted == data, """
-    Annex.Data.cast/3 failed to produce the exact same data when given :defer as the shape
-
-    invalid_result: #{inspect(casted)}
-
-    type: #{inspect(type)}
-    data: #{inspect(data)}
-    shape: :defer
-    """
-
-    casted
-  end
-
   def cast(type, data, shape) when is_tuple(shape) do
     product = Shape.product(shape)
 
@@ -50,18 +34,25 @@ defmodule Annex.DataAssertion do
     shape: #{inspect(shape)}
     """
 
-    casted = Data.cast(type, data, shape)
+    casted =
+      case Data.cast(type, data, shape) do
+        {:ok, casted} ->
+          assert Data.is_type?(type, casted) == true, """
+          Data.cast/3 failed to produce the expected type.
 
-    assert Data.is_type?(type, casted) == true, """
-    Data.cast/3 failed to produce the expected type.
+          invalid_result: #{inspect(casted)}
 
-    invalid_result: #{inspect(casted)}
+          type: #{inspect(type)}
+          data: #{inspect(data)}
+          shape: #{inspect(shape)}
 
-    type: #{inspect(type)}
-    data: #{inspect(data)}
-    shape: #{inspect(shape)}
+          """
 
-    """
+          casted
+
+        {:error, error} ->
+          raise error
+      end
 
     casted
   end
@@ -122,7 +113,7 @@ defmodule Annex.DataAssertion do
     assert Shape.is_shape?(shape), """
     For Annex.Data.shape/2 failed to produce a valid shape.
 
-    A shape must be a tuple of integers (non-empty) or the atom :defer.
+    A shape must be a non-empty tuple of integer | :any
 
     invalid_shape: #{inspect(shape)}
 
@@ -148,12 +139,6 @@ defmodule Annex.DataAssertion do
     """
 
     all_ints?
-  end
-
-  def shape_product(:defer) do
-    raise """
-    Shape.product/1 was attempted to be called during testing.
-    """
   end
 
   def shape_product(shape) when is_tuple(shape) do

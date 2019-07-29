@@ -5,16 +5,16 @@ defmodule Annex.Layer.Sequence do
   """
 
   alias Annex.{
+    AnnexError,
     Cost,
     Data,
-    Data.List1D,
+    Data.DMatrix,
     Data.Shape,
     Defaults,
     Layer,
     Layer.Backprop,
     Layer.Sequence,
-    Learner,
-    Utils
+    Learner
   }
 
   require Logger
@@ -22,39 +22,40 @@ defmodule Annex.Layer.Sequence do
   @behaviour Learner
   @behaviour Layer
 
+  @type layers :: MapArray.t()
+
   @type t :: %__MODULE__{
-          layers: list(Layer.t()),
+          layers: layers,
           initialized?: boolean(),
           init_options: Keyword.t(),
           train_options: Keyword.t(),
           cost: Cost.t()
         }
 
-  defstruct layers: [],
+  defstruct layers: %{},
             initialized?: false,
             init_options: [],
             train_options: [],
             cost: Defaults.get_defaults(:cost)
 
   @spec build(list(Layer.t()), Keyword.t()) :: Sequence.t()
-  def build(layers, opts \\ []) do
+  def build(layers, _opts \\ []) when is_list(layers) do
     %Sequence{
-      layers: layers,
-      initialized?: Keyword.get(opts, :initialized?, false)
+      initialized?: false,
+      layers: MapArray.new(layers)
     }
   end
 
-  @spec get_cost(Sequence.t()) :: Cost.t()
+  @spec add_layer(t(), struct()) :: t()
+  def add_layer(%Sequence{} = seq, %_{} = layer) do
+    %Sequence{seq | layers: seq |> get_layers() |> MapArray.append(layer)}
+  end
+
+  @spec get_cost(t()) :: Cost.t()
   def get_cost(%Sequence{cost: cost}), do: cost
 
-  @spec get_layers(Sequence.t()) :: list(Layer.t())
-  def get_layers(%Sequence{layers: layers}) do
-    layers
-  end
-
-  defp put_layers(%Sequence{} = seq, layers) do
-    %Sequence{seq | layers: layers}
-  end
+  @spec get_layers(t()) :: layers
+  def get_layers(%Sequence{layers: layers}), do: layers
 
   @impl Learner
   @spec train_opts(keyword()) :: keyword()
@@ -71,8 +72,8 @@ defmodule Annex.Layer.Sequence do
   end
 
   @impl Layer
-  @spec data_type :: List1D
-  def data_type, do: List1D
+  @spec data_type(t()) :: DMatrix
+  def data_type(_), do: DMatrix
 
   @impl Layer
   @spec init_layer(Sequence.t(), any()) :: {:error, any()} | {:ok, Sequence.t()}
@@ -83,143 +84,245 @@ defmodule Annex.Layer.Sequence do
   end
 
   def init_layer(%Sequence{initialized?: false} = seq1, _opts) do
-    seq1
-    |> get_layers()
-    |> prepare_for_chunkify()
-    |> chunkify()
-    |> Enum.map(fn {previous_layer, layer, next_layer} ->
-      layer_opts = [
-        previous_layer: previous_layer,
-        next_layer: next_layer
-      ]
+    initialized_layers =
+      seq1
+      |> get_layers()
+      |> MapArray.map(fn layer, i ->
+        case Layer.init_layer(layer, []) do
+          {:ok, layer} ->
+            {i, layer}
 
-      Layer.init_layer(layer, layer_opts)
+          err ->
+            raise Annex.AnnexError,
+              message: """
+              Annex.Layer.Sequence failed to initialize layer.
+
+              error: #{inspect(err)}
+              layer: #{inspect(layer)}
+              sequence: #{inspect(seq1)}
+              """
+        end
+      end)
+      |> Map.new()
+
+    initialized_seq = %Sequence{
+      seq1
+      | layers: initialized_layers,
+        initialized?: true
+    }
+
+    {:ok, initialized_seq}
+  end
+
+  @impl Layer
+  @spec feedforward(Sequence.t(), Data.data()) :: {Sequence.t(), Data.data()}
+  def feedforward(%Sequence{} = seq, seq_inputs) do
+    layers1 = get_layers(seq)
+
+    {output, layers2} =
+      MapArray.reduce(layers1, {seq_inputs, %{}}, fn layer1, {inputs1, layers_acc}, i ->
+        with(
+          {:ok, inputs2} <- do_convert_for_feedforward(layers1, i, inputs1),
+          {layer2, output} <- Layer.feedforward(layer1, inputs2)
+        ) do
+          {output, MapArray.append(layers_acc, layer2)}
+        else
+          {:error, %AnnexError{} = error} ->
+            details = [
+              step: :backprop,
+              layer: layer1,
+              index: i,
+              sequence: seq
+            ]
+
+            raise AnnexError.add_details(error, details)
+        end
+      end)
+
+    {%Sequence{seq | layers: layers2}, output}
+  end
+
+  defp do_convert_for_feedforward(layers, start_index, data) do
+    layers
+    |> MapArray.seek_up(start_index, fn layer ->
+      Layer.shape(layer) && Layer.data_type(layer)
     end)
-    |> Enum.group_by(
-      fn {status, _} -> status end,
-      fn {_, initialized} -> initialized end
-    )
     |> case do
-      %{error: errors} ->
-        {:error, errors}
+      :error ->
+        {:ok, data}
 
-      %{ok: initialized_layers} ->
-        initialized_seq = %Sequence{
-          seq1
-          | layers: initialized_layers,
-            initialized?: true
-        }
+      {:ok, layer} ->
+        data_type = Layer.data_type(layer)
+        shape = shape_for_feedforward(layer)
+        Data.convert(data_type, data, shape)
+    end
+  end
 
-        {:ok, initialized_seq}
+  defp do_convert_for_backprop(layers, start_index, data) do
+    layers
+    |> MapArray.seek_down(start_index, fn layer ->
+      Layer.shape(layer) && Layer.data_type(layer)
+    end)
+    |> case do
+      :error ->
+        {:ok, data}
+
+      {:ok, layer} ->
+        data_type = Layer.data_type(layer)
+        shape = shape_for_backprop(layer)
+        Data.convert(data_type, data, shape)
+    end
+  end
+
+  defp shape_for_feedforward(layer) do
+    case Layer.shape(layer) do
+      {_rows, columns} -> {columns, :any}
+      {columns} -> {columns, :any}
+    end
+  end
+
+  defp shape_for_backprop(layer) do
+    case Layer.shape(layer) do
+      {rows, _columns} -> {rows, :any}
+      {_} -> {1, :any}
     end
   end
 
   @impl Layer
-  @spec feedforward(Sequence.t(), any()) :: {Sequence.t(), any()}
-  def feedforward(%Sequence{} = seq, inputs) do
-    {output, layers} =
-      seq
-      |> get_layers()
-      |> Enum.reduce({inputs, []}, fn layer, {input, layers} ->
-        {input_shape, _} = Layer.shapes(layer)
-        converted_inputs = Layer.convert(layer, input, input_shape)
-        {updated_layer, output} = Layer.feedforward(layer, converted_inputs)
-        {output, [updated_layer | layers]}
-      end)
-      |> case do
-        {output, rev_layers} ->
-          {output, Enum.reverse(rev_layers)}
-      end
-
-    {%Sequence{seq | layers: layers}, output}
-  end
-
-  @impl Layer
-  @spec backprop(Sequence.t(), any(), keyword()) :: {Sequence.t(), any(), keyword()}
-  def backprop(%Sequence{} = seq, seq_losses, backprops) do
-    {layers, final_losses, updated_backprop} =
-      seq
-      |> get_layers()
-      |> Enum.reverse()
-      |> Enum.reduce({[], seq_losses, backprops}, fn layer, {layers, losses, props} ->
-        {_, backprop_shape} = Layer.shapes(layer)
-        converted_losses = Layer.convert(layer, losses, backprop_shape)
-        {updated_layer, next_losses, next_props} = Layer.backprop(layer, converted_losses, props)
-        {[updated_layer | layers], next_losses, next_props}
-      end)
-
-    {put_layers(seq, layers), final_losses, updated_backprop}
-  end
-
-  @impl Layer
-  @spec shapes(t()) :: {Shape.t(), Shape.t()}
-  def shapes(%Sequence{} = seq) do
+  @spec backprop(Sequence.t(), Data.data(), Backprop.t()) ::
+          {Sequence.t(), Data.data(), Backprop.t()}
+  def backprop(%Sequence{} = seq, seq_errors, seq_backprops) do
     layers = get_layers(seq)
 
-    {input_shape, _} =
-      layers
-      |> List.first()
-      |> Layer.shapes()
+    {
+      output_errors,
+      output_props,
+      output_layers
+    } =
+      MapArray.reverse_reduce(layers, {seq_errors, seq_backprops, %{}}, fn
+        layer, {errors, backprops, layers_acc}, i ->
+          with(
+            {:ok, errors2} <- do_convert_for_backprop(layers, i, errors),
+            {layer2, errors3, backprops2} <- Layer.backprop(layer, errors2, backprops),
+            layers_acc2 <- Map.put(layers_acc, i, layer2)
+          ) do
+            {errors3, backprops2, layers_acc2}
+          else
+            {:error, %AnnexError{} = error} ->
+              details = [
+                step: :backprop,
+                layer: layer,
+                index: i,
+                sequence: seq
+              ]
 
-    {_, backprop_shape} =
-      layers
-      |> List.last()
-      |> Layer.shapes()
+              raise AnnexError.add_details(error, details)
+          end
+      end)
 
-    {input_shape, backprop_shape}
+    {%Sequence{seq | layers: output_layers}, output_errors, output_props}
+  end
+
+  @impl Layer
+  @spec shape(t()) :: Shape.t()
+  def shape(%Sequence{} = seq) do
+    {_rows, columns} = first_shape(seq)
+    {rows, _columns} = last_shape(seq)
+    {rows, columns}
+  end
+
+  defp first_shape(%Sequence{} = seq) do
+    seq
+    |> get_layers
+    |> MapArray.seek_up(fn layer ->
+      Layer.shape(layer)
+    end)
+    |> case do
+      :error ->
+        raise Annex.AnnexError,
+          message: """
+          Sequence requires at least one shaped layer.
+          """
+
+      {:ok, layer} ->
+        Layer.shape(layer)
+    end
+  end
+
+  defp last_shape(%Sequence{} = seq) do
+    seq
+    |> get_layers
+    |> MapArray.seek_down(fn layer ->
+      Layer.shape(layer)
+    end)
+    |> case do
+      :error ->
+        raise Annex.AnnexError,
+          message: """
+          Sequence requires at least one shaped layer.
+          """
+
+      {:ok, layer} ->
+        Layer.shape(layer)
+    end
   end
 
   @impl Learner
-  @spec predict(Sequence.t(), any()) :: any()
+  @spec predict(Sequence.t(), any()) :: Data.data()
   def predict(%Sequence{} = seq, data) do
     {_, prediction} = Layer.feedforward(seq, data)
     prediction
   end
 
   @impl Learner
-  @spec train(t(), any(), any(), Keyword.t()) :: {t(), float()}
+  @spec train(t(), Data.data(), Data.data(), Keyword.t()) :: {t(), Learner.train_output()}
   def train(%Sequence{} = seq1, data, labels, _opts) do
     {%Sequence{} = seq2, prediction} = Layer.feedforward(seq1, data)
 
-    prediction_data_type =
-      seq1
-      |> get_layers()
-      |> List.last()
-      |> Layer.data_type()
-
-    prediction = Data.to_flat_list(prediction_data_type, prediction)
+    prediction = Data.to_flat_list(prediction)
     labels = Data.to_flat_list(labels)
 
-    error = error(prediction, labels)
+    errors =
+      prediction
+      |> error(labels)
+      |> Data.to_flat_list()
 
-    cost = get_cost(seq1)
-    # negative gradient so -1.0
-    negative_gradient = -1.0 * Cost.derivative(cost, error, data, labels)
-    proportioned_error = Utils.proportions(error)
+    props = Backprop.new()
+    {seq3, _error2, _props} = Layer.backprop(seq2, errors, props)
 
-    props = Backprop.new(negative_gradient: negative_gradient)
-    {seq3, _next_error, _props} = Layer.backprop(seq2, proportioned_error, props)
+    loss =
+      seq1
+      |> get_cost()
+      |> Cost.calculate(errors)
 
-    loss = Cost.calculate(cost, error)
+    output = %{
+      loss: loss,
+      data: data,
+      labels: labels,
+      prediction: prediction,
+      errors: errors
+    }
 
-    {seq3, loss}
+    {seq3, output}
   end
 
-  def error(outputs, labels), do: Utils.subtract(outputs, labels)
-
-  defp prepare_for_chunkify(layers) do
-    [nil] ++ layers ++ [nil]
+  @spec error(Data.data(), Data.data()) :: Data.data()
+  def error(outputs, labels) do
+    Data.apply_op(outputs, :subtract, [labels])
   end
 
-  defp chunkify(prepared_layers) do
-    chunkify(prepared_layers, [])
-  end
+  defimpl Inspect do
+    def inspect(seq, _) do
+      details =
+        seq
+        |> Sequence.get_layers()
+        |> MapArray.map(fn %module{} = layer ->
+          Kernel.inspect({module, Layer.data_type(layer), Layer.shape(layer)})
+        end)
+        |> Enum.intersperse("\n\t")
+        |> IO.iodata_to_binary()
 
-  defp chunkify([prev, current, next], acc) do
-    Enum.reverse([{prev, current, next} | acc])
-  end
-
-  defp chunkify([prev, current, next | rest], acc) do
-    chunkify([current, next | rest], [{prev, current, next} | acc])
+      "#Sequence<[\n\t#{details}\n]>"
+    end
   end
 end

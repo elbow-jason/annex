@@ -94,14 +94,14 @@ defmodule Annex.Examples.Iris do
     {:ok, %Sequence{} = seq, _output} =
       Annex.sequence([
         # Annex.dropout(0.001),
-        Annex.dense(100, 4),
+        Annex.dense(10, 4),
         Annex.activation(:tanh),
-        Annex.dense(3, 100),
+        Annex.dense(3, 10),
         Annex.activation(:sigmoid)
       ])
       |> Annex.train(train_data, train_labels,
         name: :iris,
-        learning_rate: 0.07,
+        learning_rate: 0.17,
         halt_condition: {:epochs, 20_000}
       )
 

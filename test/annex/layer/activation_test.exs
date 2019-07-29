@@ -1,6 +1,18 @@
 defmodule Annex.Layer.ActivationTest do
   use ExUnit.Case
+
   alias Annex.Layer.Activation
+
+  describe "init_layer/2" do
+    test "turns initialized? from false to true" do
+      activation1 = Activation.build(:sigmoid)
+      assert %Activation{initialized?: false} = activation1
+
+      opts = []
+      assert {:ok, activation2} = Activation.init_layer(activation1, opts)
+      assert %Activation{initialized?: true} = activation2
+    end
+  end
 
   test "relu/1" do
     assert Activation.relu(1.0) == 1.0

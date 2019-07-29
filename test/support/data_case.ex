@@ -145,13 +145,4 @@ defmodule Annex.DataCase do
     invalid_result: #{inspect(result)}
     """
   end
-
-  # defp assert_many_conversion(type, datas_and_shapes) do
-  #   Enum.each(datas_and_shapes, fn {data, _shape, _target_shape} ->
-  #     assert_one_conversion(type, data)
-  #   end)
-  # end
-
-  # defp assert_one_conversion(type, data) do
-  # end
 end

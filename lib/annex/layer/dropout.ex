@@ -2,9 +2,10 @@ defmodule Annex.Layer.Dropout do
   @moduledoc """
   Given a `frequency` the dropout layer randomly drops an input at the `frequency`.
   """
+  use Annex.Debug, debug: true
+
   alias Annex.{
-    Data.List1D,
-    Data.Shape,
+    Data,
     Layer,
     Layer.Backprop,
     Layer.Dropout,
@@ -17,14 +18,18 @@ defmodule Annex.Layer.Dropout do
           frequency: float()
         }
 
+  @type data :: Data.data()
+
   defstruct [:frequency]
 
+  defguard is_frequency(x) when is_float(x) and x >= 0.0 and x <= 1.0
+
   @spec build(float()) :: t()
-  def build(frequency)
-      when is_float(frequency) and frequency >= 0.0 and frequency <= 1.0 do
+  def build(frequency) when is_frequency(frequency) do
     %Dropout{frequency: frequency}
   end
 
+  @spec frequency(t()) :: float()
   def frequency(%Dropout{frequency: f}), do: f
 
   @impl Layer
@@ -34,25 +39,27 @@ defmodule Annex.Layer.Dropout do
   end
 
   @impl Layer
-  @spec feedforward(t(), List1D.t()) :: {t(), List1D.t()}
+  @spec feedforward(t(), data()) :: {t(), data()}
   def feedforward(%Dropout{} = layer, inputs) do
     {layer, drop(inputs, frequency(layer))}
   end
 
   @impl Layer
-  @spec backprop(t(), List1D.t(), Backprop.t()) :: {t(), List1D.t(), Backprop.t()}
+  @spec backprop(t(), data(), Backprop.t()) :: {t(), data(), Backprop.t()}
   def backprop(%Dropout{} = dropout, error, backprop), do: {dropout, error, backprop}
 
   @impl Layer
-  @spec data_type :: List1D
-  def data_type, do: List1D
+  @spec data_type(t()) :: List1D
+  def data_type(%Dropout{}), do: List1D
 
   @impl Layer
-  @spec shapes(t()) :: {Shape.t(), Shape.t()}
-  def shapes(%Dropout{}), do: {:defer, :defer}
+  @spec shape(t()) :: nil
+  def shape(%Dropout{}), do: nil
 
   defp drop(inputs, frequency) do
-    Enum.map(inputs, fn value -> zeroize_by_frequency(frequency, value) end)
+    data_type = Data.infer_type(inputs)
+    dropper = fn value -> zeroize_by_frequency(frequency, value) end
+    Data.apply_op(data_type, inputs, :map, [dropper])
   end
 
   defp zeroize_by_frequency(frequency, value) do

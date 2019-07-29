@@ -7,16 +7,24 @@ defmodule Annex.Data do
   implementer from the `c:data_type/0` callback.
   """
   alias Annex.{
+    AnnexError,
     Data,
+    Data.List1D,
+    Data.List2D,
     Data.Shape
   }
+
+  require Shape
 
   @typedoc """
   A module that implements the Annex.Data Behaviour.
   """
-  @type type :: module() | :defer
-  @type data :: any()
+  @type type :: module()
+
   @type flat_data :: [float(), ...]
+  @type data :: struct() | flat_data() | [flat_data()]
+  @type op :: any()
+  @type args :: list(any())
 
   defguard is_flat_data(data) when is_list(data) and is_float(hd(data))
 
@@ -24,6 +32,7 @@ defmodule Annex.Data do
   @callback to_flat_list(data) :: list(float())
   @callback shape(data) :: Shape.t()
   @callback is_type?(any) :: boolean
+  @callback apply_op(data(), op(), args()) :: data()
 
   defmacro __using__(_) do
     quote do
@@ -38,48 +47,46 @@ defmodule Annex.Data do
   @doc """
   Annex.Data.cast/4 calls cast/3 for an Annex.Data behaviour implementing module.
 
-  Valid shapes are a non-empty tuple of positive integers or the atom `:defer`
+  Valid shapes are a non-empty tuple of positive integers or any the atom :any.
+  e.g. `{2, 3}` or `{3, :any}`
   """
 
-  def cast(:defer, data, _) do
-    # defer if type is :defer
-    data
-  end
-
-  def cast(_type, data, :defer) do
-    # defer if shape is :defer
-    data
-  end
-
   def cast(type, data, {}) when is_list(data) do
-    raise ArgumentError,
-      message: """
-      Annex.Data.cast got an empty tuple for shape.
+    message = "Annex.Data.cast/3 got an empty tuple for shape"
+    error = AnnexError.build(message, type: type, data: data)
+    {:error, error}
+  end
 
-      Suggestion: use `:defer` to defer casting to another data type or layer.
-
-      type: #{inspect(type)}
-      data: #{inspect(data)}
-      """
+  def cast(type, data, nil) do
+    message = "Annex.Data.cast/3 got nil for a shape"
+    error = AnnexError.build(message, type: type, data: data)
+    {:error, error}
   end
 
   def cast(type, data, shape) when is_tuple(shape) and is_atom(type) do
-    type.cast(data, shape)
+    {:ok, type.cast(data, shape)}
+  end
+
+  def cast(data, shape) when Shape.is_shape(shape) do
+    data
+    |> infer_type()
+    |> cast(data, shape)
   end
 
   @doc """
-  Flattens an Annex.Data into a list of floats.
+  Flattens an Annex.Data into a list of floats via the type's callback.
   """
   @spec to_flat_list(type(), data()) :: Data.flat_data()
-  def to_flat_list(:defer, data) when is_list(data), do: List.flatten(data)
-  def to_flat_list(:defer, data), do: to_flat_list(:defer, Enum.into(data, []))
   def to_flat_list(type, data), do: type.to_flat_list(data)
 
+  @doc """
+  Flattens an Annex.Data into a list of floats via Enum.into/2.
+  """
   @spec to_flat_list(Data.data()) :: Data.flat_data()
   def to_flat_list(data) do
     data
-    |> Enum.into([])
-    |> List.flatten()
+    |> infer_type()
+    |> to_flat_list(data)
   end
 
   @doc """
@@ -88,8 +95,11 @@ defmodule Annex.Data do
   The shape of data is used to cast between the expected shapes from one Annex.Layer
   to the next or from one Annex.Sequence to the next.
   """
-  def shape(:defer, _data), do: :defer
+  @spec shape(type(), data()) :: Shape.t()
   def shape(type, data), do: type.shape(data)
+
+  @spec shape(data()) :: Shape.t()
+  def shape(data), do: data |> infer_type() |> shape(data)
 
   @doc """
   Given a type (Data implementing module) and some `data` returns true or false if the
@@ -97,7 +107,7 @@ defmodule Annex.Data do
 
   Calls `c:is_type?/1` of the `type`.
   """
-  def is_type?(:defer, _), do: true
+  def is_type?(nil, _), do: false
   def is_type?(type, data), do: type.is_type?(data)
 
   @doc """
@@ -109,19 +119,25 @@ defmodule Annex.Data do
   If either the `type` or `target_shape` do not match the `data` the data is casted using
   `Data.cast/3`.
   """
-  def convert(:defer, data, _) do
-    data
+  def convert(type, data, target_shape) do
+    if is_type?(type, data) do
+      data_shape = shape(type, data)
+      do_convert(type, data, data_shape, target_shape)
+    else
+      data_type = infer_type(data)
+      flat = Data.to_flat_list(data_type, data)
+      data_shape = List1D.shape(flat)
+      do_convert(type, flat, data_shape, target_shape)
+    end
   end
 
-  def convert(type, data, target_shape) do
-    with(
-      true <- is_type?(type, data),
-      data_shape <- shape(type, data),
-      true <- Shape.match?(data_shape, target_shape)
-    ) do
-      data
-    else
-      _ -> cast(type, data, target_shape)
+  defp do_convert(type, data, data_shape, target_shape) do
+    case Shape.convert_abstract_to_concrete(target_shape, data_shape) do
+      {:ok, new_shape} ->
+        cast(type, data, new_shape)
+
+      {:error, _} = error ->
+        error
     end
   end
 
@@ -136,4 +152,33 @@ defmodule Annex.Data do
   end
 
   defp unwrap([unwrapped]), do: unwrapped
+
+  @spec infer_type(data()) :: any
+  def infer_type(%module{} = item) do
+    if function_exported?(module, :data_type, 1) do
+      module.data_type(item)
+    else
+      module
+    end
+  end
+
+  def infer_type(data) when is_flat_data(data) do
+    List1D
+  end
+
+  def infer_type([row | _]) when is_flat_data(row) do
+    List2D
+  end
+
+  @spec apply_op(data(), any, list(any)) :: data
+  def apply_op(data, name, args) do
+    data
+    |> infer_type()
+    |> apply_op(data, name, args)
+  end
+
+  @spec apply_op(module, data(), any, list(any)) :: data()
+  def apply_op(type, data, name, args) when is_atom(type) do
+    type.apply_op(data, name, args)
+  end
 end

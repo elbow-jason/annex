@@ -4,6 +4,7 @@ defmodule Annex do
   """
 
   alias Annex.{
+    Data,
     Data.List1D,
     Layer,
     Layer.Activation,
@@ -145,6 +146,8 @@ defmodule Annex do
   """
   @spec predict(Learner.t(), Learner.data()) :: Learner.data()
   def predict(learner, data) do
-    Learner.predict(learner, data)
+    learner
+    |> Learner.predict(data)
+    |> Data.to_flat_list()
   end
 end

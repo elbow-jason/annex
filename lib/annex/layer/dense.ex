@@ -3,36 +3,41 @@ defmodule Annex.Layer.Dense do
   `rows` are the number outputs and `columns` are the number of inputs.
   """
 
-  use Annex.Debug
+  use Annex.Debug, debug: true
 
   alias Annex.{
-    Data.List1D,
+    Data,
+    Data.DMatrix,
     Data.Shape,
     Layer,
     Layer.Backprop,
-    Layer.Dense,
-    Layer.Neuron,
-    Utils
+    Layer.Dense
   }
+
+  require Data
 
   import Annex.Utils, only: [is_pos_integer: 1]
 
   @behaviour Layer
 
+  @type data_type :: DMatrix.t()
+
   @type t :: %__MODULE__{
-          neurons: list(Neuron.t()),
-          rows: pos_integer(),
+          weights: data_type() | nil,
+          biases: data_type() | nil,
+          rows: pos_integer() | nil,
           columns: pos_integer() | nil,
-          input: list(float()),
-          output: list(float()),
+          input: data_type() | nil,
+          output: data_type() | nil,
           initialized?: boolean()
         }
 
-  defstruct neurons: [],
+  defstruct weights: nil,
+            biases: nil,
             rows: nil,
             columns: nil,
-            input: [],
-            output: [],
+            input: nil,
+            output: nil,
             initialized?: false
 
   def build(rows, columns) when is_pos_integer(rows) and is_pos_integer(columns) do
@@ -51,42 +56,41 @@ defmodule Annex.Layer.Dense do
     debug_assert "Dense rows must be a positive integer", do: rows > 0
     debug_assert "Dense columns must be a positive integer", do: is_integer(columns)
     debug_assert "Dense columns must be a positive integer", do: columns > 0
-    debug_assert "Dense weights must be a list of floats", do: is_list(data)
-    debug_assert "Dense weights must be a list of floats", do: Enum.all?(data, &is_float/1)
-    debug_assert "Dense biases must be a list of floats", do: is_list(biases)
-    debug_assert "Dense biases must be a list of floats", do: Enum.all?(data, &is_float/1)
 
-    neurons =
-      weights
-      |> Enum.chunk_every(columns)
-      |> Enum.zip(biases)
-      |> Enum.map(fn {weights, bias} -> Neuron.new(weights, bias) end)
+    debug_assert "Dense weights must be a list of floats" do
+      is_list(weights) || DMatrix.is_type?(weights)
+    end
+
+    debug_assert "Dense weights must be a list of floats" do
+      Enum.all?(weights, &is_float/1)
+    end
+
+    debug_assert "Dense biases must be a list of floats" do
+      is_list(biases) || DMatrix.is_type?(biases)
+    end
+
+    debug_assert "Dense biases must be a list of floats", do: Enum.all?(biases, &is_float/1)
+
+    debug_assert "Dense biases must be the same length as the count of rows" do
+      is_list(biases) && length(biases) == rows
+    end
 
     %Dense{
-      neurons: neurons,
+      biases: DMatrix.build(biases, rows, 1),
+      weights: DMatrix.build(weights, rows, columns),
       rows: rows,
       columns: columns,
       initialized?: true
     }
   end
 
-  defp put_neurons(%Dense{} = dense, neurons) do
-    %Dense{dense | neurons: neurons}
-  end
+  defp get_output(%Dense{output: o}), do: o
 
-  defp get_neurons(%Dense{neurons: neurons}), do: neurons
+  defp get_weights(%Dense{weights: weights}), do: weights
 
-  defp put_output(%Dense{} = dense, output) when is_list(output) do
-    %Dense{dense | output: output}
-  end
+  defp get_biases(%Dense{biases: biases}), do: biases
 
-  defp get_output(%Dense{output: o}) when is_list(o), do: o
-
-  defp put_input(%Dense{} = dense, input) do
-    %Dense{dense | input: input}
-  end
-
-  defp get_input(%Dense{input: input}) when is_list(input), do: input
+  defp get_input(%Dense{input: input}), do: input
 
   @spec rows(t()) :: pos_integer()
   def rows(%Dense{rows: n}), do: n
@@ -98,74 +102,189 @@ defmodule Annex.Layer.Dense do
   @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
   def init_layer(layer, opts \\ [])
 
-  def init_layer(%Dense{initialized?: false} = layer, _opts) do
-    {:ok, %Dense{put_random_neurons(layer) | initialized?: true}}
-  end
-
   def init_layer(%Dense{initialized?: true} = layer, _opts) do
     {:ok, layer}
   end
 
-  @impl Layer
-  @spec feedforward(t(), List1D.t()) :: {t(), List1D.t()}
-  def feedforward(%Dense{} = layer, input) do
-    output =
-      layer
-      |> get_neurons()
-      |> Enum.map(fn neuron -> Neuron.feedforward(neuron, input) end)
+  def init_layer(%Dense{initialized?: false} = dense, opts) do
+    previous_layer = Keyword.get(opts, :previous_layer)
+    next_layer = Keyword.get(opts, :next_layer)
+    rows = resolve_init_rows(dense, opts)
+    columns = columns(dense)
 
-    updated_layer =
-      layer
-      |> put_input(input)
-      |> put_output(output)
+    debug_assert "rows is a positive integer" do
+      is_pos_integer(rows) == true
+    end
 
-    {updated_layer, output}
+    debug_assert "columns is a positive integer" do
+      is_pos_integer(rows) == true
+    end
+
+    initialized = %Dense{
+      dense
+      | weights: resolve_init_weights(dense, rows, columns),
+        biases: resolve_init_biases(dense, rows),
+        initialized?: true
+    }
+
+    {:ok, initialized}
+  end
+
+  defp resolve_init_weights(%Dense{} = dense, rows, columns) do
+    dense
+    |> get_weights()
+    |> build_dmatrix(rows, columns, fn ->
+      DMatrix.new_random(rows, columns)
+    end)
+  end
+
+  defp resolve_init_biases(%Dense{} = dense, rows) do
+    dense
+    |> get_biases()
+    |> build_dmatrix(rows, 1, fn ->
+      DMatrix.ones(rows, 1)
+    end)
+  end
+
+  defp build_dmatrix(item, rows, columns, builder) do
+    case item do
+      nil ->
+        builder.()
+
+      %DMatrix{} = matrix ->
+        debug_assert "matrix shape matches rows and columns" do
+          shape = DMatrix.shape(matrix)
+          shape == {rows, columns}
+        end
+
+        matrix
+
+      data when Data.is_flat_data(data) ->
+        DMatrix.build(data, rows, columns)
+    end
+  end
+
+  def resolve_init_rows(%Dense{rows: rows}, _opts) when is_pos_integer(rows) do
+    rows
+  end
+
+  def resolve_init_rows(%Dense{rows: nil}, opts) do
+    prev_layer = Keyword.get(opts, :prev_layer)
+
+    debug_assert "rows must be specified if there is no previous layer" do
+      prev_layer != nil
+    end
+
+    resolve_init_rows_from_layer(prev_layer)
+  end
+
+  defp resolve_init_rows_from_layer(layer) do
+    layer
+    |> Layer.shape()
+    |> case do
+      {n} when is_pos_integer(n) -> n
+      {n, _} when is_pos_integer(n) -> n
+    end
   end
 
   @impl Layer
-  @spec backprop(t(), List1D.t(), Backprop.t()) :: {t(), List1D.t(), Backprop.t()}
-  def backprop(%Dense{} = layer, error, props) do
+  @spec feedforward(t(), DMatrix.t()) :: {t(), DMatrix.t()}
+  def feedforward(%Dense{} = dense, inputs) do
+    debug_assert "Dense.feedforward/2 input must be dottable with the weights" do
+      weights = get_weights(dense)
+      {_, dense_columns} = Data.shape(DMatrix, weights)
+      {inputs_rows, _} = Data.shape(DMatrix, inputs)
+      dense_columns == inputs_rows
+    end
+
+    output =
+      dense
+      |> get_weights()
+      |> DMatrix.dot(inputs)
+      |> DMatrix.add(get_biases(dense))
+
+    updated_dense = %Dense{
+      dense
+      | input: inputs,
+        output: output
+    }
+
+    {updated_dense, output}
+  end
+
+  @impl Layer
+  @spec backprop(t(), data_type(), Backprop.t()) :: {t(), data_type(), Backprop.t()}
+  def backprop(%Dense{} = dense, %DMatrix{} = error, props) do
     learning_rate = Backprop.get_learning_rate(props)
     derivative = Backprop.get_derivative(props)
-    negative_gradient = Backprop.get_negative_gradient(props)
+    output = get_output(dense)
 
-    output = get_output(layer)
-    input = get_input(layer)
+    debug_assert "backprop error must have the same shape as output" do
+      output_shape = Data.shape(DMatrix, output)
+      error_shape = Data.shape(DMatrix, error)
+      output_shape == error_shape
+    end
 
-    {neuron_error, neurons} =
-      layer
-      |> get_neurons()
-      |> Utils.zip(error)
-      |> Utils.zip(output)
-      |> Enum.map(fn {{neuron, local_error}, neuron_output} ->
-        sum_deriv = derivative.(neuron_output)
-        Neuron.backprop(neuron, input, sum_deriv, negative_gradient, local_error, learning_rate)
-      end)
-      |> Enum.unzip()
+    weights = get_weights(dense)
+    input = get_input(dense)
+
+    biases = get_biases(dense)
+
+    gradients =
+      output
+      |> DMatrix.map(derivative)
+      |> DMatrix.multiply(error)
+      |> DMatrix.multiply(learning_rate)
+
+    input_t = DMatrix.transpose(input)
+
+    debug_assert "gradients must be dottable with input_T" do
+      {_, gradients_cols} = Data.shape(DMatrix, gradients)
+      {input_rows, _} = Data.shape(DMatrix, input_t)
+
+      gradients_cols == input_rows
+    end
+
+    weight_deltas = DMatrix.dot(gradients, input_t)
+
+    updated_weights = DMatrix.subtract(weights, weight_deltas)
+
+    updated_biases = DMatrix.subtract(biases, gradients)
 
     next_error =
-      neuron_error
-      |> Utils.transpose()
-      |> Enum.map(&Enum.sum/1)
+      weights
+      |> DMatrix.transpose()
+      |> DMatrix.dot(error)
 
-    {put_neurons(layer, neurons), next_error, props}
+    updated_dense = %Dense{
+      dense
+      | input: nil,
+        output: nil,
+        weights: updated_weights,
+        biases: updated_biases
+    }
+
+    {updated_dense, next_error, props}
   end
 
   @impl Layer
-  @spec data_type :: List1D
-  def data_type, do: List1D
+  @spec data_type(t()) :: DMatrix
+  def data_type(_), do: DMatrix
 
   @impl Layer
-  @spec shapes(t()) :: {Shape.t(), Shape.t()}
-  def shapes(%Dense{} = dense) do
-    {{columns(dense)}, {rows(dense)}}
+  @spec shape(t()) :: Shape.t()
+  def shape(%Dense{} = dense) do
+    {rows(dense), columns(dense)}
   end
 
-  defp random_neurons(rows, columns) do
-    Enum.map(1..rows, fn _ -> Neuron.new_random(columns) end)
-  end
+  defimpl Inspect do
+    def inspect(dense, _) do
+      shape =
+        dense
+        |> Dense.shape()
+        |> Kernel.inspect()
 
-  defp put_random_neurons(%Dense{rows: rows, columns: columns} = layer) do
-    put_neurons(layer, random_neurons(rows, columns))
+      "#Dense<[#{shape}]>"
+    end
   end
 end

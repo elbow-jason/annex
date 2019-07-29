@@ -14,6 +14,7 @@ defmodule Annex.Data.List2D do
   or a 2D list of lists of floats and a valid 2-D shapereturns a list of
   lists, a 2-D list of lists of floats.
   """
+  @impl Data
   @spec cast(Data.flat_data() | t(), Shape.t()) :: t()
   def cast(data, {_, _} = shape) when List1D.is_list1D(data) do
     cast([data], shape)
@@ -48,6 +49,7 @@ defmodule Annex.Data.List2D do
   @doc """
   Returns true for a list of lists of floats.
   """
+  @impl Data
   @spec is_type?(Data.data()) :: boolean
   def is_type?(data), do: is_list2D(data)
 
@@ -57,6 +59,7 @@ defmodule Annex.Data.List2D do
   `rows` is the number of elements in the outermost list.
   `columns` is the count of the elements of the first row.
   """
+  @impl Data
   def shape(data) do
     [row_of_floats | _] = type_check(data)
     {length(data), length(row_of_floats)}
@@ -68,10 +71,25 @@ defmodule Annex.Data.List2D do
   `rows` is the number of elements in the outermost list.
   `columns` is the count of the elements of the first row.
   """
+  @impl Data
   def to_flat_list(data) do
     data
     |> type_check()
     |> List.flatten()
+  end
+
+  @impl Data
+  @spec apply_op(t(), Data.op(), Data.args()) :: Data.flat_data()
+  def apply_op(data, op, args) do
+    case {op, args} do
+      {:map, [func]} -> map(data, func)
+    end
+  end
+
+  def map(data, func) do
+    Enum.map(data, fn row ->
+      Enum.map(row, func)
+    end)
   end
 
   defp type_check(data) do

@@ -5,15 +5,16 @@ defmodule Annex.Learner do
   A Learner is a model that is capable of supervised learning.
   """
 
-  alias Annex.{Utils}
+  alias Annex.{Data, Utils}
   require Logger
 
   @type t() :: t()
   @type options :: Keyword.t()
-  @type data :: any()
+  @type data :: Data.data()
+  @type train_output :: %{atom() => any()}
 
   @callback init_learner(t(), options()) :: {:ok, t()} | {:error, any()}
-  @callback train(t(), data(), data(), options()) :: {t(), data()}
+  @callback train(t(), data(), data(), options()) :: {t(), train_output()}
   @callback train_opts(options()) :: options()
   @callback predict(t(), data()) :: data()
 
@@ -35,14 +36,16 @@ defmodule Annex.Learner do
     end
   end
 
-  defp debug_logger(_learner, output, epoch, opts) do
-    if rem(epoch, 10_000) == 0 do
+  defp debug_logger(_learner, loss, epoch, opts) do
+    log_interval = Keyword.get(opts, :log_interval, 10_000)
+
+    if rem(epoch, log_interval) == 0 do
       Logger.debug(fn ->
         """
         Learner -
         training: #{Keyword.get(opts, :name)}
         epoch: #{epoch}
-        loss: #{get_loss(output)}
+        loss: #{inspect(loss)}
         """
       end)
     end
@@ -55,24 +58,27 @@ defmodule Annex.Learner do
 
     train_opts = module.train_opts(opts)
 
-    all_inputs
-    |> Utils.zip(all_labels)
-    |> Stream.cycle()
+    zipped = Utils.zip(all_inputs, all_labels)
+
+    fn ->
+      Enum.random(zipped)
+    end
+    |> Stream.repeatedly()
     |> Stream.with_index(1)
     |> Enum.reduce_while({learner, nil}, fn {{inputs, labels}, epoch},
                                             {learner_acc, _prev_output} ->
-      {%_{} = learner2, output} = module.train(learner_acc, inputs, labels, train_opts)
+      {%_{} = learner2, loss} = module.train(learner_acc, inputs, labels, train_opts)
 
-      _ = log.(learner2, output, epoch, opts)
+      _ = log.(learner2, loss, epoch, [{:inputs, inputs}, {:labels, labels} | opts])
 
       halt_or_cont =
-        if halt_condition.(learner2, output, epoch, opts) do
+        if halt_condition.(learner2, loss, epoch, opts) do
           :halt
         else
           :cont
         end
 
-      {halt_or_cont, {learner2, output}}
+      {halt_or_cont, {learner2, loss}}
     end)
   end
 
@@ -90,9 +96,6 @@ defmodule Annex.Learner do
   end
 
   defp parse_halt_condition({:loss_less_than, num}) when is_number(num) do
-    fn _, output, _, _ -> get_loss(output) < num end
+    fn _, loss, _, _ -> loss < num end
   end
-
-  defp get_loss(total_loss) when is_float(total_loss), do: total_loss
-  defp get_loss(%module{} = output), do: module.get_loss(output)
 end

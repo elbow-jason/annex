@@ -35,9 +35,10 @@ defmodule Annex.Layer.DropoutTest do
     end
 
     test "dropout does not change on init_layer" do
+      opts = []
       layer1 = Dropout.build(0.5)
-      {:ok, layer2} = Layer.init_layer(layer1)
-      assert layer1 == layer2
+      {:ok, layer2} = Layer.init_layer(layer1, opts)
+      assert layer2 == layer1
     end
   end
 end
