@@ -41,7 +41,7 @@ defmodule Annex.Layer do
   @spec shape(t()) :: Shape.t() | nil
   def shape(%module{} = layer), do: module.shape(layer)
 
-  @spec convert(t(), Data.data(), Shape.t()) :: Data.data()
+  @spec convert(t(), Data.data(), Shape.t()) :: {:ok, Data.data()} | {:error, any()}
   def convert(layer, data, shape) do
     layer
     |> data_type()

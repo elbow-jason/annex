@@ -1,4 +1,7 @@
 defmodule Annex.LearnerHelper do
+  @moduledoc """
+  This module contains utility functions for the testing of an Annex.Learner
+  """
   require Logger
 
   def test_logger(learner, loss, epoch, opts) do

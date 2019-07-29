@@ -48,7 +48,7 @@ defmodule Annex.Data.List1D do
   def is_type?(data), do: is_list1D(data)
 
   @impl Data
-  @spec apply_op(Data.flat_data(), Data.op(), Data.args()) :: Data.flat_data()
+  @spec apply_op(t(), Data.op(), Data.args()) :: Data.flat_data()
   def apply_op(data, op, args) do
     case {op, args} do
       {:map, [func]} -> Enum.map(data, func)

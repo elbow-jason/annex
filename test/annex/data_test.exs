@@ -129,7 +129,7 @@ defmodule Annex.DataTest do
     end
 
     test "works for DMatrix data" do
-      data = Annex.Data.DMatrix.build([1.0, 2.0, 3.0])
+      data = DMatrix.build([1.0, 2.0, 3.0])
       assert Data.infer_type(data) == Annex.Data.DMatrix
     end
 

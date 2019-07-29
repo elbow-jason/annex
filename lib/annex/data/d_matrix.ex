@@ -1,4 +1,9 @@
 defmodule Annex.Data.DMatrix do
+  @moduledoc """
+  A 2D Matrix Annex.Data that uses the Tensor library as the underlying data structure.
+
+  For the purpose of Dense Matrices it seems to be slower than a flat list or a list of lists.
+  """
   use Annex.Debug, debug: true
   use Tensor
   use Annex.Data
@@ -9,7 +14,8 @@ defmodule Annex.Data.DMatrix do
     Utils
   }
 
-  @type t :: %__MODULE__{tensor: Matrix.t()}
+  @type tensor :: any()
+  @type t :: %__MODULE__{tensor: tensor()}
   @type rows :: pos_integer()
   @type columns :: pos_integer()
   @type op :: :dot | :add | :subtract | :multiply
@@ -83,12 +89,15 @@ defmodule Annex.Data.DMatrix do
 
   @spec new_random(rows(), columns()) :: t()
   def new_random(rows, columns) do
-    (rows * columns)
+    product = rows * columns
+
+    product
     |> Utils.random_weights()
     |> build_tensor(rows, columns)
     |> from_tensor()
   end
 
+  @spec build([float(), ...] | [[float, ...], ...]) :: Annex.Data.DMatrix.t()
   def build([f | _] = data) when is_float(f) do
     columns = length(data)
     build(data, 1, columns)
@@ -133,15 +142,17 @@ defmodule Annex.Data.DMatrix do
     |> Matrix.new(rows, columns)
   end
 
+  @spec ones(non_neg_integer, non_neg_integer) :: t()
   def ones(rows, columns) do
     %DMatrix{tensor: Matrix.new([], rows, columns, 1.0)}
   end
 
+  @spec zeros(non_neg_integer, non_neg_integer) :: t()
   def zeros(rows, columns) do
     %DMatrix{tensor: Matrix.new([], rows, columns, 0.0)}
   end
 
-  @spec tensor(t()) :: Matrix.t()
+  @spec tensor(t()) :: any()
   def tensor(%DMatrix{tensor: tensor}), do: tensor
 
   @spec to_list_of_lists(t()) :: [[float(), ...], ...]

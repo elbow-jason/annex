@@ -4,18 +4,17 @@ defmodule Annex.Layer.Dense do
   """
 
   use Annex.Debug, debug: true
-  alias Annex.Data.DMatrix
-
-  require Annex.Data
 
   alias Annex.{
     Data,
-    Data.Shape,
     Data.DMatrix,
+    Data.Shape,
     Layer,
     Layer.Backprop,
     Layer.Dense
   }
+
+  require Data
 
   import Annex.Utils, only: [is_pos_integer: 1]
 
@@ -237,16 +236,16 @@ defmodule Annex.Layer.Dense do
       |> DMatrix.multiply(error)
       |> DMatrix.multiply(learning_rate)
 
-    input_T = DMatrix.transpose(input)
+    input_t = DMatrix.transpose(input)
 
     debug_assert "gradients must be dottable with input_T" do
       {_, gradients_cols} = Data.shape(DMatrix, gradients)
-      {input_rows, _} = Data.shape(DMatrix, input_T)
+      {input_rows, _} = Data.shape(DMatrix, input_t)
 
       gradients_cols == input_rows
     end
 
-    weight_deltas = DMatrix.dot(gradients, input_T)
+    weight_deltas = DMatrix.dot(gradients, input_t)
 
     updated_weights = DMatrix.subtract(weights, weight_deltas)
 

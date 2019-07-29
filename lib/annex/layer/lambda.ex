@@ -61,13 +61,13 @@ defmodule Annex.Layer.Lambda do
   end
 
   @impl Layer
-  @spec feedforward(t(), any()) :: {t(), any()}
+  @spec feedforward(t(), any()) :: {t(), Data.data()}
   def feedforward(%Lambda{} = lambda, inputs) do
     apply_callback(lambda, :on_feedforward, [lambda, inputs], {lambda, inputs})
   end
 
   @impl Layer
-  @spec backprop(t(), any, Backprop.t()) :: {t(), any, Backprop.t()}
+  @spec backprop(t(), Data.data(), Backprop.t()) :: {t(), Data.data(), Backprop.t()}
   def backprop(%Lambda{} = lambda, error, backprop) do
     apply_callback(lambda, :on_backprop, [lambda, error, backprop], {lambda, error, backprop})
   end
