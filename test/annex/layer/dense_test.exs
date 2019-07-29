@@ -133,7 +133,7 @@ defmodule Annex.Layer.DenseTest do
       dense = @dense_2_by_3
       inputs = DMatrix.build([[0.0], [1.0], [0.0]])
       labels = DMatrix.build([[2.0], [0.0]])
-      backprops = [learning_rate: 0.01, derivative: fn x -> 1.0 end]
+      backprops = [learning_rate: 0.01, derivative: fn _ -> 1.0 end]
       # iter 1
       {dense1, output1} = Dense.feedforward(dense, inputs)
       assert output1 == DMatrix.build([[2.0], [1.5]])

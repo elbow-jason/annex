@@ -20,7 +20,6 @@ defmodule Annex.Data do
   A module that implements the Annex.Data Behaviour.
   """
   @type type :: module()
-
   @type flat_data :: [float(), ...]
   @type data :: struct() | flat_data() | [flat_data()]
   @type op :: any()
@@ -71,6 +70,26 @@ defmodule Annex.Data do
     data
     |> infer_type()
     |> cast(data, shape)
+  end
+
+  @spec cast!(type(), data(), Shape.t()) :: Data.data()
+  def cast!(type, data, shape) do
+    type
+    |> cast(data, shape)
+    |> case do
+      {:ok, casted} ->
+        casted
+
+      {:error, %AnnexError{} = error} ->
+        raise error
+    end
+  end
+
+  @spec cast!(data(), Shape.t()) :: Data.data()
+  def cast!(data, shape) do
+    data
+    |> infer_type()
+    |> cast!(data, shape)
   end
 
   @doc """

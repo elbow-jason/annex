@@ -3,6 +3,8 @@ defmodule Annex.DataTest do
     AnnexError,
     Data,
     Data.DMatrix,
+    Data.List1D,
+    Data.List2D,
     Layer.Dense
   }
 
@@ -117,12 +119,12 @@ defmodule Annex.DataTest do
   describe "infer_type/1" do
     test "List1D for flat list of floats" do
       data = [1.0, 2.0]
-      assert Data.infer_type(data) == Annex.Data.List1D
+      assert Data.infer_type(data) == List1D
     end
 
     test "List2D for flat list of floats" do
       data = [[1.0, 2.0]]
-      assert Data.infer_type(data) == Annex.Data.List2D
+      assert Data.infer_type(data) == List2D
     end
 
     test "works for SimpleData data" do
@@ -131,12 +133,19 @@ defmodule Annex.DataTest do
 
     test "works for DMatrix data" do
       data = DMatrix.build([1.0, 2.0, 3.0])
-      assert Data.infer_type(data) == Annex.Data.DMatrix
+      assert Data.infer_type(data) == DMatrix
     end
 
     test "works for Layer" do
       dense = Dense.build(2, 3)
-      assert Data.infer_type(dense) == Annex.Data.DMatrix
+      assert Data.infer_type(dense) == DMatrix
+    end
+  end
+
+  describe "data_type/1" do
+    test "a Dense layer struct has a default data_type" do
+      dense = %Dense{}
+      assert %Dense{data_type: DMatrix} = dense
     end
   end
 end
