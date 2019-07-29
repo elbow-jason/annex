@@ -20,17 +20,22 @@ defmodule Annex.Layer.Dense do
 
   @behaviour Layer
 
-  @type data_type :: DMatrix.t()
+  @type data :: Data.data()
 
   @type t :: %__MODULE__{
-          weights: data_type() | nil,
-          biases: data_type() | nil,
+          data_type: Data.type(),
+          weights: data() | nil,
+          biases: data() | nil,
           rows: pos_integer() | nil,
           columns: pos_integer() | nil,
-          input: data_type() | nil,
-          output: data_type() | nil,
+          input: data() | nil,
+          output: data() | nil,
           initialized?: boolean()
         }
+
+  @default_data_type :annex
+                     |> Application.get_env(__MODULE__, [])
+                     |> Keyword.get(:data_type, DMatrix)
 
   defstruct weights: nil,
             biases: nil,
@@ -38,7 +43,8 @@ defmodule Annex.Layer.Dense do
             columns: nil,
             input: nil,
             output: nil,
-            initialized?: false
+            initialized?: false,
+            data_type: @default_data_type
 
   def build(rows, columns) when is_pos_integer(rows) and is_pos_integer(columns) do
     %Dense{
@@ -213,7 +219,7 @@ defmodule Annex.Layer.Dense do
   end
 
   @impl Layer
-  @spec backprop(t(), data_type(), Backprop.t()) :: {t(), data_type(), Backprop.t()}
+  @spec backprop(t(), Data.data(), Backprop.t()) :: {t(), Data.data(), Backprop.t()}
   def backprop(%Dense{} = dense, %DMatrix{} = error, props) do
     learning_rate = Backprop.get_learning_rate(props)
     derivative = Backprop.get_derivative(props)
@@ -268,8 +274,8 @@ defmodule Annex.Layer.Dense do
   end
 
   @impl Layer
-  @spec data_type(t()) :: DMatrix
-  def data_type(_), do: DMatrix
+  @spec data_type(t()) :: Data.type()
+  def data_type(%Dense{data_type: data_type}), do: data_type
 
   @impl Layer
   @spec shape(t()) :: Shape.t()
