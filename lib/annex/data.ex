@@ -25,13 +25,13 @@ defmodule Annex.Data do
   @type op :: any()
   @type args :: list(any())
 
-  defguard is_flat_data(data) when is_list(data) and is_float(hd(data))
-
   @callback cast(data, Shape.t()) :: data()
   @callback to_flat_list(data) :: list(float())
   @callback shape(data) :: Shape.t()
   @callback is_type?(any) :: boolean
   @callback apply_op(data(), op(), args()) :: data()
+
+  defguard is_flat_data(data) when is_list(data) and is_float(hd(data))
 
   defmacro __using__(_) do
     quote do

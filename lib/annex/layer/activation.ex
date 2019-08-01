@@ -6,17 +6,22 @@ defmodule Annex.Layer.Activation do
   function to the Backprops during backpropagation.
   """
   use Annex.Debug, debug: true
+  use Annex.Layer
 
   alias Annex.AnnexError
   alias Annex.Data
-  alias Annex.Layer
   alias Annex.Layer.Activation
   alias Annex.Layer.Backprop
   alias Annex.LayerConfig
 
   @type func_type :: :float | :list
 
-  @type func_name :: :relu | :sigmoid | :tanh | {:relu, number()}
+  @type func_name ::
+          :softmax
+          | :relu
+          | :sigmoid
+          | :tanh
+          | {:relu, number()}
 
   @type t :: %__MODULE__{
           activator: (number -> number),
@@ -26,8 +31,6 @@ defmodule Annex.Layer.Activation do
         }
 
   @type data :: Data.data()
-
-  @behaviour Layer
 
   defstruct [
     :activator,

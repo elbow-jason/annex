@@ -42,12 +42,12 @@ defmodule Annex.Layer do
     end
   end
 
-  @spec feedforward(struct(), any()) :: {struct(), any()}
+  @spec feedforward(t(), Data.data()) :: {t(), Data.data()}
   def feedforward(%module{} = layer, inputs) do
     module.feedforward(layer, inputs)
   end
 
-  @spec backprop(struct(), any(), Backprop.t()) :: {struct(), any(), Backprop.t()}
+  @spec backprop(t(), Data.data(), Backprop.t()) :: {t(), Data.data(), Backprop.t()}
   def backprop(%module{} = layer, error, props) do
     module.backprop(layer, error, props)
   end

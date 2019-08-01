@@ -6,6 +6,8 @@ config :annex,
     cost: Annex.Cost.MeanSquaredError
   ]
 
+config :annex, Annex.Layer, data_type: Annex.Data.DMatrix
+
 config :annex, Annex.Layer.Dense, data_type: Annex.Data.DMatrix
 
 import_config("#{Mix.env()}.exs")

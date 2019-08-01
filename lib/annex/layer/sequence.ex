@@ -98,7 +98,7 @@ defmodule Annex.Layer.Sequence do
   defp do_convert_for_feedforward(layers, start_index, data) do
     layers
     |> MapArray.seek_up(start_index, fn layer ->
-      Layer.has_shapes?(layer) && Layer.data_type(layer)
+      Layer.has_shapes?(layer) && Layer.has_data_type?(layer)
     end)
     |> case do
       :error ->
@@ -114,7 +114,7 @@ defmodule Annex.Layer.Sequence do
   defp do_convert_for_backprop(layers, start_index, data) do
     layers
     |> MapArray.seek_down(start_index, fn layer ->
-      Layer.has_shapes?(layer) && Layer.data_type(layer)
+      Layer.has_shapes?(layer) && Layer.has_data_type?(layer)
     end)
     |> case do
       :error ->
@@ -165,8 +165,8 @@ defmodule Annex.Layer.Sequence do
   @impl Layer
   @spec shapes(t()) :: {Shape.t(), Shape.t()}
   def shapes(%Sequence{} = seq) do
-    {input_shape, _} = first_shape(seq)
-    {_, output_shape} = last_shape(seq)
+    {input_shape, _} = first_input_shape(seq)
+    {_, output_shape} = last_output_shape(seq)
     {input_shape, output_shape}
   end
 
