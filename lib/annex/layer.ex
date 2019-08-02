@@ -7,8 +7,10 @@ defmodule Annex.Layer do
   """
 
   alias Annex.{
+    AnnexError,
     Data,
     Data.Shape,
+    LayerConfig,
     Layer.Backprop
   }
 
@@ -19,6 +21,21 @@ defmodule Annex.Layer do
   @callback init_layer(t(), Keyword.t()) :: {:ok, t()} | {:error, any()}
   @callback data_type(t()) :: Data.type() | nil
   @callback shape(t()) :: Shape.t() | nil
+  @callback build(LayerConfig.t()) :: {:ok, struct()} | {:error, AnnexError.t()}
+
+  @optional_callbacks [
+    build: 1,
+    init_layer: 2
+  ]
+
+  defmacro __using__(_) do
+    quote do
+      alias Annex.Layer
+      @behaviour Layer
+
+      require Annex.LayerConfig
+    end
+  end
 
   @spec feedforward(struct(), any()) :: {struct(), any()}
   def feedforward(%module{} = layer, inputs) do

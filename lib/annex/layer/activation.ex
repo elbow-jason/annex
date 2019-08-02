@@ -9,6 +9,7 @@ defmodule Annex.Layer.Activation do
 
   alias Annex.Data
   alias Annex.Layer
+  alias Annex.LayerConfig
   alias Annex.Layer.Activation
   alias Annex.Layer.Backprop
 
@@ -39,8 +40,16 @@ defmodule Annex.Layer.Activation do
     initialized?: false
   ]
 
-  @spec build(:relu | :sigmoid | :tanh | {:relu, number()}) :: t()
-  def build(name) do
+  @impl Layer
+  @spec build(LayerConfig.deatils()) :: t()
+  def build(details) when is_map(details) do
+    case details do
+      %{name: name} -> from_name(name)
+    end
+  end
+
+  @spec from_name(:relu | :sigmoid | :softmax | :tanh | {:relu, any}) :: t()
+  def from_name(name) do
     case name do
       {:relu, threshold} ->
         %Activation{

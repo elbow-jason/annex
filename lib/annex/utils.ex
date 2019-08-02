@@ -22,6 +22,12 @@ defmodule Annex.Utils do
     Enum.map(1..n, fn _ -> random_float() end)
   end
 
+  def ones(n) do
+    fn -> 1.0 end
+    |> Stream.repeatedly()
+    |> Enum.take(n)
+  end
+
   @doc """
   Random unifmormly splits a given `dataset` into two datasets at a given `frequency`.
   """
@@ -136,5 +142,9 @@ defmodule Annex.Utils do
       0.0 -> Enum.map(data, fn item -> item end)
       sum -> Enum.map(data, fn item -> item / sum end)
     end
+  end
+
+  def is_module?(item) do
+    is_atom(item) && Code.ensure_loaded?(item)
   end
 end
