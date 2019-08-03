@@ -10,9 +10,9 @@ defmodule Annex.Layer.Activation do
   alias Annex.AnnexError
   alias Annex.Data
   alias Annex.Layer
-  alias Annex.LayerConfig
   alias Annex.Layer.Activation
   alias Annex.Layer.Backprop
+  alias Annex.LayerConfig
 
   @type func_type :: :float | :list
 
@@ -50,7 +50,8 @@ defmodule Annex.Layer.Activation do
   @spec from_name(:relu | :sigmoid | :softmax | :tanh | {:relu, any}) ::
           {:ok, t()} | {:error, AnnexError.t()}
   def from_name(name) do
-    case name do
+    name
+    |> case do
       {:relu, threshold} ->
         %Activation{
           activator: fn n -> max(n, threshold) end,

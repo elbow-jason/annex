@@ -4,8 +4,8 @@ defmodule Annex.Layer.DropoutTest do
   alias Annex.{
     AnnexError,
     Layer,
-    LayerConfig,
-    Layer.Dropout
+    Layer.Dropout,
+    LayerConfig
   }
 
   describe "init_layer/1" do

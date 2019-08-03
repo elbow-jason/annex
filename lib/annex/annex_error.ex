@@ -1,8 +1,14 @@
 defmodule Annex.AnnexError do
   alias Annex.AnnexError
 
+  @type t :: %__MODULE__{
+          message: String.t(),
+          details: Keyword.t()
+        }
+
   defexception [:message, details: []]
 
+  @spec build(String.t(), Keyword.t()) :: t()
   def build(message, details) do
     %AnnexError{
       message: message,
@@ -10,10 +16,12 @@ defmodule Annex.AnnexError do
     }
   end
 
-  def add_details(%AnnexError{details: prev} = error, details) do
-    %AnnexError{error | details: prev ++ List.wrap(details)}
+  @spec add_details(t(), Keyword.t()) :: t()
+  def add_details(%AnnexError{details: prev} = error, details) when is_list(details) do
+    %AnnexError{error | details: prev ++ details}
   end
 
+  @spec message(t()) :: String.t()
   def message(%AnnexError{message: message, details: details}) do
     """
     #{message}

@@ -10,8 +10,8 @@ defmodule Annex.Layer do
     AnnexError,
     Data,
     Data.Shape,
-    LayerConfig,
-    Layer.Backprop
+    Layer.Backprop,
+    LayerConfig
   }
 
   @type t() :: struct()
@@ -28,8 +28,8 @@ defmodule Annex.Layer do
       alias Annex.Layer
       @behaviour Layer
 
-      alias Annex.LayerConfig
       alias Annex.AnnexError
+      alias Annex.LayerConfig
       require Annex.Utils
       import Annex.Utils, only: [validate: 3]
     end

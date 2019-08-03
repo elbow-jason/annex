@@ -5,11 +5,11 @@ defmodule Annex do
 
   alias Annex.{
     Data,
-    LayerConfig,
     Layer.Activation,
     Layer.Dense,
     Layer.Dropout,
     Layer.Sequence,
+    LayerConfig,
     Learner
   }
 

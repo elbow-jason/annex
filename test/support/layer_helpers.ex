@@ -1,4 +1,7 @@
 defmodule Annex.LayerHelpers do
+  @moduledoc """
+  Helpers for building Layers.
+  """
   alias Annex.{
     AnnexError,
     LayerConfig
@@ -6,7 +9,7 @@ defmodule Annex.LayerHelpers do
 
   @type kvs :: map | keyword()
 
-  @spec build(atom, kvs) :: struct()
+  @spec build(atom, kvs) :: {:ok, struct()} | {:error, AnnexError.t()}
   def build(module, kvs) do
     module
     |> LayerConfig.build(kvs)

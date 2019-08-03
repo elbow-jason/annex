@@ -1,4 +1,10 @@
 defmodule Annex.LayerConfig do
+  @moduledoc """
+  The Annex.LayerConfig is the intermediate structure used to intialize an Annex.Layer.
+
+  This is particularly useful for building the same Layer given many different combinations
+  of configuration.
+  """
   alias Annex.{
     AnnexError,
     LayerConfig
