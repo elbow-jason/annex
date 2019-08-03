@@ -147,4 +147,30 @@ defmodule Annex.Utils do
   def is_module?(item) do
     is_atom(item) && Code.ensure_loaded?(item)
   end
+
+  defmacro validate(field, reason, do: expr) do
+    code = Macro.to_string(expr)
+    vars = Annex.Debug.get_ast_vars(expr)
+
+    quote do
+      result = unquote(expr)
+
+      if result != true do
+        error = %Annex.AnnexError{
+          message: "valiation failed",
+          details: [
+            module: __MODULE__,
+            field: unquote(field),
+            reason: unquote(reason),
+            variables: Keyword.take(binding(), unquote(vars)),
+            code: unquote(code)
+          ]
+        }
+
+        {:error, unquote(field), error}
+      else
+        :ok
+      end
+    end
+  end
 end

@@ -5,9 +5,9 @@ defmodule Annex.LayerConfig do
   }
 
   @type details :: %{atom() => any}
-  @type t :: %__MODULE__{
+  @type t(layer_module) :: %__MODULE__{
           details: details(),
-          module: module()
+          module: layer_module
         }
 
   defstruct details: %{},
@@ -20,24 +20,25 @@ defmodule Annex.LayerConfig do
     }
   end
 
-  @spec module(t()) :: module()
+  @spec module(t(module())) :: module()
   def module(%LayerConfig{module: m}), do: m
 
   def details(%LayerConfig{details: d}), do: d
 
-  @spec add(t(), atom(), any()) :: t()
+  @spec add(t(module()), atom(), any()) :: t(module())
   def add(cfg, key, value) do
     add(cfg, %{key => value})
   end
 
-  @spec add(t(), any) :: t()
+  @spec add(t(module()), any) :: t(module())
   def add(%LayerConfig{} = cfg, details) do
     more_details = Map.new(details)
     %LayerConfig{cfg | details: cfg |> details |> Map.merge(more_details)}
   end
 
-  def build_layer(%LayerConfig{} = cfg) do
-    module(cfg).build(cfg)
+  @spec init_layer(t(module())) :: {:ok, struct()} | {:error, AnnexError.t()}
+  def init_layer(%LayerConfig{} = cfg) do
+    module(cfg).init_layer(cfg)
   end
 
   def fetch(%LayerConfig{} = cfg, key) do
@@ -68,30 +69,6 @@ defmodule Annex.LayerConfig do
 
       {:error, key, _} ->
         {:ok, key, func.()}
-    end
-  end
-
-  defmacro validate(field, reason, do: expr) do
-    code = Macro.to_string(expr)
-    vars = Annex.Debug.get_ast_vars(expr)
-
-    quote do
-      result = unquote(expr)
-
-      if result != true do
-        error = %Annex.AnnexError{
-          message: "valiation failed",
-          details: [
-            reason: unquote(reason),
-            code: unquote(code),
-            variables: Keyword.take(binding(), unquote(vars))
-          ]
-        }
-
-        {:error, unquote(field), error}
-      else
-        :ok
-      end
     end
   end
 end

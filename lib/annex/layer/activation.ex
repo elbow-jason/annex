@@ -7,6 +7,7 @@ defmodule Annex.Layer.Activation do
   """
   use Annex.Debug, debug: true
 
+  alias Annex.AnnexError
   alias Annex.Data
   alias Annex.Layer
   alias Annex.LayerConfig
@@ -21,8 +22,7 @@ defmodule Annex.Layer.Activation do
           activator: (number -> number),
           derivative: (number -> number),
           func_type: func_type(),
-          name: atom(),
-          initialized?: boolean()
+          name: atom()
         }
 
   @type data_type :: Data.type()
@@ -36,19 +36,19 @@ defmodule Annex.Layer.Activation do
     :name,
     :outputs,
     :inputs,
-    :func_type,
-    initialized?: false
+    :func_type
   ]
 
   @impl Layer
-  @spec build(LayerConfig.deatils()) :: t()
-  def build(details) when is_map(details) do
-    case details do
+  @spec init_layer(LayerConfig.t()) :: {:ok, t()} | {:error, AnnexError.t()}
+  def init_layer(%LayerConfig{} = cfg) do
+    case LayerConfig.details(cfg) do
       %{name: name} -> from_name(name)
     end
   end
 
-  @spec from_name(:relu | :sigmoid | :softmax | :tanh | {:relu, any}) :: t()
+  @spec from_name(:relu | :sigmoid | :softmax | :tanh | {:relu, any}) ::
+          {:ok, t()} | {:error, AnnexError.t()}
   def from_name(name) do
     case name do
       {:relu, threshold} ->
@@ -90,15 +90,24 @@ defmodule Annex.Layer.Activation do
           func_type: :list,
           name: name
         }
+
+      _ ->
+        :error
     end
-  end
+    |> case do
+      %Activation{} = layer ->
+        {:ok, layer}
 
-  @impl Layer
-  @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
-  def init_layer(%Activation{} = activation1, _opts) do
-    activation2 = %Activation{activation1 | initialized?: true}
+      :error ->
+        error = %AnnexError{
+          message: "unknown activation name",
+          details: [
+            name: name
+          ]
+        }
 
-    {:ok, activation2}
+        {:error, error}
+    end
   end
 
   @impl Layer
