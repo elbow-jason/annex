@@ -19,7 +19,7 @@ defmodule Annex.Layer do
   @callback feedforward(t(), Data.data()) :: {struct(), Data.data()}
   @callback backprop(t(), Data.data(), Backprop.t()) :: {t(), Data.data(), Backprop.t()}
 
-  @callback init_layer(LayerConfig.t()) :: {:ok, struct()} | {:error, AnnexError.t()}
+  @callback init_layer(LayerConfig.t(module())) :: {:ok, struct()} | {:error, AnnexError.t()}
   @callback data_type(t()) :: Data.type() | nil
   @callback shape(t()) :: Shape.t() | nil
 

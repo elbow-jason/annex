@@ -40,7 +40,7 @@ defmodule Annex.Layer.Activation do
   ]
 
   @impl Layer
-  @spec init_layer(LayerConfig.t()) :: {:ok, t()} | {:error, AnnexError.t()}
+  @spec init_layer(LayerConfig.t(Activations)) :: {:ok, t()} | {:error, AnnexError.t()}
   def init_layer(%LayerConfig{} = cfg) do
     case LayerConfig.details(cfg) do
       %{name: name} -> from_name(name)

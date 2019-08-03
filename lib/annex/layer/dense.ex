@@ -46,7 +46,7 @@ defmodule Annex.Layer.Dense do
             data_type: nil
 
   @impl Layer
-  @spec init_layer(LayerConfig.t()) :: {:ok, t()} | {:error, AnnexError.t()}
+  @spec init_layer(LayerConfig.t(Dense)) :: {:ok, t()} | {:error, AnnexError.t()}
   def init_layer(%LayerConfig{} = cfg) do
     with(
       {:ok, :data_type, data_type} <- build_data_type(cfg),

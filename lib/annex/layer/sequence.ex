@@ -40,7 +40,7 @@ defmodule Annex.Layer.Sequence do
             cost: Defaults.get_defaults(:cost)
 
   @impl Layer
-  @spec init_layer(LayerConfig.t()) :: {:ok, t()} | {:error, t()}
+  @spec init_layer(LayerConfig.t(Sequence)) :: {:ok, t()} | {:error, AnnexError.t()}
   def init_layer(%LayerConfig{} = cfg) do
     with(
       {:ok, :layers, layer_configs} <- LayerConfig.fetch(cfg, :layers),
@@ -101,7 +101,7 @@ defmodule Annex.Layer.Sequence do
   end
 
   @impl Learner
-  @spec init_learner(t() | LayerConfig.t(), Keyword.t()) :: {:error, any()} | {:ok, t()}
+  @spec init_learner(t() | LayerConfig.t(Sequence), Keyword.t()) :: {:error, any()} | {:ok, t()}
   def init_learner(seq, opts \\ [])
 
   def init_learner(%Sequence{layer_configs: layer_configs}, opts) do

@@ -25,7 +25,7 @@ defmodule Annex.Layer.Dropout do
   defguard is_frequency(x) when is_float(x) and x >= 0.0 and x <= 1.0
 
   @impl Layer
-  @spec init_layer(LayerConfig.t()) :: {:ok, t()} | {:error, AnnexError.t()}
+  @spec init_layer(LayerConfig.t(Dropout)) :: {:ok, t()} | {:error, AnnexError.t()}
   def init_layer(%LayerConfig{} = cfg) do
     cfg
     |> LayerConfig.details()

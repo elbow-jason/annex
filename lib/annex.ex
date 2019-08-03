@@ -17,7 +17,7 @@ defmodule Annex do
   Given a list of `layers` and `opts` returns a built, but not initialized
   `Sequence`.
   """
-  @spec sequence(list(LayerConfig.t(Sequence))) :: LayerConfig.t(Sequence)
+  @spec sequence(list(LayerConfig.t(module()))) :: LayerConfig.t(Sequence)
   def sequence(layers) when is_list(layers) do
     LayerConfig.build(Sequence, layers: layers)
   end
