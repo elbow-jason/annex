@@ -9,9 +9,9 @@ defmodule Annex.Layer do
   alias Annex.{
     AnnexError,
     Data,
-    Data.Shape,
     Layer.Backprop,
-    LayerConfig
+    LayerConfig,
+    Shape
   }
 
   @type t() :: struct()
@@ -20,11 +20,13 @@ defmodule Annex.Layer do
   @callback backprop(t(), Data.data(), Backprop.t()) :: {t(), Data.data(), Backprop.t()}
 
   @callback init_layer(LayerConfig.t(module())) :: {:ok, struct()} | {:error, AnnexError.t()}
-  @callback data_type(t()) :: Data.type() | nil
+
+  @callback data_type(t()) :: Data.type()
   @callback shapes(t()) :: {Shape.t(), Shape.t()}
 
   @optional_callbacks [
-    shapes: 1
+    shapes: 1,
+    data_type: 1
   ]
 
   defmacro __using__(_) do
@@ -57,7 +59,7 @@ defmodule Annex.Layer do
   @spec data_type(atom | struct()) :: Data.type()
   def data_type(%module{} = layer), do: module.data_type(layer)
 
-  @spec shapes(t()) :: Shape.t()
+  @spec shapes(t()) :: {Shape.t(), Shape.t()}
   def shapes(%module{} = layer), do: module.shape(layer)
 
   @spec has_shapes?(module() | struct()) :: boolean()
@@ -65,13 +67,17 @@ defmodule Annex.Layer do
   def has_shapes?(module) when is_atom(module), do: function_exported?(module, :shapes, 1)
 
   def input_shape(layer) do
-    {input_shape, _} = shapes(layer)
-    input_shape
+    if has_shapes?(layer) do
+      {input_shape, _} = shapes(layer)
+      input_shape
+    end
   end
 
   def output_shape(layer) do
-    {_, output_shape} = shapes(layer)
-    output_shape
+    if has_shapes?(layer) do
+      {_, output_shape} = shapes(layer)
+      output_shape
+    end
   end
 
   @spec convert(t(), Data.data(), Shape.t()) :: {:ok, Data.data()} | {:error, any()}
@@ -84,7 +90,7 @@ defmodule Annex.Layer do
   @spec forward_shape(t()) :: {pos_integer, :any} | nil
   def forward_shape(layer) do
     layer
-    |> shapes()
+    |> input_shape()
     |> case do
       nil -> nil
       shape -> {Shape.resolve_columns(shape), :any}
@@ -94,7 +100,7 @@ defmodule Annex.Layer do
   @spec backward_shape(t()) :: {:any, pos_integer} | nil
   def backward_shape(layer) do
     layer
-    |> shape()
+    |> output_shape()
     |> case do
       nil -> nil
       shape -> {:any, Shape.resolve_rows(shape)}

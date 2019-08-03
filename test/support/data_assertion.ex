@@ -7,10 +7,12 @@ defmodule Annex.DataAssertion do
 
   alias Annex.{
     Data,
-    Data.Shape
+    Shape
   }
 
-  def cast(type, data, shape) when is_tuple(shape) do
+  require Shape
+
+  def cast(type, data, shape) when Shape.is_shape(shape) do
     product = Shape.product(shape)
 
     flat_data =
@@ -121,19 +123,16 @@ defmodule Annex.DataAssertion do
     data: #{inspect(data)}
     """
 
-    shape_tuple_is_all_integers(shape)
+    shape_is_all_integers(shape)
   end
 
-  def shape_tuple_is_all_integers(shape) do
-    all_ints? =
-      shape
-      |> Tuple.to_list()
-      |> Enum.all?(&is_integer/1)
+  def shape_is_all_integers(shape) do
+    all_ints? = Enum.all?(shape, &is_integer/1)
 
     assert all_ints? == true, """
     Annex.Data.shape/2 failed to produce a valid shape.
 
-    A tuple shape have integer elements only.
+    Data shape must be concrete; a list of integers only.
 
     invalid_shape: #{inspect(shape)}
     """
@@ -141,8 +140,8 @@ defmodule Annex.DataAssertion do
     all_ints?
   end
 
-  def shape_product(shape) when is_tuple(shape) do
-    assert shape_tuple_is_all_integers(shape) == true
+  def shape_product(shape) when Shape.is_shape(shape) do
+    assert shape_is_all_integers(shape) == true
     product = Shape.product(shape)
 
     assert is_integer(product) == true, """

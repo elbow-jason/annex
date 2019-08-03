@@ -25,7 +25,6 @@ defmodule Annex.Layer.Activation do
           name: atom()
         }
 
-  @type data_type :: Data.type()
   @type data :: Data.data()
 
   @behaviour Layer
@@ -132,17 +131,6 @@ defmodule Annex.Layer.Activation do
 
     {layer, error, Backprop.put_derivative(props, derivative)}
   end
-
-  @impl Layer
-  @spec data_type(t()) :: nil
-  def data_type(%Activation{}), do: nil
-
-  @doc """
-  Activation has no shape.
-  """
-  @impl Layer
-  @spec shape(t()) :: nil
-  def shape(%Activation{}), do: nil
 
   @spec generate_outputs(t(), Data.data()) :: Data.data()
   def generate_outputs(%Activation{} = layer, inputs) do
