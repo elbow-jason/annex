@@ -9,17 +9,15 @@ defmodule Annex.Layer.Dense do
     Data,
     Data.DMatrix,
     Data.Shape,
-    Layer,
     Layer.Backprop,
     Layer.Dense,
+    LayerConfig,
     Utils
   }
 
   require Data
 
-  import Annex.Utils, only: [is_pos_integer: 1]
-
-  @behaviour Layer
+  use Annex.Layer
 
   @type data :: Data.data()
 
@@ -30,13 +28,14 @@ defmodule Annex.Layer.Dense do
           rows: pos_integer() | nil,
           columns: pos_integer() | nil,
           input: data() | nil,
-          output: data() | nil,
-          initialized?: boolean()
+          output: data() | nil
         }
 
-  @default_data_type :annex
-                     |> Application.get_env(__MODULE__, [])
-                     |> Keyword.get(:data_type, DMatrix)
+  defp default_data_type do
+    :annex
+    |> Application.get_env(__MODULE__, [])
+    |> Keyword.get(:data_type, DMatrix)
+  end
 
   defstruct weights: nil,
             biases: nil,
@@ -44,66 +43,130 @@ defmodule Annex.Layer.Dense do
             columns: nil,
             input: nil,
             output: nil,
-            initialized?: false,
-            data_type: @default_data_type
+            data_type: nil
 
-  @spec build(pos_integer, pos_integer) :: t()
-  def build(rows, columns) when is_pos_integer(rows) and is_pos_integer(columns) do
-    %Dense{
-      rows: rows,
-      columns: columns
-    }
+  @impl Layer
+  @spec init_layer(LayerConfig.t(Dense)) :: {:ok, t()} | {:error, AnnexError.t()}
+  def init_layer(%LayerConfig{} = cfg) do
+    with(
+      {:ok, :data_type, data_type} <- build_data_type(cfg),
+      {:ok, :rows, rows} <- build_rows(cfg),
+      {:ok, :columns, columns} <- build_columns(cfg),
+      {:ok, :weights, weights} <- build_weights(cfg, data_type, rows, columns),
+      {:ok, :biases, biases} <- build_biases(cfg, data_type, rows)
+    ) do
+      dense = %Dense{
+        biases: biases,
+        weights: weights,
+        rows: rows,
+        columns: columns,
+        data_type: data_type
+      }
+
+      {:ok, dense}
+    else
+      {:error, _field, error} ->
+        {:error, error}
+    end
   end
 
-  @spec build(pos_integer()) :: t()
-  def build(rows) when is_pos_integer(rows) do
-    %Dense{rows: rows}
-  end
-
-  @spec build(pos_integer, pos_integer, [float, ...], [float, ...]) :: t()
-  def build(rows, columns, weights, biases, opts \\ []) do
-    debug_assert "Dense rows must be a positive integer" do
-      is_int? = is_integer(rows)
-      is_positive? = rows > 0
-      is_int? && is_positive?
-    end
-
-    debug_assert "Dense columns must be a positive integer" do
-      is_int? = is_integer(columns)
-      is_positive? = columns > 0
-      is_int? && is_positive?
-    end
-
-    debug_assert "Dense weights must be an Annex.Data" do
-      type = Data.infer_type(weights)
-      Data.is_type?(type, weights)
-    end
-
-    debug_assert "Dense biases must be a list of floats" do
-      type = Data.infer_type(biases)
-      Data.is_type?(type, biases)
-    end
-
-    debug_assert "Dense biases shape must be compatible with Dense shape" do
-      {biases_rows, biases_columns} =
-        case Data.shape(biases) do
-          {rows} -> {rows, 1}
-          {rows, cols} -> {rows, cols}
+  defp build_rows(cfg) do
+    with(
+      {:ok, :rows, rows} <- LayerConfig.fetch(cfg, :rows),
+      :ok <-
+        validate :rows, "must be a positive integer" do
+          is_int? = is_integer(rows)
+          is_positive? = rows > 0
+          is_int? && is_positive?
         end
-
-      biases_rows == rows && biases_columns == 1
+    ) do
+      {:ok, :rows, rows}
     end
+  end
 
-    data_type = Keyword.get(opts, :data_type, @default_data_type)
+  defp build_columns(cfg) do
+    with(
+      {:ok, :columns, columns} <- LayerConfig.fetch(cfg, :columns),
+      :ok <-
+        validate :columns, "must be a positive integer" do
+          is_int? = is_integer(columns)
+          is_positive? = columns > 0
+          is_int? && is_positive?
+        end
+    ) do
+      {:ok, :columns, columns}
+    end
+  end
 
-    %Dense{
-      biases: Data.cast!(data_type, biases, {rows, 1}),
-      weights: Data.cast!(data_type, weights, {rows, columns}),
-      rows: rows,
-      columns: columns,
-      initialized?: true,
-      data_type: data_type
-    }
+  defp build_data_type(cfg) do
+    with(
+      {:ok, :data_type, data_type} <-
+        LayerConfig.fetch_lazy(cfg, :data_type, fn ->
+          default_data_type()
+        end),
+      :ok <-
+        validate :data_type, "must be a module" do
+          Utils.is_module?(data_type)
+        end
+    ) do
+      {:ok, :data_type, data_type}
+    end
+  end
+
+  defp build_weights(cfg, data_type, rows, columns) do
+    with(
+      {:ok, :weights, weights} <-
+        LayerConfig.fetch_lazy(cfg, :weights, fn ->
+          Utils.random_weights(rows * columns)
+        end),
+      :ok <-
+        validate :weights, "must be an Annex.Data" do
+          type = Data.infer_type(weights)
+          Data.is_type?(type, weights)
+        end,
+      :ok <-
+        validate :weights, "data size must be the same as the layer" do
+          {weights_rows, weights_columns} =
+            case Data.shape(weights) do
+              {w_rows} -> {w_rows, 1}
+              {w_rows, w_cols} -> {w_rows, w_cols}
+            end
+
+          weights_size = weights_rows * weights_columns
+          layer_size = rows * columns
+          weights_size == layer_size
+        end,
+      {:ok, casted_weights} <- Data.cast(data_type, weights, {rows, columns})
+    ) do
+      {:ok, :weights, casted_weights}
+    end
+  end
+
+  defp build_biases(cfg, data_type, rows) do
+    with(
+      {:ok, :biases, biases} <-
+        LayerConfig.fetch_lazy(cfg, :biases, fn ->
+          Utils.ones(rows)
+        end),
+      :ok <-
+        validate :biases, "must be an Annex.Data" do
+          type = Data.infer_type(biases)
+          Data.is_type?(type, biases)
+        end,
+      :ok <-
+        validate :biases, "data size must match rows" do
+          {biases_rows, biases_columns} =
+            case Data.shape(biases) do
+              {b_rows} -> {b_rows, 1}
+              {b_rows, b_cols} -> {b_rows, b_cols}
+            end
+
+          biases_rows * biases_columns == rows
+        end,
+      {:ok, casted_biases} <- Data.cast(data_type, biases, {rows, 1})
+    ) do
+      {:ok, :biases, casted_biases}
+    end
   end
 
   defp get_output(%Dense{output: o}), do: o
@@ -119,82 +182,6 @@ defmodule Annex.Layer.Dense do
 
   @spec columns(t()) :: pos_integer()
   def columns(%Dense{columns: n}), do: n
-
-  @impl Layer
-  @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
-  def init_layer(layer, opts \\ [])
-
-  def init_layer(%Dense{initialized?: true} = layer, _opts) do
-    {:ok, layer}
-  end
-
-  def init_layer(%Dense{initialized?: false} = dense, opts) do
-    rows = resolve_init_rows(dense, opts)
-    columns = columns(dense)
-
-    debug_assert "rows is a positive integer" do
-      is_pos_integer(rows) == true
-    end
-
-    debug_assert "columns is a positive integer" do
-      is_pos_integer(rows) == true
-    end
-
-    initialized = %Dense{
-      dense
-      | weights: resolve_init_weights(dense, rows, columns),
-        biases: resolve_init_biases(dense, rows),
-        initialized?: true
-    }
-
-    {:ok, initialized}
-  end
-
-  defp resolve_init_weights(%Dense{} = dense, rows, columns) do
-    dense
-    |> data_type()
-    |> build_data(get_weights(dense), rows, columns, fn ->
-      Utils.random_weights(rows * columns)
-    end)
-  end
-
-  defp resolve_init_biases(%Dense{} = dense, rows) do
-    dense
-    |> data_type()
-    |> build_data(get_biases(dense), rows, 1, fn ->
-      fn -> 1.0 end
-      |> Stream.repeatedly()
-      |> Enum.take(rows)
-    end)
-  end
-
-  defp build_data(type, data, rows, columns, builder) when is_atom(type) do
-    data = data || builder.()
-    Data.cast!(type, data, {rows, columns})
-  end
-
-  defp resolve_init_rows(%Dense{rows: rows}, _opts) when is_pos_integer(rows) do
-    rows
-  end
-
-  defp resolve_init_rows(%Dense{rows: nil}, opts) do
-    prev_layer = Keyword.get(opts, :prev_layer)
-
-    debug_assert "rows must be specified if there is no previous layer" do
-      prev_layer != nil
-    end
-
-    resolve_init_rows_from_layer(prev_layer)
-  end
-
-  defp resolve_init_rows_from_layer(layer) do
-    layer
-    |> Layer.shape()
-    |> case do
-      {n} when is_pos_integer(n) -> n
-      {n, _} when is_pos_integer(n) -> n
-    end
-  end
 
   @impl Layer
   @spec feedforward(t(), Data.data()) :: {t(), Data.data()}
@@ -295,7 +282,12 @@ defmodule Annex.Layer.Dense do
         |> Dense.shape()
         |> Kernel.inspect()
 
-      "#Dense<[#{shape}]>"
+      data_type =
+        dense
+        |> Dense.data_type()
+        |> inspect()
+
+      "#Dense<[#{data_type}, #{shape}]>"
     end
   end
 end

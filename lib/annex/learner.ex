@@ -5,10 +5,15 @@ defmodule Annex.Learner do
   A Learner is a model that is capable of supervised learning.
   """
 
-  alias Annex.{Data, Utils}
+  alias Annex.{
+    Data,
+    LayerConfig,
+    Utils
+  }
+
   require Logger
 
-  @type t() :: t()
+  @type t() :: struct()
   @type options :: Keyword.t()
   @type data :: Data.data()
   @type train_output :: %{atom() => any()}
@@ -23,9 +28,20 @@ defmodule Annex.Learner do
     module.predict(learner, data)
   end
 
-  @spec train(t(), data(), data(), Keyword.t()) ::
-          {:ok, t(), list(float())} | {:error, any()}
-  def train(%module{} = learner, all_inputs, all_labels, opts \\ []) do
+  @spec train(t(), data(), data(), Keyword.t()) :: {:ok, t(), list(float())} | {:error, any()}
+  def train(learner, all_inputs, all_labels, opts \\ [])
+
+  def train(%LayerConfig{} = cfg, all_inputs, all_labels, opts) do
+    case LayerConfig.init_layer(cfg) do
+      {:ok, learner} ->
+        train(learner, all_inputs, all_labels, opts)
+
+      {:error, _} = error ->
+        error
+    end
+  end
+
+  def train(%module{} = learner, all_inputs, all_labels, opts) do
     with(
       {:ok, learner} <- module.init_learner(learner, opts),
       {learner2, loss} <- do_train(learner, all_inputs, all_labels, opts)

@@ -20,7 +20,7 @@ defmodule Annex.Layer.Sequence do
   require Logger
 
   @behaviour Learner
-  @behaviour Layer
+  use Layer
 
   @type layers :: MapArray.t()
 
@@ -33,17 +33,52 @@ defmodule Annex.Layer.Sequence do
         }
 
   defstruct layers: %{},
+            layer_configs: [],
             initialized?: false,
             init_options: [],
             train_options: [],
             cost: Defaults.get_defaults(:cost)
 
-  @spec build(list(Layer.t()), Keyword.t()) :: Sequence.t()
-  def build(layers, _opts \\ []) when is_list(layers) do
-    %Sequence{
-      initialized?: false,
-      layers: MapArray.new(layers)
-    }
+  @impl Layer
+  @spec init_layer(LayerConfig.t(Sequence)) :: {:ok, t()} | {:error, AnnexError.t()}
+  def init_layer(%LayerConfig{} = cfg) do
+    with(
+      {:ok, :layers, layer_configs} <- LayerConfig.fetch(cfg, :layers),
+      {:ok, layers} <- do_init_layers(layer_configs)
+    ) do
+      {:ok, %Sequence{layers: layers, layer_configs: layer_configs}}
+    else
+      {:error, :layers, %AnnexError{} = err} ->
+        {:error, err}
+
+      {:error, %AnnexError{}} = err ->
+        err
+    end
+  end
+
+  defp do_init_layers(layer_configs) do
+    layer_configs
+    |> Enum.reduce_while([], fn %LayerConfig{} = layer_config, acc ->
+      case LayerConfig.init_layer(layer_config) do
+        {:ok, built_layer} ->
+          {:cont, [built_layer | acc]}
+
+        {:error, _} = error ->
+          {:halt, error}
+      end
+    end)
+    |> case do
+      rev_built_layers when is_list(rev_built_layers) ->
+        built_layers =
+          rev_built_layers
+          |> Enum.reverse()
+          |> MapArray.new()
+
+        {:ok, built_layers}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   @spec add_layer(t(), struct()) :: t()
@@ -66,53 +101,61 @@ defmodule Annex.Layer.Sequence do
   end
 
   @impl Learner
-  @spec init_learner(t(), any()) :: {:error, any()} | {:ok, t()}
-  def init_learner(seq, opts \\ []) do
-    init_layer(seq, opts)
+  @spec init_learner(t() | LayerConfig.t(Sequence), Keyword.t()) :: {:error, any()} | {:ok, t()}
+  def init_learner(seq, opts \\ [])
+
+  def init_learner(%Sequence{layer_configs: layer_configs}, opts) do
+    Sequence
+    |> LayerConfig.build(layers: layer_configs)
+    |> init_learner(opts)
+  end
+
+  def init_learner(%LayerConfig{} = cfg, _opts) do
+    init_layer(cfg)
   end
 
   @impl Layer
   @spec data_type(t()) :: DMatrix
   def data_type(_), do: DMatrix
 
-  @impl Layer
-  @spec init_layer(Sequence.t(), any()) :: {:error, any()} | {:ok, Sequence.t()}
-  def init_layer(seq, opts \\ [])
+  # @impl Layer
+  # @spec init_layer(Sequence.t(), any()) :: {:error, any()} | {:ok, Sequence.t()}
+  # def init_layer(seq, opts \\ [])
 
-  def init_layer(%Sequence{initialized?: true} = seq, _opts) do
-    {:ok, seq}
-  end
+  # def init_layer(%Sequence{initialized?: true} = seq, _opts) do
+  #   {:ok, seq}
+  # end
 
-  def init_layer(%Sequence{initialized?: false} = seq1, _opts) do
-    initialized_layers =
-      seq1
-      |> get_layers()
-      |> MapArray.map(fn layer, i ->
-        case Layer.init_layer(layer, []) do
-          {:ok, layer} ->
-            {i, layer}
+  # def init_layer(%Sequence{initialized?: false} = seq1, _opts) do
+  #   initialized_layers =
+  #     seq1
+  #     |> get_layers()
+  #     |> MapArray.map(fn layer, i ->
+  #       case Layer.init_layer(layer, []) do
+  #         {:ok, layer} ->
+  #           {i, layer}
 
-          err ->
-            raise Annex.AnnexError,
-              message: """
-              Annex.Layer.Sequence failed to initialize layer.
+  #         err ->
+  #           raise Annex.AnnexError,
+  #             message: """
+  #             Annex.Layer.Sequence failed to initialize layer.
 
-              error: #{inspect(err)}
-              layer: #{inspect(layer)}
-              sequence: #{inspect(seq1)}
-              """
-        end
-      end)
-      |> Map.new()
+  #             error: #{inspect(err)}
+  #             layer: #{inspect(layer)}
+  #             sequence: #{inspect(seq1)}
+  #             """
+  #       end
+  #     end)
+  #     |> Map.new()
 
-    initialized_seq = %Sequence{
-      seq1
-      | layers: initialized_layers,
-        initialized?: true
-    }
+  #   initialized_seq = %Sequence{
+  #     seq1
+  #     | layers: initialized_layers,
+  #       initialized?: true
+  #   }
 
-    {:ok, initialized_seq}
-  end
+  #   {:ok, initialized_seq}
+  # end
 
   @impl Layer
   @spec feedforward(Sequence.t(), Data.data()) :: {Sequence.t(), Data.data()}

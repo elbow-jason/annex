@@ -1,5 +1,5 @@
 defmodule Annex.Layer.DenseTest do
-  use ExUnit.Case, async: true
+  use Annex.LayerCase, async: true
 
   alias Annex.{
     Cost,
@@ -15,7 +15,7 @@ defmodule Annex.Layer.DenseTest do
   def fixture do
     weights = [-0.3333, 0.24, 0.1, 0.7, -0.4, -0.9]
     biases = [1.0, 1.0]
-    Dense.build(2, 3, weights, biases)
+    build!(Dense, rows: 2, columns: 3, weights: weights, baises: biases)
   end
 
   test "dense feedforward works" do
@@ -107,24 +107,45 @@ defmodule Annex.Layer.DenseTest do
            }
   end
 
-  @dense_2_by_3 Dense.build(2, 3, [1.0, 1.0, 1.0, 0.5, 0.5, 0.5], [1.0, 1.0])
+  @dense_2_by_3 build!(Dense,
+                  rows: 2,
+                  columns: 3,
+                  weights: [1.0, 1.0, 1.0, 0.5, 0.5, 0.5],
+                  biases: [1.0, 1.0]
+                )
+  describe "init_layer/1" do
+    test "ok for valid config with rows and columns" do
+      assert {:ok, %Dense{}} =
+               Dense
+               |> LayerConfig.build(rows: 2, columns: 3)
+               |> Dense.init_layer()
+    end
 
-  describe "build/4" do
-    test "outputs the correct shape" do
-      built = Dense.build(2, 3, [1.0, 1.0, 1.0, 0.5, 0.5, 0.5], [1.0, 1.0])
+    test "ok for valid rows, columns, weights, and biases" do
+      assert {:ok, dense} =
+               Dense
+               |> LayerConfig.build(
+                 rows: 2,
+                 columns: 3,
+                 weights: [1.0, 1.0, 1.0, 0.5, 0.5, 0.5],
+                 biases: [1.0, 1.0]
+               )
+               |> Dense.init_layer()
 
-      assert built == %Dense{
-               weights: DMatrix.build([[1.0, 1.0, 1.0], [0.5, 0.5, 0.5]]),
-               biases: DMatrix.build([[1.0], [1.0]]),
+      assert %Dense{
+               weights: weights,
+               biases: biases,
                rows: 2,
                columns: 3,
-               initialized?: true
-             }
+               data_type: Annex.Data.DMatrix
+             } = dense
 
-      dense = Dense.build(2, 1, [1.0, 1.0], [1.0, 1.0])
-      assert dense.weights == DMatrix.build([[1.0], [1.0]])
-      assert Data.shape(DMatrix, dense.weights) == {2, 1}
-      assert Dense.shape(dense) == {2, 1}
+      assert weights == DMatrix.build([[1.0, 1.0, 1.0], [0.5, 0.5, 0.5]])
+      assert biases == DMatrix.build([[1.0], [1.0]])
+
+      assert Data.shape(weights) == {2, 3}
+      assert Data.shape(biases) == {2, 1}
+      assert Dense.shape(dense) == {2, 3}
     end
   end
 

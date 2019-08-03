@@ -7,18 +7,33 @@ defmodule Annex.Layer do
   """
 
   alias Annex.{
+    AnnexError,
     Data,
     Data.Shape,
-    Layer.Backprop
+    Layer.Backprop,
+    LayerConfig
   }
 
   @type t() :: struct()
 
   @callback feedforward(t(), Data.data()) :: {struct(), Data.data()}
   @callback backprop(t(), Data.data(), Backprop.t()) :: {t(), Data.data(), Backprop.t()}
-  @callback init_layer(t(), Keyword.t()) :: {:ok, t()} | {:error, any()}
+
+  @callback init_layer(LayerConfig.t(module())) :: {:ok, struct()} | {:error, AnnexError.t()}
   @callback data_type(t()) :: Data.type() | nil
   @callback shape(t()) :: Shape.t() | nil
+
+  defmacro __using__(_) do
+    quote do
+      alias Annex.Layer
+      @behaviour Layer
+
+      alias Annex.AnnexError
+      alias Annex.LayerConfig
+      require Annex.Utils
+      import Annex.Utils, only: [validate: 3]
+    end
+  end
 
   @spec feedforward(struct(), any()) :: {struct(), any()}
   def feedforward(%module{} = layer, inputs) do
@@ -30,9 +45,9 @@ defmodule Annex.Layer do
     module.backprop(layer, error, props)
   end
 
-  @spec init_layer(struct(), Keyword.t()) :: {:ok, struct()} | {:error, any()}
-  def init_layer(%module{} = layer, opts) do
-    module.init_layer(layer, opts)
+  @spec init_layer(struct()) :: {:ok, struct()} | {:error, AnnexError.t()}
+  def init_layer(%LayerConfig{} = cfg) do
+    LayerConfig.init_layer(cfg)
   end
 
   @spec data_type(atom | struct()) :: Data.type()

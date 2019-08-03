@@ -12,7 +12,6 @@ defmodule Annex.Layer.Lambda do
   alias Annex.{
     Data,
     Data.Shape,
-    Layer,
     Layer.Backprop,
     Layer.Lambda
   }
@@ -52,31 +51,26 @@ defmodule Annex.Layer.Lambda do
     put_state(lambda, state)
   end
 
-  @behaviour Layer
+  # @behaviour Layer
 
-  @impl Layer
   @spec init_layer(t(), Keyword.t()) :: {:ok, t()} | {:error, any()}
   def init_layer(%Lambda{} = lambda, opts \\ []) do
     apply_callback(lambda, :on_init_layer, [lambda, opts], {:ok, lambda})
   end
 
-  @impl Layer
   @spec feedforward(t(), any()) :: {t(), Data.data()}
   def feedforward(%Lambda{} = lambda, inputs) do
     apply_callback(lambda, :on_feedforward, [lambda, inputs], {lambda, inputs})
   end
 
-  @impl Layer
   @spec backprop(t(), Data.data(), Backprop.t()) :: {t(), Data.data(), Backprop.t()}
   def backprop(%Lambda{} = lambda, error, backprop) do
     apply_callback(lambda, :on_backprop, [lambda, error, backprop], {lambda, error, backprop})
   end
 
-  @impl Layer
   @spec data_type(t()) :: Data.type() | nil
   def data_type(%Lambda{data_type: data_type}), do: data_type
 
-  @impl Layer
   @spec shape(t()) :: Shape.t() | nil
   def shape(%Lambda{shape: shape} = lambda) do
     apply_callback(lambda, :on_shape, [lambda], shape)

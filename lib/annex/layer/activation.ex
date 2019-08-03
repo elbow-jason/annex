@@ -7,10 +7,12 @@ defmodule Annex.Layer.Activation do
   """
   use Annex.Debug, debug: true
 
+  alias Annex.AnnexError
   alias Annex.Data
   alias Annex.Layer
   alias Annex.Layer.Activation
   alias Annex.Layer.Backprop
+  alias Annex.LayerConfig
 
   @type func_type :: :float | :list
 
@@ -20,8 +22,7 @@ defmodule Annex.Layer.Activation do
           activator: (number -> number),
           derivative: (number -> number),
           func_type: func_type(),
-          name: atom(),
-          initialized?: boolean()
+          name: atom()
         }
 
   @type data_type :: Data.type()
@@ -35,13 +36,22 @@ defmodule Annex.Layer.Activation do
     :name,
     :outputs,
     :inputs,
-    :func_type,
-    initialized?: false
+    :func_type
   ]
 
-  @spec build(:relu | :sigmoid | :tanh | {:relu, number()}) :: t()
-  def build(name) do
-    case name do
+  @impl Layer
+  @spec init_layer(LayerConfig.t(Activations)) :: {:ok, t()} | {:error, AnnexError.t()}
+  def init_layer(%LayerConfig{} = cfg) do
+    case LayerConfig.details(cfg) do
+      %{name: name} -> from_name(name)
+    end
+  end
+
+  @spec from_name(:relu | :sigmoid | :softmax | :tanh | {:relu, any}) ::
+          {:ok, t()} | {:error, AnnexError.t()}
+  def from_name(name) do
+    name
+    |> case do
       {:relu, threshold} ->
         %Activation{
           activator: fn n -> max(n, threshold) end,
@@ -81,15 +91,24 @@ defmodule Annex.Layer.Activation do
           func_type: :list,
           name: name
         }
+
+      _ ->
+        :error
     end
-  end
+    |> case do
+      %Activation{} = layer ->
+        {:ok, layer}
 
-  @impl Layer
-  @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
-  def init_layer(%Activation{} = activation1, _opts) do
-    activation2 = %Activation{activation1 | initialized?: true}
+      :error ->
+        error = %AnnexError{
+          message: "unknown activation name",
+          details: [
+            name: name
+          ]
+        }
 
-    {:ok, activation2}
+        {:error, error}
+    end
   end
 
   @impl Layer

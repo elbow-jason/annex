@@ -5,12 +5,11 @@ defmodule Annex do
 
   alias Annex.{
     Data,
-    Data.List1D,
-    Layer,
     Layer.Activation,
     Layer.Dense,
     Layer.Dropout,
     Layer.Sequence,
+    LayerConfig,
     Learner
   }
 
@@ -18,9 +17,9 @@ defmodule Annex do
   Given a list of `layers` and `opts` returns a built, but not initialized
   `Sequence`.
   """
-  @spec sequence(list(struct()), keyword()) :: Sequence.t()
-  def sequence(layers, opts \\ []) when is_list(layers) do
-    Sequence.build(layers, opts)
+  @spec sequence(list(LayerConfig.t(module()))) :: LayerConfig.t(Sequence)
+  def sequence(layers) when is_list(layers) do
+    LayerConfig.build(Sequence, layers: layers)
   end
 
   @doc """
@@ -28,9 +27,9 @@ defmodule Annex do
   randomly, at the given frequency, returns `0.0` for an input regardless of
   that input's value.
   """
-  @spec dropout(float()) :: Dropout.t()
+  @spec dropout(float()) :: LayerConfig.t(Dropout)
   def dropout(frequency) do
-    Dropout.build(frequency)
+    LayerConfig.build(Dropout, frequency: frequency)
   end
 
   @doc """
@@ -47,7 +46,8 @@ defmodule Annex do
   def initialize(model, opts \\ []) do
     [
       {is_learner?(model), &Learner.init_learner/2},
-      {is_layer?(model), &Layer.init_layer/2}
+      {is_layer_config?(model), fn cfg, _ -> LayerConfig.init_layer(cfg) end},
+      {is_layer?(model), fn layer, _ -> layer end}
     ]
     |> Enum.group_by(fn {k, _} -> k end, fn {_, v} -> v end)
     |> Map.get(true, [])
@@ -69,19 +69,29 @@ defmodule Annex do
     end)
   end
 
-  defp is_layer?(%module{}), do: function_exported?(module, :init_layer, 2)
-  defp is_layer?(_), do: false
+  defp is_layer_config?(cfg), do: match?(%LayerConfig{}, cfg)
+  defp is_layer?(layer), do: do_module_exports?(layer, {:init_layer, 2})
+  defp is_learner?(learner), do: do_module_exports?(learner, {:init_learner, 2})
 
-  defp is_learner?(%module{}), do: function_exported?(module, :init_learner, 2)
-  defp is_learner?(_), do: false
+  defp do_module_exports?(%module{}, func) do
+    do_module_exports?(module, func)
+  end
+
+  defp do_module_exports?(module, {func, arity}) when is_atom(module) do
+    function_exported?(module, func, arity)
+  end
+
+  defp do_module_exports?(_, _) do
+    false
+  end
 
   @doc """
   Given a number of `rows`, `columns`, some `weights`,
   and some `biases` returns a built `Dense` layer.
   """
-  @spec dense(pos_integer(), pos_integer(), List1D.t(), List1D.t()) :: Dense.t()
+  @spec dense(pos_integer(), pos_integer(), Data.data(), Data.data()) :: LayerConfig.t(Dense)
   def dense(rows, columns, weights, biases) do
-    Dense.build(rows, columns, weights, biases)
+    LayerConfig.build(Dense, rows: rows, columns: columns, weights: weights, biases: biases)
   end
 
   @doc """
@@ -91,9 +101,9 @@ defmodule Annex do
   have no neurons. Upon `Layer.init_layer/2` the Dense layer will be
   initialized with random neurons; Neurons with random weights and biases.
   """
-  @spec dense(pos_integer(), pos_integer()) :: Dense.t()
+  @spec dense(pos_integer(), pos_integer()) :: LayerConfig.t(Dense)
   def dense(rows, columns) do
-    Dense.build(rows, columns)
+    LayerConfig.build(Dense, rows: rows, columns: columns)
   end
 
   @doc """
@@ -107,17 +117,17 @@ defmodule Annex do
   have no neurons. Upon `Layer.init_layer/2` the Dense layer will be
   initialized with random neurons; Neurons with random weights and biases.
   """
-  @spec dense(pos_integer()) :: Dense.t()
+  @spec dense(pos_integer()) :: LayerConfig.t(Dense)
   def dense(rows) do
-    Dense.build(rows)
+    LayerConfig.build(Dense, rows: rows)
   end
 
   @doc """
   Given an Activation's name returns appropriate `Activation` layer.
   """
-  @spec activation(Activation.func_name()) :: Activation.t()
+  @spec activation(Activation.func_name()) :: LayerConfig.t(Activation)
   def activation(name) do
-    Activation.build(name)
+    LayerConfig.build(Activation, %{name: name})
   end
 
   @doc """

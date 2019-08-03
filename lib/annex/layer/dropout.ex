@@ -12,7 +12,7 @@ defmodule Annex.Layer.Dropout do
     Utils
   }
 
-  @behaviour Layer
+  use Layer
 
   @type t :: %__MODULE__{
           frequency: float()
@@ -24,19 +24,47 @@ defmodule Annex.Layer.Dropout do
 
   defguard is_frequency(x) when is_float(x) and x >= 0.0 and x <= 1.0
 
-  @spec build(float()) :: t()
-  def build(frequency) when is_frequency(frequency) do
-    %Dropout{frequency: frequency}
+  @impl Layer
+  @spec init_layer(LayerConfig.t(Dropout)) :: {:ok, t()} | {:error, AnnexError.t()}
+  def init_layer(%LayerConfig{} = cfg) do
+    cfg
+    |> LayerConfig.details()
+    |> Map.fetch(:frequency)
+    |> case do
+      {:ok, frequency} when is_frequency(frequency) ->
+        {:ok, %Dropout{frequency: frequency}}
+
+      {:ok, not_frequency} ->
+        error = %AnnexError{
+          message: "Dropout.build/1 requires a :frequency that is a float between 0.0 and 1.0",
+          details: [
+            invalid_frequency: not_frequency,
+            reason: :invalid_frequency_value
+          ]
+        }
+
+        {:error, error}
+
+      :error ->
+        error = %AnnexError{
+          message: "Dropout.build/1 requires a :frequency that is a float between 0.0 and 1.0",
+          details: [
+            reason: {:key_not_found, :frequency}
+          ]
+        }
+
+        {:error, error}
+    end
   end
 
   @spec frequency(t()) :: float()
   def frequency(%Dropout{frequency: f}), do: f
 
-  @impl Layer
-  @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
-  def init_layer(%Dropout{} = dropout, _opts \\ []) do
-    {:ok, dropout}
-  end
+  # @impl Layer
+  # @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
+  # def init_layer(%Dropout{} = dropout, _opts \\ []) do
+  #   {:ok, dropout}
+  # end
 
   @impl Layer
   @spec feedforward(t(), data()) :: {t(), data()}

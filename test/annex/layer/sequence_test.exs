@@ -1,7 +1,8 @@
 defmodule Annex.Layer.SequenceTest do
-  use ExUnit.Case
+  use Annex.LayerCase
 
   alias Annex.Layer
+  alias Annex.LayerConfig
 
   alias Annex.Layer.{
     Activation,
@@ -25,18 +26,29 @@ defmodule Annex.Layer.SequenceTest do
     |> Enum.take(n)
   end
 
-  def generate_sequence(layers) do
-    Sequence.build(layers)
+  def generate_sequence(layer_configs) do
+    assert {:ok, seq} =
+             Sequence
+             |> LayerConfig.build(layers: layer_configs)
+             |> LayerConfig.init_layer()
+
+    seq
   end
 
-  def in_order?([%Dense{}, %Activation{} | _rest]), do: true
-  def in_order?([%Activation{}, %Dropout{} | _rest]), do: true
-  def in_order?([%Dropout{}, %Dense{} | _rest]), do: true
+  def in_order?([Dense, Activation | _rest]), do: true
+  def in_order?([Activation, Dropout | _rest]), do: true
+  def in_order?([Dropout, Dense | _rest]), do: true
   def in_order?(_), do: false
 
-  def all_in_order?([_]), do: true
-
   def all_in_order?(layers) do
+    layers
+    |> to_module()
+    |> do_all_in_order?()
+  end
+
+  defp do_all_in_order?([_]), do: true
+
+  defp do_all_in_order?(layers) do
     if in_order?(layers) do
       layers
       |> tl()
@@ -45,6 +57,11 @@ defmodule Annex.Layer.SequenceTest do
       false
     end
   end
+
+  defp to_module(list) when is_list(list), do: Enum.map(list, &to_module/1)
+  defp to_module(%LayerConfig{} = cfg), do: LayerConfig.module(cfg)
+  defp to_module(%module{}), do: module
+  defp to_module(module) when is_atom(module), do: module
 
   def assert_in_order(%Sequence{layers: layers}) do
     assert_in_order(layers)
@@ -59,18 +76,33 @@ defmodule Annex.Layer.SequenceTest do
   end
 
   def run_order_assertions(n, seq_transform) do
-    layers = generate_n_layers(n)
-    assert length(layers) == n
-    assert_in_order(layers)
-    seq = seq_transform.(layers)
+    layer_configs = generate_n_layers(n)
+
+    assert %Sequence{} = seq = generate_sequence(layer_configs)
+
+    # make sure seq is in order
     seq_layers = Sequence.get_layers(seq)
     assert MapArray.len(seq_layers) == n
-    assert_in_order(seq_layers)
+    layers = MapArray.to_list(seq_layers)
+    assert_in_order(layers)
+
+    # apply transform
+    assert {:ok, %Sequence{} = seq} =
+             layer_configs
+             |> seq_transform.()
+             |> Sequence.init_layer()
+
+    # make sure seq is in order
+    seq_layers = Sequence.get_layers(seq)
+    assert MapArray.len(seq_layers) == n
+    layers = MapArray.to_list(seq_layers)
+    assert_in_order(layers)
   end
 
   setup do
-    seq = generate_sequence(generate_n_layers(9))
-    {:ok, %{seq: seq}}
+    layer_configs = generate_n_layers(9)
+    seq = generate_sequence(layer_configs)
+    {:ok, %{seq: seq, layer_configs: layer_configs}}
   end
 
   describe "layer ordering:" do
@@ -98,42 +130,44 @@ defmodule Annex.Layer.SequenceTest do
       end)
     end
 
-    test "Sequence.init_layer/1 preserves ordering of layers", %{seq: seq} do
-      assert_in_order(seq)
-      assert seq.initialized? == false
-      assert {:ok, seq2} = Sequence.init_layer(seq)
+    test "Sequence.init_layer/1 preserves ordering of layers", %{layer_configs: layer_configs} do
+      seq_cfg = LayerConfig.build(Sequence, layers: layer_configs)
+      assert_in_order(layer_configs)
+      assert {:ok, seq} = Sequence.init_layer(seq_cfg)
       assert_in_order(seq)
     end
 
-    test "Sequence.feedforward/2 preserves ordering of layers", %{seq: seq} do
-      assert_in_order(seq)
-      assert seq.initialized? == false
-      assert {:ok, seq2} = Sequence.init_layer(seq)
+    test "Sequence.feedforward/2 preserves ordering of layers", %{seq: seq1} do
+      assert {%Sequence{} = seq2, _} = Sequence.feedforward(seq1, [1.0])
+      assert_in_order(seq1)
       assert_in_order(seq2)
-      assert {%Sequence{} = seq3, _} = Sequence.feedforward(seq2, [1.0])
-      assert_in_order(seq3)
     end
 
-    test "Sequence.backprop/2 preserves ordering of layers", %{seq: seq} do
-      assert_in_order(seq)
-      assert seq.initialized? == false
-      assert {:ok, seq2} = Sequence.init_layer(seq)
-      assert_in_order(seq2)
-      assert {%Sequence{} = seq3, _} = Sequence.feedforward(seq2, [1.0])
-      assert_in_order(seq3)
-
+    test "Sequence.backprop/2 preserves ordering of layers", %{seq: seq1} do
+      assert {%Sequence{} = seq2, _} = Sequence.feedforward(seq1, [1.0])
       props = Backprop.new(negative_gradient: 0.1)
-
-      assert {%Sequence{} = seq4, _, _} = Sequence.backprop(seq3, [1.0], props)
-      assert_in_order(seq4)
+      assert {%Sequence{} = seq3, _, _} = Sequence.backprop(seq2, [1.0], props)
+      assert_in_order(seq1)
+      assert_in_order(seq2)
+      assert_in_order(seq3)
     end
   end
 
   describe "feedforward and backprop works for simple sequence" do
     setup do
-      dense = Annex.dense(2, 3, [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], [1.0, 1.0])
-      seq = Sequence.build([dense])
-      assert {:ok, seq} = Layer.init_layer(seq, [])
+      dense =
+        LayerConfig.build(Dense,
+          rows: 2,
+          columns: 3,
+          weights: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+          biases: [1.0, 1.0]
+        )
+
+      assert {:ok, seq} =
+               Sequence
+               |> LayerConfig.build(layers: [dense])
+               |> Layer.init_layer()
+
       {:ok, seq: seq}
     end
 

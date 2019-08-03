@@ -22,6 +22,12 @@ defmodule Annex.Utils do
     Enum.map(1..n, fn _ -> random_float() end)
   end
 
+  def ones(n) do
+    fn -> 1.0 end
+    |> Stream.repeatedly()
+    |> Enum.take(n)
+  end
+
   @doc """
   Random unifmormly splits a given `dataset` into two datasets at a given `frequency`.
   """
@@ -135,6 +141,36 @@ defmodule Annex.Utils do
     case Enum.sum(data) do
       0.0 -> Enum.map(data, fn item -> item end)
       sum -> Enum.map(data, fn item -> item / sum end)
+    end
+  end
+
+  def is_module?(item) do
+    is_atom(item) && Code.ensure_loaded?(item)
+  end
+
+  defmacro validate(field, reason, do: expr) do
+    code = Macro.to_string(expr)
+    vars = Annex.Debug.get_ast_vars(expr)
+
+    quote do
+      result = unquote(expr)
+
+      if result != true do
+        error = %Annex.AnnexError{
+          message: "valiation failed",
+          details: [
+            module: __MODULE__,
+            field: unquote(field),
+            reason: unquote(reason),
+            variables: Keyword.take(binding(), unquote(vars)),
+            code: unquote(code)
+          ]
+        }
+
+        {:error, unquote(field), error}
+      else
+        :ok
+      end
     end
   end
 end

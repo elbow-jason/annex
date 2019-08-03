@@ -40,10 +40,7 @@ defmodule Annex.DataTest do
   ]
 
   use Annex.DataCase, type: SimpleData, data: @casts
-
-  # test "type behaviour is correctly implemented" do
-  #   Annex.DataCase.run_all_assertions(SimpleData, @casts)
-  # end
+  use Annex.LayerCase
 
   describe "cast/3" do
     test "calls cast for implementers of behaviour" do
@@ -137,14 +134,14 @@ defmodule Annex.DataTest do
     end
 
     test "works for Layer" do
-      dense = Dense.build(2, 3)
+      assert {:ok, %Dense{} = dense} = build(Dense, rows: 2, columns: 3)
       assert Data.infer_type(dense) == DMatrix
     end
   end
 
   describe "data_type/1" do
-    test "a Dense layer struct has a default data_type" do
-      dense = %Dense{}
+    test "a built Dense layer defaults data_type to DMatrix" do
+      dense = build!(Dense, rows: 3, columns: 2)
       assert %Dense{data_type: DMatrix} = dense
     end
   end
