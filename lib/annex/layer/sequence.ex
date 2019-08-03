@@ -118,45 +118,6 @@ defmodule Annex.Layer.Sequence do
   @spec data_type(t()) :: DMatrix
   def data_type(_), do: DMatrix
 
-  # @impl Layer
-  # @spec init_layer(Sequence.t(), any()) :: {:error, any()} | {:ok, Sequence.t()}
-  # def init_layer(seq, opts \\ [])
-
-  # def init_layer(%Sequence{initialized?: true} = seq, _opts) do
-  #   {:ok, seq}
-  # end
-
-  # def init_layer(%Sequence{initialized?: false} = seq1, _opts) do
-  #   initialized_layers =
-  #     seq1
-  #     |> get_layers()
-  #     |> MapArray.map(fn layer, i ->
-  #       case Layer.init_layer(layer, []) do
-  #         {:ok, layer} ->
-  #           {i, layer}
-
-  #         err ->
-  #           raise Annex.AnnexError,
-  #             message: """
-  #             Annex.Layer.Sequence failed to initialize layer.
-
-  #             error: #{inspect(err)}
-  #             layer: #{inspect(layer)}
-  #             sequence: #{inspect(seq1)}
-  #             """
-  #       end
-  #     end)
-  #     |> Map.new()
-
-  #   initialized_seq = %Sequence{
-  #     seq1
-  #     | layers: initialized_layers,
-  #       initialized?: true
-  #   }
-
-  #   {:ok, initialized_seq}
-  # end
-
   @impl Layer
   @spec feedforward(Sequence.t(), Data.data()) :: {Sequence.t(), Data.data()}
   def feedforward(%Sequence{} = seq, seq_inputs) do
