@@ -57,8 +57,22 @@ defmodule Annex.Layer do
   @spec data_type(atom | struct()) :: Data.type()
   def data_type(%module{} = layer), do: module.data_type(layer)
 
-  @spec shape(t()) :: Shape.t() | nil
+  @spec shapes(t()) :: Shape.t()
   def shapes(%module{} = layer), do: module.shape(layer)
+
+  @spec has_shapes?(module() | struct()) :: boolean()
+  def has_shapes?(%module{}), do: has_shapes?(module)
+  def has_shapes?(module) when is_atom(module), do: function_exported?(module, :shapes, 1)
+
+  def input_shape(layer) do
+    {input_shape, _} = shapes(layer)
+    input_shape
+  end
+
+  def output_shape(layer) do
+    {_, output_shape} = shapes(layer)
+    output_shape
+  end
 
   @spec convert(t(), Data.data(), Shape.t()) :: {:ok, Data.data()} | {:error, any()}
   def convert(layer, data, shape) do
@@ -70,7 +84,7 @@ defmodule Annex.Layer do
   @spec forward_shape(t()) :: {pos_integer, :any} | nil
   def forward_shape(layer) do
     layer
-    |> shape()
+    |> shapes()
     |> case do
       nil -> nil
       shape -> {Shape.resolve_columns(shape), :any}
