@@ -21,7 +21,11 @@ defmodule Annex.Layer do
 
   @callback init_layer(LayerConfig.t(module())) :: {:ok, struct()} | {:error, AnnexError.t()}
   @callback data_type(t()) :: Data.type() | nil
-  @callback shape(t()) :: Shape.t() | nil
+  @callback shapes(t()) :: {Shape.t(), Shape.t()}
+
+  @optional_callbacks [
+    shapes: 1
+  ]
 
   defmacro __using__(_) do
     quote do
@@ -54,7 +58,7 @@ defmodule Annex.Layer do
   def data_type(%module{} = layer), do: module.data_type(layer)
 
   @spec shape(t()) :: Shape.t() | nil
-  def shape(%module{} = layer), do: module.shape(layer)
+  def shapes(%module{} = layer), do: module.shape(layer)
 
   @spec convert(t(), Data.data(), Shape.t()) :: {:ok, Data.data()} | {:error, any()}
   def convert(layer, data, shape) do
