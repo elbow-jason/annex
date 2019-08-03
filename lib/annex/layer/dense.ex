@@ -23,10 +23,10 @@ defmodule Annex.Layer.Dense do
 
   @type t :: %__MODULE__{
           data_type: Data.type(),
-          weights: data() | nil,
-          biases: data() | nil,
-          rows: pos_integer() | nil,
-          columns: pos_integer() | nil,
+          weights: data(),
+          biases: data(),
+          rows: pos_integer(),
+          columns: pos_integer(),
           input: data() | nil,
           output: data() | nil
         }
