@@ -19,38 +19,38 @@ defmodule Annex.Data.List2DTest do
   ]
 
   @casts [
-    {@data_2_by_3, {2, 3}, {6, 1}},
-    {@data_2_by_3, {2, 3}, {3, 2}},
-    {@data_2_by_3, {2, 3}, {2, 3}},
-    {@data_2_by_3, {2, 3}, {1, 6}},
-    {@data_4_by_2, {4, 2}, {1, 8}},
-    {@data_4_by_2, {4, 2}, {2, 4}},
-    {@data_4_by_2, {4, 2}, {4, 2}},
-    {@data_4_by_2, {4, 2}, {8, 1}}
+    {@data_2_by_3, [2, 3], [6, 1]},
+    {@data_2_by_3, [2, 3], [3, 2]},
+    {@data_2_by_3, [2, 3], [2, 3]},
+    {@data_2_by_3, [2, 3], [1, 6]},
+    {@data_4_by_2, [4, 2], [1, 8]},
+    {@data_4_by_2, [4, 2], [2, 4]},
+    {@data_4_by_2, [4, 2], [4, 2]},
+    {@data_4_by_2, [4, 2], [8, 1]}
   ]
 
   use Annex.DataCase, type: List2D, data: @casts
 
   describe "cast/2" do
     test "given flat data paired with a valid shape can convert into a 2D List" do
-      assert List2D.cast([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], {2, 3}) == [
+      assert List2D.cast([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], [2, 3]) == [
                [1.0, 2.0, 3.0],
                [4.0, 5.0, 6.0]
              ]
     end
 
     test "given a 2D list of floats and the same shape returns the same 2D list" do
-      assert Data.shape(List2D, @data_2_by_3) == {2, 3}
-      assert List2D.cast(@data_2_by_3, {2, 3}) == @data_2_by_3
+      assert Data.shape(List2D, @data_2_by_3) == [2, 3]
+      assert List2D.cast(@data_2_by_3, [2, 3]) == @data_2_by_3
     end
 
     test "works for 2D where the dimensions is the count of the data items" do
-      assert List2D.cast(@data_2_by_3, {3, 2}) == [[1.0, 1.0], [1.0, 2.0], [2.0, 2.0]]
+      assert List2D.cast(@data_2_by_3, [3, 2]) == [[1.0, 1.0], [1.0, 2.0], [2.0, 2.0]]
     end
 
     test "raises for other than 2D list of floats" do
       raises = fn data ->
-        assert_raise(ArgumentError, fn -> List2D.cast(data, {10, 10}) end)
+        assert_raise(ArgumentError, fn -> List2D.cast(data, [10, 10]) end)
       end
 
       raises.([[1]])
@@ -78,8 +78,8 @@ defmodule Annex.Data.List2DTest do
 
   describe "" do
     test "is correct for nested lists" do
-      assert List2D.shape(@data_2_by_3) == {2, 3}
-      assert List2D.shape(@data_4_by_2) == {4, 2}
+      assert List2D.shape(@data_2_by_3) == [2, 3]
+      assert List2D.shape(@data_4_by_2) == [4, 2]
     end
 
     test "raises for other than 2D list" do

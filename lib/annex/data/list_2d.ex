@@ -16,11 +16,11 @@ defmodule Annex.Data.List2D do
   """
   @impl Data
   @spec cast(Data.flat_data() | t(), Shape.t()) :: t()
-  def cast(data, {_, _} = shape) when List1D.is_list1D(data) do
+  def cast(data, [_, _] = shape) when List1D.is_list1D(data) do
     cast([data], shape)
   end
 
-  def cast(data, {_, _} = shape) do
+  def cast(data, [_, _] = shape) do
     flat_data =
       data
       |> type_check()
@@ -62,7 +62,7 @@ defmodule Annex.Data.List2D do
   @impl Data
   def shape(data) do
     [row_of_floats | _] = type_check(data)
-    {length(data), length(row_of_floats)}
+    [length(data), length(row_of_floats)]
   end
 
   @doc """

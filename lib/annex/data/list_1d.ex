@@ -3,7 +3,7 @@ defmodule Annex.Data.List1D do
   The Annex.Data.List is the most basic Annex.Data.
   """
   use Annex.Data
-
+  alias Annex.Shape
   alias Annex.Utils
 
   @type t() :: [float(), ...]
@@ -11,12 +11,12 @@ defmodule Annex.Data.List1D do
   defguard is_list1D(data) when Data.is_flat_data(data)
 
   @impl Data
-  @spec cast(any, {pos_integer()}) :: t()
+  @spec cast(any, Shape.concrete()) :: t()
 
-  def cast(data, {1, n}), do: cast(data, {n})
-  def cast(data, {n, 1}), do: cast(data, {n})
+  def cast(data, [1, n]), do: cast(data, [n])
+  def cast(data, [n, 1]), do: cast(data, [n])
 
-  def cast(data, {n} = shape) when is_list1D(data) and is_integer(n) do
+  def cast(data, [n] = shape) when is_list1D(data) and is_integer(n) do
     elements_count = length(data)
 
     if elements_count != n do
@@ -41,7 +41,7 @@ defmodule Annex.Data.List1D do
 
   @impl Data
   @spec shape(t()) :: Shape.t()
-  def shape(data) when is_list1D(data), do: {length(data)}
+  def shape(data) when is_list1D(data), do: [length(data)]
 
   @impl Data
   @spec is_type?(Data.data()) :: boolean

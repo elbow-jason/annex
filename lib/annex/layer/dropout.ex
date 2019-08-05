@@ -76,14 +76,6 @@ defmodule Annex.Layer.Dropout do
   @spec backprop(t(), data(), Backprop.t()) :: {t(), data(), Backprop.t()}
   def backprop(%Dropout{} = dropout, error, backprop), do: {dropout, error, backprop}
 
-  @impl Layer
-  @spec data_type(t()) :: List1D
-  def data_type(%Dropout{}), do: List1D
-
-  @impl Layer
-  @spec shape(t()) :: nil
-  def shape(%Dropout{}), do: nil
-
   defp drop(inputs, frequency) do
     data_type = Data.infer_type(inputs)
     dropper = fn value -> zeroize_by_frequency(frequency, value) end

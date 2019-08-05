@@ -9,12 +9,12 @@ defmodule Annex.Layer.Sequence do
     Cost,
     Data,
     Data.DMatrix,
-    Data.Shape,
     Defaults,
     Layer,
     Layer.Backprop,
     Layer.Sequence,
-    Learner
+    Learner,
+    Shape
   }
 
   require Logger
@@ -149,7 +149,7 @@ defmodule Annex.Layer.Sequence do
   defp do_convert_for_feedforward(layers, start_index, data) do
     layers
     |> MapArray.seek_up(start_index, fn layer ->
-      Layer.shape(layer) && Layer.data_type(layer)
+      Layer.has_shapes?(layer) && Layer.data_type(layer)
     end)
     |> case do
       :error ->
@@ -165,7 +165,7 @@ defmodule Annex.Layer.Sequence do
   defp do_convert_for_backprop(layers, start_index, data) do
     layers
     |> MapArray.seek_down(start_index, fn layer ->
-      Layer.shape(layer) && Layer.data_type(layer)
+      Layer.has_shapes?(layer) && Layer.data_type(layer)
     end)
     |> case do
       :error ->
@@ -179,16 +179,16 @@ defmodule Annex.Layer.Sequence do
   end
 
   defp shape_for_feedforward(layer) do
-    case Layer.shape(layer) do
-      {_rows, columns} -> {columns, :any}
-      {columns} -> {columns, :any}
+    case Layer.input_shape(layer) do
+      [_rows, columns] -> [columns, :any]
+      [columns] -> [columns, :any]
     end
   end
 
   defp shape_for_backprop(layer) do
-    case Layer.shape(layer) do
-      {rows, _columns} -> {rows, :any}
-      {_} -> {1, :any}
+    case Layer.output_shape(layer) do
+      [_columns, rows] -> [rows, :any]
+      [_] -> [1, :any]
     end
   end
 
@@ -228,18 +228,18 @@ defmodule Annex.Layer.Sequence do
   end
 
   @impl Layer
-  @spec shape(t()) :: Shape.t()
-  def shape(%Sequence{} = seq) do
-    {_rows, columns} = first_shape(seq)
-    {rows, _columns} = last_shape(seq)
-    {rows, columns}
+  @spec shapes(t()) :: {Shape.t(), Shape.t()}
+  def shapes(%Sequence{} = seq) do
+    {input_shape, _} = first_shape(seq)
+    {_, output_shape} = last_shape(seq)
+    {input_shape, output_shape}
   end
 
   defp first_shape(%Sequence{} = seq) do
     seq
     |> get_layers
     |> MapArray.seek_up(fn layer ->
-      Layer.shape(layer)
+      Layer.has_shapes?(layer)
     end)
     |> case do
       :error ->
@@ -249,7 +249,7 @@ defmodule Annex.Layer.Sequence do
           """
 
       {:ok, layer} ->
-        Layer.shape(layer)
+        Layer.shapes(layer)
     end
   end
 
@@ -257,7 +257,7 @@ defmodule Annex.Layer.Sequence do
     seq
     |> get_layers
     |> MapArray.seek_down(fn layer ->
-      Layer.shape(layer)
+      Layer.has_shapes?(layer)
     end)
     |> case do
       :error ->
@@ -267,7 +267,7 @@ defmodule Annex.Layer.Sequence do
           """
 
       {:ok, layer} ->
-        Layer.shape(layer)
+        Layer.shapes(layer)
     end
   end
 
@@ -321,12 +321,24 @@ defmodule Annex.Layer.Sequence do
         seq
         |> Sequence.get_layers()
         |> MapArray.map(fn %module{} = layer ->
-          Kernel.inspect({module, Layer.data_type(layer), Layer.shape(layer)})
+          Kernel.inspect({module, data_type(layer), shapes(layer)})
         end)
         |> Enum.intersperse("\n\t")
         |> IO.iodata_to_binary()
 
       "#Sequence<[\n\t#{details}\n]>"
+    end
+
+    def data_type(layer) do
+      if Layer.has_data_type?(layer) do
+        Layer.data_type(layer)
+      end
+    end
+
+    def shapes(layer) do
+      if Layer.has_shapes?(layer) do
+        Layer.shapes(layer)
+      end
     end
   end
 end

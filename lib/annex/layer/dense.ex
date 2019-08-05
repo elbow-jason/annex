@@ -8,10 +8,10 @@ defmodule Annex.Layer.Dense do
   alias Annex.{
     Data,
     Data.DMatrix,
-    Data.Shape,
     Layer.Backprop,
     Layer.Dense,
     LayerConfig,
+    Shape,
     Utils
   }
 
@@ -126,17 +126,17 @@ defmodule Annex.Layer.Dense do
         end,
       :ok <-
         validate :weights, "data size must be the same as the layer" do
-          {weights_rows, weights_columns} =
+          [weights_rows, weights_columns] =
             case Data.shape(weights) do
-              {w_rows} -> {w_rows, 1}
-              {w_rows, w_cols} -> {w_rows, w_cols}
+              [w_rows] -> [w_rows, 1]
+              [w_rows, w_cols] -> [w_rows, w_cols]
             end
 
           weights_size = weights_rows * weights_columns
           layer_size = rows * columns
           weights_size == layer_size
         end,
-      {:ok, casted_weights} <- Data.cast(data_type, weights, {rows, columns})
+      {:ok, casted_weights} <- Data.cast(data_type, weights, [rows, columns])
     ) do
       {:ok, :weights, casted_weights}
     end
@@ -155,15 +155,15 @@ defmodule Annex.Layer.Dense do
         end,
       :ok <-
         validate :biases, "data size must match rows" do
-          {biases_rows, biases_columns} =
+          [biases_rows, biases_columns] =
             case Data.shape(biases) do
-              {b_rows} -> {b_rows, 1}
-              {b_rows, b_cols} -> {b_rows, b_cols}
+              [b_rows] -> [b_rows, 1]
+              [b_rows, b_cols] -> [b_rows, b_cols]
             end
 
           biases_rows * biases_columns == rows
         end,
-      {:ok, casted_biases} <- Data.cast(data_type, biases, {rows, 1})
+      {:ok, casted_biases} <- Data.cast(data_type, biases, [rows, 1])
     ) do
       {:ok, :biases, casted_biases}
     end
@@ -188,8 +188,8 @@ defmodule Annex.Layer.Dense do
   def feedforward(%Dense{} = dense, inputs) do
     debug_assert "Dense.feedforward/2 input must be dottable with the weights" do
       weights = get_weights(dense)
-      {_, dense_columns} = Data.shape(weights)
-      {inputs_rows, _} = Data.shape(inputs)
+      [_, dense_columns] = Data.shape(weights)
+      [inputs_rows, _] = Data.shape(inputs)
       dense_columns == inputs_rows
     end
 
@@ -237,8 +237,8 @@ defmodule Annex.Layer.Dense do
     input_t = Data.apply_op(input, :transpose, [])
 
     debug_assert "gradients must be dottable with input_T" do
-      {_, gradients_cols} = Data.shape(gradients)
-      {input_rows, _} = Data.shape(input_t)
+      [_, gradients_cols] = Data.shape(gradients)
+      [input_rows, _] = Data.shape(input_t)
 
       gradients_cols == input_rows
     end
@@ -270,16 +270,18 @@ defmodule Annex.Layer.Dense do
   def data_type(%Dense{data_type: data_type}), do: data_type
 
   @impl Layer
-  @spec shape(t()) :: Shape.t()
-  def shape(%Dense{} = dense) do
-    {rows(dense), columns(dense)}
+  @spec shapes(t()) :: {Shape.t(), Shape.t()}
+  def shapes(%Dense{} = dense) do
+    rows = rows(dense)
+    columns = columns(dense)
+    {[rows, columns], [columns, rows]}
   end
 
   defimpl Inspect do
     def inspect(dense, _) do
-      shape =
+      shapes =
         dense
-        |> Dense.shape()
+        |> Dense.shapes()
         |> Kernel.inspect()
 
       data_type =
@@ -287,7 +289,7 @@ defmodule Annex.Layer.Dense do
         |> Dense.data_type()
         |> inspect()
 
-      "#Dense<[#{data_type}, #{shape}]>"
+      "#Dense<[#{data_type}, #{shapes}]>"
     end
   end
 end

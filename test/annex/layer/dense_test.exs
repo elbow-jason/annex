@@ -28,7 +28,7 @@ defmodule Annex.Layer.DenseTest do
 
   test "dense backprop works" do
     dense = %Dense{weights: w} = fixture()
-    assert Data.shape(w) == {2, 3}
+    assert Data.shape(w) == [2, 3]
 
     assert DMatrix.to_list_of_lists(w) == [
              [-0.3333, 0.24, 0.1],
@@ -143,9 +143,9 @@ defmodule Annex.Layer.DenseTest do
       assert weights == DMatrix.build([[1.0, 1.0, 1.0], [0.5, 0.5, 0.5]])
       assert biases == DMatrix.build([[1.0], [1.0]])
 
-      assert Data.shape(weights) == {2, 3}
-      assert Data.shape(biases) == {2, 1}
-      assert Dense.shape(dense) == {2, 3}
+      assert Data.shape(weights) == [2, 3]
+      assert Data.shape(biases) == [2, 1]
+      assert Dense.shapes(dense) == {[2, 3], [3, 2]}
     end
   end
 
@@ -183,7 +183,7 @@ defmodule Annex.Layer.DenseTest do
 
     test "outputs the correct shape", %{inputs: inputs} do
       {_dense2, outputs} = Dense.feedforward(@dense_2_by_3, inputs)
-      assert Data.shape(DMatrix, outputs) == {2, 1}
+      assert Data.shape(DMatrix, outputs) == [2, 1]
     end
 
     test "outputs the correct values", %{inputs: inputs} do

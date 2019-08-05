@@ -9,9 +9,9 @@ defmodule Annex.Layer do
   alias Annex.{
     AnnexError,
     Data,
-    Data.Shape,
     Layer.Backprop,
-    LayerConfig
+    LayerConfig,
+    Shape
   }
 
   @type t() :: struct()
@@ -20,8 +20,14 @@ defmodule Annex.Layer do
   @callback backprop(t(), Data.data(), Backprop.t()) :: {t(), Data.data(), Backprop.t()}
 
   @callback init_layer(LayerConfig.t(module())) :: {:ok, struct()} | {:error, AnnexError.t()}
-  @callback data_type(t()) :: Data.type() | nil
-  @callback shape(t()) :: Shape.t() | nil
+
+  @callback data_type(t()) :: Data.type()
+  @callback shapes(t()) :: {Shape.t(), Shape.t()}
+
+  @optional_callbacks [
+    shapes: 1,
+    data_type: 1
+  ]
 
   defmacro __using__(_) do
     quote do
@@ -50,11 +56,33 @@ defmodule Annex.Layer do
     LayerConfig.init_layer(cfg)
   end
 
+  @spec has_data_type?(module() | struct()) :: boolean()
+  def has_data_type?(%module{}), do: has_data_type?(module)
+  def has_data_type?(module) when is_atom(module), do: function_exported?(module, :data_type, 1)
+
   @spec data_type(atom | struct()) :: Data.type()
   def data_type(%module{} = layer), do: module.data_type(layer)
 
-  @spec shape(t()) :: Shape.t() | nil
-  def shape(%module{} = layer), do: module.shape(layer)
+  @spec shapes(t()) :: {Shape.t(), Shape.t()}
+  def shapes(%module{} = layer), do: module.shapes(layer)
+
+  @spec has_shapes?(module() | struct()) :: boolean()
+  def has_shapes?(%module{}), do: has_shapes?(module)
+  def has_shapes?(module) when is_atom(module), do: function_exported?(module, :shapes, 1)
+
+  def input_shape(layer) do
+    if has_shapes?(layer) do
+      {input_shape, _} = shapes(layer)
+      input_shape
+    end
+  end
+
+  def output_shape(layer) do
+    if has_shapes?(layer) do
+      {_, output_shape} = shapes(layer)
+      output_shape
+    end
+  end
 
   @spec convert(t(), Data.data(), Shape.t()) :: {:ok, Data.data()} | {:error, any()}
   def convert(layer, data, shape) do
@@ -63,23 +91,26 @@ defmodule Annex.Layer do
     |> Data.convert(data, shape)
   end
 
-  @spec forward_shape(t()) :: {pos_integer, :any} | nil
+  @spec forward_shape(t()) :: Shape.t() | nil
   def forward_shape(layer) do
     layer
-    |> shape()
+    |> input_shape()
     |> case do
       nil -> nil
-      shape -> {Shape.resolve_columns(shape), :any}
+      shape -> [Shape.resolve_columns(shape), :any]
     end
   end
 
-  @spec backward_shape(t()) :: {:any, pos_integer} | nil
+  @spec backward_shape(t()) :: Shape.t() | nil
   def backward_shape(layer) do
     layer
-    |> shape()
+    |> input_shape()
     |> case do
-      nil -> nil
-      shape -> {:any, Shape.resolve_rows(shape)}
+      nil ->
+        nil
+
+      shape ->
+        [:any, Shape.resolve_rows(shape)]
     end
   end
 end

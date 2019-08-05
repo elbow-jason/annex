@@ -11,6 +11,7 @@ defmodule Annex.Data.DMatrix do
   alias Annex.{
     Data,
     Data.DMatrix,
+    Shape,
     Utils
   }
 
@@ -23,33 +24,33 @@ defmodule Annex.Data.DMatrix do
   defstruct [:tensor]
 
   @impl Data
-  @spec cast(Data.flat_data() | t(), {pos_integer, pos_integer}) :: t()
+  @spec cast(Data.flat_data() | t(), Shape.t()) :: t()
   def cast(data, shape) when Data.is_flat_data(data) do
     case shape do
-      {rows, columns} ->
+      [rows, columns] ->
         build(data, rows, columns)
 
-      {columns} ->
+      [columns] ->
         build(data, 1, columns)
     end
   end
 
-  def cast(%DMatrix{} = dmatrix, {rows, columns}) do
+  def cast(%DMatrix{} = dmatrix, [rows, columns]) do
     case shape(dmatrix) do
-      {^rows, ^columns} ->
+      [^rows, ^columns] ->
         dmatrix
 
       _ ->
         dmatrix
         |> to_flat_list()
-        |> cast({rows, columns})
+        |> cast([rows, columns])
     end
   end
 
   def cast(%DMatrix{} = dmatrix, {columns}) do
     dmatrix
     |> to_flat_list()
-    |> cast({1, columns})
+    |> cast([1, columns])
   end
 
   @impl Data
@@ -66,12 +67,11 @@ defmodule Annex.Data.DMatrix do
   end
 
   @impl Data
-  @spec shape(t()) :: {pos_integer(), pos_integer()}
+  @spec shape(t()) :: Shape.t()
   def shape(%DMatrix{} = dmatrix) do
     dmatrix
     |> tensor()
     |> Map.fetch!(:dimensions)
-    |> List.to_tuple()
   end
 
   @impl Data
@@ -166,17 +166,17 @@ defmodule Annex.Data.DMatrix do
   def dot(%DMatrix{} = left, %DMatrix{} = right) do
     debug_assert "left DMatrix must be 2D" do
       left_shape = shape(left)
-      tuple_size(left_shape) == 2
+      length(left_shape) == 2
     end
 
     debug_assert "right DMatrix must be 2D" do
       right_shape = shape(right)
-      tuple_size(right_shape) == 2
+      length(right_shape) == 2
     end
 
     debug_assert "DMatrix.dot/2 - left columns must the the same as right rows" do
-      {_, left_columns} = shape(left)
-      {right_rows, _} = shape(right)
+      [_, left_columns] = shape(left)
+      [right_rows, _] = shape(right)
 
       left_columns == right_rows
     end
@@ -185,7 +185,7 @@ defmodule Annex.Data.DMatrix do
   end
 
   def dot(%DMatrix{} = left, data) when Data.is_flat_data(data) do
-    {_, columns} = shape(left)
+    [_, columns] = shape(left)
     # build it so that dot can be performed.
     # in the future we might need to cast the shape with the
     # given rows as well...
@@ -199,7 +199,7 @@ defmodule Annex.Data.DMatrix do
   end
 
   def multiply(%DMatrix{} = left, data) when Data.is_flat_data(data) do
-    {rows, columns} = shape(left)
+    [rows, columns] = shape(left)
     # build it the same shape for multiply
     right = DMatrix.build(data, rows, columns)
 

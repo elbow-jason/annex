@@ -16,9 +16,9 @@ defmodule Annex.Data.List1DTest do
   ]
 
   @casts [
-    {@data_5, {5}, {5}},
-    {@data_6, {6}, {6}},
-    {@data_8, {8}, {8}}
+    {@data_5, [5], [5]},
+    {@data_6, [6], [6]},
+    {@data_8, [8], [8]}
   ]
 
   use Annex.DataCase, type: List1D, data: @casts
@@ -27,11 +27,11 @@ defmodule Annex.Data.List1DTest do
     test "given a 1D list and a 1D shape of the same size" do
       data = [1.0, 1.0, 1.0, 2.0, 2.0, 2.0]
       assert length(data) == 6
-      assert List1D.cast(data, {6}) == data
+      assert List1D.cast(data, [6]) == data
     end
 
     test "raises for nested lists" do
-      assert_raise(FunctionClauseError, fn -> List1D.cast(@data_2_by_3, {6}) end)
+      assert_raise(FunctionClauseError, fn -> List1D.cast(@data_2_by_3, [6]) end)
     end
   end
 
@@ -48,7 +48,7 @@ defmodule Annex.Data.List1DTest do
 
   describe "shape/1" do
     test "is correct for flat lists" do
-      assert List1D.shape(@data_5) == {5}
+      assert List1D.shape(@data_5) == [5]
     end
 
     test "raises for nested lists" do
@@ -83,7 +83,7 @@ defmodule Annex.Data.List1DTest do
 
   describe "Data Behaviour" do
     test "shape/1 works" do
-      [{@data_5, {5}}, {@data_8, {8}}]
+      [{@data_5, [5]}, {@data_8, [8]}]
       |> Enum.each(fn {data, expected_shape} ->
         assert Data.shape(List1D, data) == expected_shape
       end)
@@ -91,9 +91,9 @@ defmodule Annex.Data.List1DTest do
 
     test "cast/2 works" do
       [
-        {@data_5, {5}, @data_5},
-        {@data_6, {6}, @data_6},
-        {@data_8, {8}, @data_8}
+        {@data_5, [5], @data_5},
+        {@data_6, [6], @data_6},
+        {@data_8, [8], @data_8}
       ]
       |> Enum.each(fn {data, shape_to_cast, expected} ->
         assert Data.cast(List1D, data, shape_to_cast) == {:ok, expected}

@@ -11,7 +11,7 @@ defmodule Annex.Data do
     Data,
     Data.List1D,
     Data.List2D,
-    Data.Shape
+    Shape
   }
 
   require Shape
@@ -36,8 +36,10 @@ defmodule Annex.Data do
   defmacro __using__(_) do
     quote do
       require Annex.Data
+      require Annex.Shape
+
       alias Annex.Data
-      alias Annex.Data.Shape
+      alias Annex.Shape
 
       @behaviour Annex.Data
     end
@@ -50,8 +52,8 @@ defmodule Annex.Data do
   e.g. `{2, 3}` or `{3, :any}`
   """
 
-  def cast(type, data, {}) when is_list(data) do
-    message = "Annex.Data.cast/3 got an empty tuple for shape"
+  def cast(type, data, []) when is_list(data) do
+    message = "Annex.Data.cast/3 got an list for shape"
     error = AnnexError.build(message, type: type, data: data)
     {:error, error}
   end
@@ -62,11 +64,12 @@ defmodule Annex.Data do
     {:error, error}
   end
 
-  def cast(type, data, shape) when is_tuple(shape) and is_atom(type) do
+  def cast(type, data, shape) when Shape.is_shape(shape) and is_atom(type) do
     {:ok, type.cast(data, shape)}
   end
 
-  def cast(data, shape) when Shape.is_shape(shape) do
+  @spec cast(Data.data(), Shape.t() | nil) :: {:error, Annex.AnnexError.t()} | {:ok, any}
+  def cast(data, shape) do
     data
     |> infer_type()
     |> cast(data, shape)
@@ -143,26 +146,19 @@ defmodule Annex.Data do
       data_shape = shape(type, data)
       do_convert(type, data, data_shape, target_shape)
     else
-      data_type = infer_type(data)
-      flat = Data.to_flat_list(data_type, data)
+      flat = Data.to_flat_list(data)
       data_shape = List1D.shape(flat)
       do_convert(type, flat, data_shape, target_shape)
     end
   end
 
   defp do_convert(type, data, data_shape, target_shape) do
-    case Shape.convert_abstract_to_concrete(target_shape, data_shape) do
-      {:ok, new_shape} ->
-        cast(type, data, new_shape)
-
-      {:error, _} = error ->
-        error
-    end
+    new_shape = Shape.convert_abstract_to_concrete(target_shape, data_shape)
+    cast(type, data, new_shape)
   end
 
-  def flat_data_to_tensor(flat_data, shape) when is_tuple(shape) do
+  def flat_data_to_tensor(flat_data, shape) when Shape.is_shape(shape) do
     shape
-    |> Tuple.to_list()
     |> Enum.reverse()
     |> Enum.reduce(flat_data, fn chunk_size, acc ->
       Enum.chunk_every(acc, chunk_size)
