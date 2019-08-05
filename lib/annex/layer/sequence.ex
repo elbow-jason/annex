@@ -187,7 +187,7 @@ defmodule Annex.Layer.Sequence do
 
   defp shape_for_backprop(layer) do
     case Layer.output_shape(layer) do
-      [rows, _columns] -> [rows, :any]
+      [_columns, rows] -> [rows, :any]
       [_] -> [1, :any]
     end
   end
@@ -321,12 +321,24 @@ defmodule Annex.Layer.Sequence do
         seq
         |> Sequence.get_layers()
         |> MapArray.map(fn %module{} = layer ->
-          Kernel.inspect({module, Layer.data_type(layer), Layer.shapes(layer)})
+          Kernel.inspect({module, data_type(layer), shapes(layer)})
         end)
         |> Enum.intersperse("\n\t")
         |> IO.iodata_to_binary()
 
       "#Sequence<[\n\t#{details}\n]>"
+    end
+
+    def data_type(layer) do
+      if Layer.has_data_type?(layer) do
+        Layer.data_type(layer)
+      end
+    end
+
+    def shapes(layer) do
+      if Layer.has_shapes?(layer) do
+        Layer.shapes(layer)
+      end
     end
   end
 end

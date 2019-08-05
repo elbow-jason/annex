@@ -274,7 +274,7 @@ defmodule Annex.Layer.Dense do
   def shapes(%Dense{} = dense) do
     rows = rows(dense)
     columns = columns(dense)
-    {[rows, columns], [rows]}
+    {[rows, columns], [columns, rows]}
   end
 
   defimpl Inspect do

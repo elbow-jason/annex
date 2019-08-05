@@ -108,8 +108,13 @@ defmodule Annex.DataTest do
     end
 
     test "raises for an incompatible shape" do
-      {:error, %AnnexError{}} = Data.convert(SimpleData, @simple_2_by_3, [20, 3])
-      {:error, %AnnexError{}} = Data.convert(SimpleData, @simple_2_by_3, [1, 3])
+      assert_raise(AnnexError, fn ->
+        Data.convert(SimpleData, @simple_2_by_3, [20, 3])
+      end)
+
+      assert_raise(AnnexError, fn ->
+        Data.convert(SimpleData, @simple_2_by_3, [1, 3])
+      end)
     end
   end
 

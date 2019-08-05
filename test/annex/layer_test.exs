@@ -15,20 +15,22 @@ defmodule Annex.LayerTest do
   describe "forward_shape/1" do
     test "given a shaped layer returns the layer's columns as rows and :any as the columns" do
       layer = dense_fixture()
-      assert {rows, columns} = Layer.shape(layer)
+      assert {inputs, _outputs} = Layer.shapes(layer)
+      assert [rows, columns] = inputs
       assert rows == 2
       assert columns == 3
-      assert Layer.forward_shape(layer) == {columns, :any}
+      assert Layer.forward_shape(layer) == [columns, :any]
     end
   end
 
   describe "backward_shape/1" do
     test "given a shaped layer returns the layer's rows as columns and :any as the rows" do
       layer = dense_fixture()
-      assert {rows, columns} = Layer.shape(layer)
+      assert {inputs, outputs} = Layer.shapes(layer)
+      assert [rows, columns] = inputs
       assert rows == 2
       assert columns == 3
-      assert Layer.backward_shape(layer) == {:any, rows}
+      assert Layer.backward_shape(layer) == [:any, rows]
     end
   end
 end

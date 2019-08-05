@@ -56,11 +56,15 @@ defmodule Annex.Layer do
     LayerConfig.init_layer(cfg)
   end
 
+  @spec has_data_type?(module() | struct()) :: boolean()
+  def has_data_type?(%module{}), do: has_data_type?(module)
+  def has_data_type?(module) when is_atom(module), do: function_exported?(module, :data_type, 1)
+
   @spec data_type(atom | struct()) :: Data.type()
   def data_type(%module{} = layer), do: module.data_type(layer)
 
   @spec shapes(t()) :: {Shape.t(), Shape.t()}
-  def shapes(%module{} = layer), do: module.shape(layer)
+  def shapes(%module{} = layer), do: module.shapes(layer)
 
   @spec has_shapes?(module() | struct()) :: boolean()
   def has_shapes?(%module{}), do: has_shapes?(module)
@@ -87,23 +91,26 @@ defmodule Annex.Layer do
     |> Data.convert(data, shape)
   end
 
-  @spec forward_shape(t()) :: {pos_integer, :any} | nil
+  @spec forward_shape(t()) :: Shape.t() | nil
   def forward_shape(layer) do
     layer
     |> input_shape()
     |> case do
       nil -> nil
-      shape -> {Shape.resolve_columns(shape), :any}
+      shape -> [Shape.resolve_columns(shape), :any]
     end
   end
 
-  @spec backward_shape(t()) :: {:any, pos_integer} | nil
+  @spec backward_shape(t()) :: Shape.t() | nil
   def backward_shape(layer) do
     layer
-    |> output_shape()
+    |> input_shape()
     |> case do
-      nil -> nil
-      shape -> {:any, Shape.resolve_rows(shape)}
+      nil ->
+        nil
+
+      shape ->
+        [:any, Shape.resolve_rows(shape)]
     end
   end
 end
