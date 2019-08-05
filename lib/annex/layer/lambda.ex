@@ -11,9 +11,9 @@ defmodule Annex.Layer.Lambda do
   """
   alias Annex.{
     Data,
-    Data.Shape,
     Layer.Backprop,
-    Layer.Lambda
+    Layer.Lambda,
+    Shape
   }
 
   @type callback2(out) :: (t(), any() -> out)

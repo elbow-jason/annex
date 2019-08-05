@@ -11,8 +11,8 @@ defmodule Annex.Data.DMatrix do
   alias Annex.{
     Data,
     Data.DMatrix,
-    Utils,
-    Shape
+    Shape,
+    Utils
   }
 
   @type tensor :: any()
