@@ -13,7 +13,7 @@ defmodule Annex.LearnerHelper do
         Learner -
         learner_name: #{Keyword.get(opts, :name)}
         epoch: #{epoch}
-        training_output: #{inspect(training_output)}
+        training_output: #{inspect(training_output, pretty: true)}
         learner: #{inspect(learner)}
         """
       end)
