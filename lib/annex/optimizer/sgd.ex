@@ -25,7 +25,7 @@ defmodule Annex.Optimizer.SGD do
     batch_size = Keyword.get(opts, :batch_size)
     batched_dataset = batch_dataset(dataset, batch_size)
 
-    Enum.reduce(batched_dataset, orig_layer, fn {inputs, labels}, layer1 ->
+    Enum.reduce(batched_dataset, {orig_layer, %{}}, fn {inputs, labels}, {layer1, _output} ->
       {%{} = layer2, prediction} = Layer.feedforward(layer1, inputs)
 
       error = Data.error(prediction, labels)

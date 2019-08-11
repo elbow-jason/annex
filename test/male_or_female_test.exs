@@ -17,15 +17,15 @@ defmodule Annex.SequenceMOrFTest do
     assert {%Sequence{} = seq, _training_output} =
              [
                Annex.dense(2, 2),
-               Annex.activation(:sigmoid),
+               Annex.activation(:tanh),
                Annex.dense(1, 2),
                Annex.activation(:sigmoid)
              ]
              |> Annex.sequence()
              |> Annex.train(dataset,
                name: "male or female based on normalized weight and height",
-               halt_condition: {:epochs, 8_000},
-               log_interval: 1_000
+               halt_condition: {:epochs, 2000},
+               log_interval: 1000
              )
 
     [alice_pred] = Annex.predict(seq, [-2.0, -1.0])

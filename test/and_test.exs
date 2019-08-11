@@ -26,9 +26,9 @@ defmodule Annex.AndTest do
              Annex.train(seq_config, @dataset,
                learning_rate: 0.15,
                name: "AND operation",
-               halt_condition: {:epochs, 8000},
+               halt_condition: {:epochs, 1500},
                log: &LearnerHelper.test_logger/4,
-               log_interval: 1_000
+               log_interval: 750
              )
 
     [should_be_true] = Annex.predict(seq, [1.0, 1.0, 1.0])

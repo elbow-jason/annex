@@ -4,20 +4,16 @@ defmodule Annex.LearnerHelper do
   """
   require Logger
 
-  def test_logger(learner, loss, epoch, opts) do
-    log_interval = Keyword.get(opts, :log_interval, 10_000)
-    inputs = Keyword.get(opts, :inputs)
-    labels = Keyword.get(opts, :labels)
+  def test_logger(learner, training_output, epoch, opts) do
+    log_interval = Keyword.get(opts, :log_interval, 1000)
 
     if rem(epoch, log_interval) == 0 do
       Logger.debug(fn ->
         """
         Learner -
-        training: #{Keyword.get(opts, :name)}
+        learner_name: #{Keyword.get(opts, :name)}
         epoch: #{epoch}
-        loss: #{inspect(loss)}
-        inputs: #{inspect(inputs)}
-        labels: #{inspect(labels)}
+        training_output: #{inspect(training_output)}
         learner: #{inspect(learner)}
         """
       end)

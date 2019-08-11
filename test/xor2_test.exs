@@ -1,24 +1,14 @@
 defmodule Annex.SequenceXor2Test do
   use ExUnit.Case, async: true
   alias Annex.Layer.Sequence
-  alias Annex.Dataset
 
   test "xor2 test" do
-    data = [
-      [0.0, 0.0],
-      [0.0, 1.0],
-      [1.0, 0.0],
-      [1.0, 1.0]
+    dataset = [
+      {[0.0, 0.0], [0.0, 1.0]},
+      {[0.0, 1.0], [1.0, 0.0]},
+      {[1.0, 0.0], [1.0, 0.0]},
+      {[1.0, 1.0], [0.0, 1.0]}
     ]
-
-    labels = [
-      [0.0, 1.0],
-      [1.0, 0.0],
-      [1.0, 0.0],
-      [0.0, 1.0]
-    ]
-
-    dataset = Dataset.zip(data, labels)
 
     assert {%Sequence{} = seq, _training_output} =
              [
@@ -31,8 +21,8 @@ defmodule Annex.SequenceXor2Test do
              |> Annex.train(dataset,
                name: "xor2",
                learning_rate: 0.02,
-               halt_condition: {:epochs, 8000},
-               log_interval: 1000
+               halt_condition: {:epochs, 1200},
+               log_interval: 600
              )
 
     [pred_yes, pred_no] = Annex.predict(seq, [0.0, 0.0])
