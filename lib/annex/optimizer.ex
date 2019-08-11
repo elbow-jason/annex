@@ -1,12 +1,18 @@
 defmodule Annex.Optimizer do
-  def batch_data(%optimizer_module{} = optimizer, dataset) do
-    if function_exported?(optimizer_module, :batch_data, 1) do
-      optimizer_module.batch_data(optimizer, dataset)
-    else
-      dataset
-    end
-  end
+  @moduledoc """
+  The Optimizer Behaviour and context for calling optimizer implementations.
 
+  """
+
+  alias Annex.{Dataset, Learner}
+
+  @type t :: module()
+
+  @callback train(Learner.t(), Dataset.t(), Keyword.t()) ::
+              {Learner.t(), Learner.training_output()}
+
+  @spec train(t(), Learner.t(), Dataset.t(), Keyword.t()) ::
+          {Learner.t(), Learner.training_output()}
   def train(optimizer, learner, dataset, opts) do
     optimizer.train(learner, dataset, opts)
   end

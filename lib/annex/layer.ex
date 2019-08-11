@@ -52,7 +52,7 @@ defmodule Annex.Layer do
     module.backprop(layer, error, props)
   end
 
-  @spec init_layer(LayerConfig.t()) :: t()
+  @spec init_layer(LayerConfig.t(module())) :: t()
   def init_layer(%LayerConfig{} = cfg), do: LayerConfig.init_layer(cfg)
 
   @spec has_data_type?(module() | struct()) :: boolean()

@@ -7,6 +7,7 @@ defmodule Annex.Learner do
 
   alias Annex.{
     Data,
+    Dataset,
     LayerConfig,
     Optimizer,
     Optimizer.SGD
@@ -31,7 +32,7 @@ defmodule Annex.Learner do
     init_learner: 2
   ]
 
-  def __using__(_) do
+  defmacro __using__(_) do
     quote do
       def __annex__(:learner?), do: true
 
@@ -39,7 +40,7 @@ defmodule Annex.Learner do
     end
   end
 
-  def __before_compile__(_env) do
+  defmacro __before_compile__(_env) do
     quote do
       def __annex__(_), do: nil
     end
