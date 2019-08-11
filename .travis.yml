@@ -7,11 +7,7 @@ otp_release:
 sudo: false
 
 env:
-  - MIX_ENV=test
   - COVERALLS_SERVICE_NAME=travis-ci
 
-before_script:
-  - "mix deps.get && mix compile"
-  
 script:
-  - "mix coveralls.travis"
+  - "MIX_ENV=test mix coveralls.travis"
