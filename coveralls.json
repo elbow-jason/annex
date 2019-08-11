@@ -1,6 +1,7 @@
 {
   "skip_files": [
     "examples/*",
-    "deps/*"
+    "deps/*",
+    "test/*"
   ]
 }
