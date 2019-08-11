@@ -1,3 +1,5 @@
 {
-  "skip_files": []
+  "skip_files": [
+    "examples/*"
+  ]
 }
