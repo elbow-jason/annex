@@ -8,6 +8,10 @@ sudo: false
 
 env:
   - MIX_ENV=test
+  - COVERALLS_SERVICE_NAME=travis-ci
 
+before_script:
+  - "mix deps.get && mix compile"
+  
 script:
-  - "mix do deps.get, test && mix compile && mix coveralls.travis"
+  - "mix coveralls.travis"
