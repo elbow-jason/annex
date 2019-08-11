@@ -8,3 +8,4 @@ before_script:
   - mix deps.get
 script:
   - mix test
+  - mix coveralls.travis
