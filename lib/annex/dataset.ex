@@ -23,12 +23,16 @@ defmodule Annex.Dataset do
   Very useful for splitting traiings
   """
   def split(dataset, frequency) when frequency >= 0.0 and frequency <= 1.0 do
-    %{true => left, false => right} =
+    left_size =
       dataset
-      |> randomize()
-      |> Enum.group_by(fn _ -> :rand.uniform() > frequency end)
-      |> Enum.into(%{true => [], false => []})
+      |> Enum.count()
+      |> Kernel.*(frequency)
+      |> trunc()
 
+    randomized = randomize(dataset)
+
+    left = Enum.take(randomized, left_size)
+    right = randomized -- left
     {left, right}
   end
 end
