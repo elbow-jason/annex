@@ -134,20 +134,21 @@ defmodule Annex.DataTest do
     end
 
     test "works for DMatrix data" do
-      data = DMatrix.build([1.0, 2.0, 3.0])
-      assert Data.infer_type(data) == DMatrix
+      assert [1.0, 2.0, 3.0]
+             |> DMatrix.build()
+             |> Data.infer_type() == DMatrix
     end
 
     test "works for Layer" do
-      assert {:ok, %Dense{} = dense} = build(Dense, rows: 2, columns: 3)
-      assert Data.infer_type(dense) == DMatrix
+      assert Dense
+             |> build(rows: 2, columns: 3)
+             |> Data.infer_type() == DMatrix
     end
   end
 
   describe "data_type/1" do
     test "a built Dense layer defaults data_type to DMatrix" do
-      dense = build!(Dense, rows: 3, columns: 2)
-      assert %Dense{data_type: DMatrix} = dense
+      assert %Dense{data_type: DMatrix} = build(Dense, rows: 3, columns: 2)
     end
   end
 end

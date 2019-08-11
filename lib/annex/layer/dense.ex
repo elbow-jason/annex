@@ -46,7 +46,7 @@ defmodule Annex.Layer.Dense do
             data_type: nil
 
   @impl Layer
-  @spec init_layer(LayerConfig.t(Dense)) :: {:ok, t()} | {:error, AnnexError.t()}
+  @spec init_layer(LayerConfig.t(Dense)) :: t() | no_return()
   def init_layer(%LayerConfig{} = cfg) do
     with(
       {:ok, :data_type, data_type} <- build_data_type(cfg),
@@ -55,18 +55,16 @@ defmodule Annex.Layer.Dense do
       {:ok, :weights, weights} <- build_weights(cfg, data_type, rows, columns),
       {:ok, :biases, biases} <- build_biases(cfg, data_type, rows)
     ) do
-      dense = %Dense{
+      %Dense{
         biases: biases,
         weights: weights,
         rows: rows,
         columns: columns,
         data_type: data_type
       }
-
-      {:ok, dense}
     else
       {:error, _field, error} ->
-        {:error, error}
+        raise error
     end
   end
 

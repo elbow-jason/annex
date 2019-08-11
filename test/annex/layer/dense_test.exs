@@ -8,14 +8,13 @@ defmodule Annex.Layer.DenseTest do
     Layer.Activation,
     Layer.Backprop,
     Layer.Dense,
-    Layer.Sequence,
     Utils
   }
 
   def fixture do
     weights = [-0.3333, 0.24, 0.1, 0.7, -0.4, -0.9]
     biases = [1.0, 1.0]
-    build!(Dense, rows: 2, columns: 3, weights: weights, baises: biases)
+    build(Dense, rows: 2, columns: 3, weights: weights, baises: biases)
   end
 
   test "dense feedforward works" do
@@ -44,7 +43,7 @@ defmodule Annex.Layer.DenseTest do
 
     assert output == DMatrix.build([[1.20667], [0.6699999999999999]])
     assert flat_output = DMatrix.to_flat_list(output)
-    error = Sequence.error(flat_output, labels)
+    error = Data.error(flat_output, labels)
 
     error_matrix =
       error
@@ -107,7 +106,7 @@ defmodule Annex.Layer.DenseTest do
            }
   end
 
-  @dense_2_by_3 build!(Dense,
+  @dense_2_by_3 build(Dense,
                   rows: 2,
                   columns: 3,
                   weights: [1.0, 1.0, 1.0, 0.5, 0.5, 0.5],
@@ -115,22 +114,22 @@ defmodule Annex.Layer.DenseTest do
                 )
   describe "init_layer/1" do
     test "ok for valid config with rows and columns" do
-      assert {:ok, %Dense{}} =
+      assert %Dense{} =
                Dense
                |> LayerConfig.build(rows: 2, columns: 3)
                |> Dense.init_layer()
     end
 
     test "ok for valid rows, columns, weights, and biases" do
-      assert {:ok, dense} =
-               Dense
-               |> LayerConfig.build(
-                 rows: 2,
-                 columns: 3,
-                 weights: [1.0, 1.0, 1.0, 0.5, 0.5, 0.5],
-                 biases: [1.0, 1.0]
-               )
-               |> Dense.init_layer()
+      dense =
+        Dense
+        |> LayerConfig.build(
+          rows: 2,
+          columns: 3,
+          weights: [1.0, 1.0, 1.0, 0.5, 0.5, 0.5],
+          biases: [1.0, 1.0]
+        )
+        |> Dense.init_layer()
 
       assert %Dense{
                weights: weights,

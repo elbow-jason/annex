@@ -1,5 +1,6 @@
 defmodule Annex.Examples.Iris do
   alias Annex.{
+    Dataset,
     Layer.Sequence,
     Utils
   }
@@ -46,10 +47,11 @@ defmodule Annex.Examples.Iris do
     |> normalize_by_name(:petal_length)
     |> normalize_by_name(:petal_width)
     |> Enum.map(&prep_row/1)
-    |> Utils.split_dataset(0.30)
-    |> case do
-      {trains, tests} -> {Enum.unzip(trains), Enum.unzip(tests)}
-    end
+    |> Dataset.split(0.30)
+
+    # |> case do
+    #   {trains, tests} -> {Enum.unzip(trains), Enum.unzip(tests)}
+    # end
   end
 
   def normalize_by_name(dataset, name) do
@@ -77,21 +79,9 @@ defmodule Annex.Examples.Iris do
 
   def run do
     %Stream{} = flower_data = load()
-    {train_set, test_set} = prep_data(flower_data)
+    {training_dataset, test_dataset} = prep_data(flower_data)
 
-    {train_data, train_labels} = train_set
-    {test_data, test_labels} = test_set
-
-    Logger.debug(fn ->
-      """
-      Before:
-
-      first test data: #{test_data |> List.first() |> inspect()}
-      first test label #{test_labels |> List.first() |> inspect()}
-      """
-    end)
-
-    {:ok, %Sequence{} = seq, _output} =
+    {%Sequence{} = seq, _output} =
       Annex.sequence([
         # Annex.dropout(0.001),
         Annex.dense(10, 4),
@@ -99,28 +89,20 @@ defmodule Annex.Examples.Iris do
         Annex.dense(3, 10),
         Annex.activation(:sigmoid)
       ])
-      |> Annex.train(train_data, train_labels,
+      |> Annex.train(training_dataset,
         name: :iris,
         learning_rate: 0.17,
         halt_condition: {:epochs, 20_000}
       )
 
-    first_test_data = List.first(test_data)
-    first_test_labels = List.first(test_labels)
-    pred = Annex.predict(seq, first_test_data)
-
     Logger.debug(fn ->
       """
       Done - :iris
-      Data #{inspect(first_test_data)}
-      Labels #{inspect(first_test_labels)}
-      Pred #{inspect(pred)}
       """
     end)
 
     result =
-      test_data
-      |> Enum.zip(test_labels)
+      test_dataset
       |> Enum.map(fn {datum, label} ->
         pred = Annex.predict(seq, datum)
         norm = Utils.normalize(pred)

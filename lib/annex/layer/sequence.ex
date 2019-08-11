@@ -6,10 +6,8 @@ defmodule Annex.Layer.Sequence do
 
   alias Annex.{
     AnnexError,
-    Cost,
     Data,
     Data.DMatrix,
-    Defaults,
     Layer,
     Layer.Backprop,
     Layer.Sequence,
@@ -28,57 +26,36 @@ defmodule Annex.Layer.Sequence do
           layers: layers,
           initialized?: boolean(),
           init_options: Keyword.t(),
-          train_options: Keyword.t(),
-          cost: Cost.t()
+          train_options: Keyword.t()
         }
 
   defstruct layers: %{},
             layer_configs: [],
             initialized?: false,
             init_options: [],
-            train_options: [],
-            cost: Defaults.get_defaults(:cost)
+            train_options: []
 
   @impl Layer
-  @spec init_layer(LayerConfig.t(Sequence)) :: {:ok, t()} | {:error, AnnexError.t()}
+  @spec init_layer(LayerConfig.t(Sequence)) :: t()
   def init_layer(%LayerConfig{} = cfg) do
     with(
       {:ok, :layers, layer_configs} <- LayerConfig.fetch(cfg, :layers),
-      {:ok, layers} <- do_init_layers(layer_configs)
+      layers <- do_init_layers(layer_configs)
     ) do
-      {:ok, %Sequence{layers: layers, layer_configs: layer_configs}}
+      %Sequence{layers: layers, layer_configs: layer_configs}
     else
       {:error, :layers, %AnnexError{} = err} ->
-        {:error, err}
-
-      {:error, %AnnexError{}} = err ->
-        err
+        raise err
     end
   end
 
   defp do_init_layers(layer_configs) do
     layer_configs
-    |> Enum.reduce_while([], fn %LayerConfig{} = layer_config, acc ->
-      case LayerConfig.init_layer(layer_config) do
-        {:ok, built_layer} ->
-          {:cont, [built_layer | acc]}
-
-        {:error, _} = error ->
-          {:halt, error}
-      end
+    |> Enum.reduce([], fn %LayerConfig{} = layer_config, acc ->
+      [LayerConfig.init_layer(layer_config) | acc]
     end)
-    |> case do
-      rev_built_layers when is_list(rev_built_layers) ->
-        built_layers =
-          rev_built_layers
-          |> Enum.reverse()
-          |> MapArray.new()
-
-        {:ok, built_layers}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+    |> Enum.reverse()
+    |> MapArray.new()
   end
 
   @spec add_layer(t(), struct()) :: t()
@@ -86,22 +63,11 @@ defmodule Annex.Layer.Sequence do
     %Sequence{seq | layers: seq |> get_layers() |> MapArray.append(layer)}
   end
 
-  @spec get_cost(t()) :: Cost.t()
-  def get_cost(%Sequence{cost: cost}), do: cost
-
   @spec get_layers(t()) :: layers
   def get_layers(%Sequence{layers: layers}), do: layers
 
   @impl Learner
-  @spec train_opts(keyword()) :: keyword()
-  def train_opts(opts) when is_list(opts) do
-    Defaults.get_defaults()
-    |> Keyword.merge(opts)
-    |> Keyword.take([:learning_rate, :cost])
-  end
-
-  @impl Learner
-  @spec init_learner(t() | LayerConfig.t(Sequence), Keyword.t()) :: {:error, any()} | {:ok, t()}
+  @spec init_learner(t() | LayerConfig.t(Sequence), Keyword.t()) :: t() | no_return()
   def init_learner(seq, opts \\ [])
 
   def init_learner(%Sequence{layer_configs: layer_configs}, opts) do
@@ -193,8 +159,7 @@ defmodule Annex.Layer.Sequence do
   end
 
   @impl Layer
-  @spec backprop(Sequence.t(), Data.data(), Backprop.t()) ::
-          {Sequence.t(), Data.data(), Backprop.t()}
+  @spec backprop(t(), Data.data(), Backprop.t()) :: {t(), Data.data(), Backprop.t()}
   def backprop(%Sequence{} = seq, seq_errors, seq_backprops) do
     layers = get_layers(seq)
 
@@ -276,43 +241,6 @@ defmodule Annex.Layer.Sequence do
   def predict(%Sequence{} = seq, data) do
     {_, prediction} = Layer.feedforward(seq, data)
     prediction
-  end
-
-  @impl Learner
-  @spec train(t(), Data.data(), Data.data(), Keyword.t()) :: {t(), Learner.train_output()}
-  def train(%Sequence{} = seq1, data, labels, _opts) do
-    {%Sequence{} = seq2, prediction} = Layer.feedforward(seq1, data)
-
-    prediction = Data.to_flat_list(prediction)
-    labels = Data.to_flat_list(labels)
-
-    errors =
-      prediction
-      |> error(labels)
-      |> Data.to_flat_list()
-
-    props = Backprop.new()
-    {seq3, _error2, _props} = Layer.backprop(seq2, errors, props)
-
-    loss =
-      seq1
-      |> get_cost()
-      |> Cost.calculate(errors)
-
-    output = %{
-      loss: loss,
-      data: data,
-      labels: labels,
-      prediction: prediction,
-      errors: errors
-    }
-
-    {seq3, output}
-  end
-
-  @spec error(Data.data(), Data.data()) :: Data.data()
-  def error(outputs, labels) do
-    Data.apply_op(outputs, :subtract, [labels])
   end
 
   defimpl Inspect do

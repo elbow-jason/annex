@@ -29,18 +29,6 @@ defmodule Annex.Utils do
   end
 
   @doc """
-  Random unifmormly splits a given `dataset` into two datasets at a given `frequency`.
-  """
-  def split_dataset(dataset, frequency) when frequency >= 0.0 and frequency <= 1.0 do
-    grouped =
-      dataset
-      |> Enum.shuffle()
-      |> Enum.group_by(fn _ -> :rand.uniform() > frequency end)
-
-    {Map.get(grouped, true, []), Map.get(grouped, false, [])}
-  end
-
-  @doc """
   A strict zip function in which the two given enumerables *must* be the same size.
   """
   @spec zip([any()], [any()]) :: [{any(), any()}]

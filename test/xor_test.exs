@@ -1,23 +1,17 @@
 defmodule Annex.SequenceXorTest do
   use ExUnit.Case, async: true
+
   alias Annex.Layer.Sequence
 
   test "xor test" do
-    data = [
-      [0.0, 0.0],
-      [0.0, 1.0],
-      [1.0, 0.0],
-      [1.0, 1.0]
+    dataset = [
+      {[0.0, 0.0], [0.0]},
+      {[0.0, 1.0], [1.0]},
+      {[1.0, 0.0], [1.0]},
+      {[1.0, 1.0], [0.0]}
     ]
 
-    labels = [
-      [0.0],
-      [1.0],
-      [1.0],
-      [0.0]
-    ]
-
-    assert {:ok, %Sequence{} = seq, _loss} =
+    assert {%Sequence{} = seq, _training_output} =
              [
                Annex.dense(8, 2),
                Annex.activation(:tanh),
@@ -25,7 +19,7 @@ defmodule Annex.SequenceXorTest do
                Annex.activation(:sigmoid)
              ]
              |> Annex.sequence()
-             |> Annex.train(data, labels,
+             |> Annex.train(dataset,
                name: "XOR operation",
                learning_rate: 0.05,
                halt_condition: {:epochs, 8_000},

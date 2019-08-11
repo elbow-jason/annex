@@ -39,15 +39,14 @@ defmodule Annex.Layer.Activation do
   ]
 
   @impl Layer
-  @spec init_layer(LayerConfig.t(Activations)) :: {:ok, t()} | {:error, AnnexError.t()}
+  @spec init_layer(LayerConfig.t(Activations)) :: t()
   def init_layer(%LayerConfig{} = cfg) do
     case LayerConfig.details(cfg) do
       %{name: name} -> from_name(name)
     end
   end
 
-  @spec from_name(:relu | :sigmoid | :softmax | :tanh | {:relu, any}) ::
-          {:ok, t()} | {:error, AnnexError.t()}
+  @spec from_name(func_name()) :: t() | no_return()
   def from_name(name) do
     name
     |> case do
@@ -92,21 +91,12 @@ defmodule Annex.Layer.Activation do
         }
 
       _ ->
-        :error
-    end
-    |> case do
-      %Activation{} = layer ->
-        {:ok, layer}
-
-      :error ->
-        error = %AnnexError{
+        raise %AnnexError{
           message: "unknown activation name",
           details: [
             name: name
           ]
         }
-
-        {:error, error}
     end
   end
 

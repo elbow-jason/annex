@@ -9,7 +9,7 @@ defmodule Annex.LayerTest do
   def dense_fixture do
     weights = [-0.3333, 0.24, 0.1, 0.7, -0.4, -0.9]
     biases = [1.0, 1.0]
-    build!(Dense, rows: 2, columns: 3, weights: weights, biases: biases)
+    build(Dense, rows: 2, columns: 3, weights: weights, biases: biases)
   end
 
   describe "forward_shape/1" do
