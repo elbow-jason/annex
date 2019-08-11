@@ -7,6 +7,7 @@ defmodule Annex.LayerConfig do
   """
   alias Annex.{
     AnnexError,
+    Layer,
     LayerConfig
   }
 
@@ -42,7 +43,7 @@ defmodule Annex.LayerConfig do
     %LayerConfig{cfg | details: cfg |> details |> Map.merge(more_details)}
   end
 
-  @spec init_layer(t(module())) :: {:ok, struct()} | {:error, AnnexError.t()}
+  @spec init_layer(t(module())) :: Layer.t()
   def init_layer(%LayerConfig{} = cfg) do
     module(cfg).init_layer(cfg)
   end

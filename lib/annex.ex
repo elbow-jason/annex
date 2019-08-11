@@ -5,6 +5,7 @@ defmodule Annex do
 
   alias Annex.{
     Data,
+    Layer,
     Layer.Activation,
     Layer.Dense,
     Layer.Dropout,
@@ -44,46 +45,16 @@ defmodule Annex do
   """
   @spec initialize(struct()) :: struct()
   def initialize(model, opts \\ []) do
-    [
-      {is_learner?(model), &Learner.init_learner/2},
-      {is_layer_config?(model), fn cfg, _ -> LayerConfig.init_layer(cfg) end},
-      {is_layer?(model), fn layer, _ -> layer end}
-    ]
-    |> Enum.group_by(fn {k, _} -> k end, fn {_, v} -> v end)
-    |> Map.get(true, [])
-    |> case do
-      [] ->
-        {:error, :invalid_model}
-
-      funcs ->
-        do_init(model, funcs, opts)
+    cond do
+      is_learner?(model) -> Learner.init_learner(model, opts)
+      is_layer_config?(model) -> LayerConfig.init_layer(model)
+      is_layer?(model) -> model
     end
   end
 
-  defp do_init(model, funcs, opts) do
-    Enum.reduce_while(funcs, model, fn fun, acc ->
-      case fun.(acc, opts) do
-        {:ok, acc} -> {:cont, acc}
-        {:error, _} = err -> {:halt, err}
-      end
-    end)
-  end
-
   defp is_layer_config?(cfg), do: match?(%LayerConfig{}, cfg)
-  defp is_layer?(layer), do: do_module_exports?(layer, {:init_layer, 2})
-  defp is_learner?(learner), do: do_module_exports?(learner, {:init_learner, 2})
-
-  defp do_module_exports?(%module{}, func) do
-    do_module_exports?(module, func)
-  end
-
-  defp do_module_exports?(module, {func, arity}) when is_atom(module) do
-    function_exported?(module, func, arity)
-  end
-
-  defp do_module_exports?(_, _) do
-    false
-  end
+  defp is_layer?(layer), do: Layer.is_layer?(layer)
+  defp is_learner?(learner), do: Learner.is_learner?(learner)
 
   @doc """
   Given a number of `rows`, `columns`, some `weights`,
@@ -138,10 +109,8 @@ defmodule Annex do
 
   Returns the trained `learner` along with some measure of loss or performance.
   """
-  @spec train(struct(), Learner.data(), Learner.data(), Keyword.t()) ::
-          {:ok, Learner.t(), Learner.data()} | {:error, any()}
-  def train(%_{} = learner, data, labels, options \\ []) do
-    Learner.train(learner, data, labels, options)
+  def train(%_{} = learner, dataset, options \\ []) do
+    Learner.train(learner, dataset, options)
   end
 
   @doc """

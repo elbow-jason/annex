@@ -27,11 +27,12 @@ defmodule Annex.Layer.SequenceTest do
   end
 
   def generate_sequence(layer_configs) do
-    assert {:ok, seq} =
-             Sequence
-             |> LayerConfig.build(layers: layer_configs)
-             |> LayerConfig.init_layer()
+    seq =
+      Sequence
+      |> LayerConfig.build(layers: layer_configs)
+      |> LayerConfig.init_layer()
 
+    assert %Sequence{} = seq
     seq
   end
 
@@ -87,11 +88,12 @@ defmodule Annex.Layer.SequenceTest do
     assert_in_order(layers)
 
     # apply transform
-    assert {:ok, %Sequence{} = seq} =
-             layer_configs
-             |> seq_transform.()
-             |> Sequence.init_layer()
+    seq =
+      layer_configs
+      |> seq_transform.()
+      |> Sequence.init_layer()
 
+    assert %Sequence{} = seq
     # make sure seq is in order
     seq_layers = Sequence.get_layers(seq)
     assert MapArray.len(seq_layers) == n
@@ -133,8 +135,10 @@ defmodule Annex.Layer.SequenceTest do
     test "Sequence.init_layer/1 preserves ordering of layers", %{layer_configs: layer_configs} do
       seq_cfg = LayerConfig.build(Sequence, layers: layer_configs)
       assert_in_order(layer_configs)
-      assert {:ok, seq} = Sequence.init_layer(seq_cfg)
-      assert_in_order(seq)
+
+      seq_cfg
+      |> Sequence.init_layer()
+      |> assert_in_order()
     end
 
     test "Sequence.feedforward/2 preserves ordering of layers", %{seq: seq1} do
@@ -163,7 +167,7 @@ defmodule Annex.Layer.SequenceTest do
           biases: [1.0, 1.0]
         )
 
-      assert {:ok, seq} =
+      assert seq =
                Sequence
                |> LayerConfig.build(layers: [dense])
                |> Layer.init_layer()

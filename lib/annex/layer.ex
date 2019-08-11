@@ -7,7 +7,6 @@ defmodule Annex.Layer do
   """
 
   alias Annex.{
-    AnnexError,
     Data,
     Layer.Backprop,
     LayerConfig,
@@ -19,7 +18,7 @@ defmodule Annex.Layer do
   @callback feedforward(t(), Data.data()) :: {struct(), Data.data()}
   @callback backprop(t(), Data.data(), Backprop.t()) :: {t(), Data.data(), Backprop.t()}
 
-  @callback init_layer(LayerConfig.t(module())) :: {:ok, struct()} | {:error, AnnexError.t()}
+  @callback init_layer(LayerConfig.t(module())) :: t()
 
   @callback data_type(t()) :: Data.type()
   @callback shapes(t()) :: {Shape.t(), Shape.t()}
@@ -38,6 +37,8 @@ defmodule Annex.Layer do
       alias Annex.LayerConfig
       require Annex.Utils
       import Annex.Utils, only: [validate: 3]
+
+      def __annex__(:is_layer?), do: true
     end
   end
 
@@ -51,10 +52,8 @@ defmodule Annex.Layer do
     module.backprop(layer, error, props)
   end
 
-  @spec init_layer(struct()) :: {:ok, struct()} | {:error, AnnexError.t()}
-  def init_layer(%LayerConfig{} = cfg) do
-    LayerConfig.init_layer(cfg)
-  end
+  @spec init_layer(LayerConfig.t(module())) :: t()
+  def init_layer(%LayerConfig{} = cfg), do: LayerConfig.init_layer(cfg)
 
   @spec has_data_type?(module() | struct()) :: boolean()
   def has_data_type?(%module{}), do: has_data_type?(module)
@@ -69,6 +68,15 @@ defmodule Annex.Layer do
   @spec has_shapes?(module() | struct()) :: boolean()
   def has_shapes?(%module{}), do: has_shapes?(module)
   def has_shapes?(module) when is_atom(module), do: function_exported?(module, :shapes, 1)
+
+  @spec is_layer?(any()) :: boolean()
+  def is_layer?(%module{}) do
+    is_layer?(module)
+  end
+
+  def is_layer?(item) do
+    is_atom(item) && function_exported?(item, :__annex__, 1) && item.__annex__(:is_layer?)
+  end
 
   def input_shape(layer) do
     if has_shapes?(layer) do

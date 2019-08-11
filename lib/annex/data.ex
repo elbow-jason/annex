@@ -53,7 +53,7 @@ defmodule Annex.Data do
   """
 
   def cast(type, data, []) when is_list(data) do
-    message = "Annex.Data.cast/3 got an list for shape"
+    message = "Annex.Data.cast/3 got an empty list for shape"
     error = AnnexError.build(message, type: type, data: data)
     {:error, error}
   end
@@ -195,5 +195,14 @@ defmodule Annex.Data do
   @spec apply_op(module, data(), any, list(any)) :: data()
   def apply_op(type, data, name, args) when is_atom(type) do
     type.apply_op(data, name, args)
+  end
+
+  @spec error(Data.data(), Data.data()) :: Data.flat_data()
+  def error(outputs, labels) do
+    labels = Data.to_flat_list(labels)
+
+    outputs
+    |> Data.to_flat_list()
+    |> Data.apply_op(:subtract, [labels])
   end
 end

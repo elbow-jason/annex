@@ -25,17 +25,17 @@ defmodule Annex.Layer.Dropout do
   defguard is_frequency(x) when is_float(x) and x >= 0.0 and x <= 1.0
 
   @impl Layer
-  @spec init_layer(LayerConfig.t(Dropout)) :: {:ok, t()} | {:error, AnnexError.t()}
+  @spec init_layer(LayerConfig.t(Dropout)) :: t()
   def init_layer(%LayerConfig{} = cfg) do
     cfg
     |> LayerConfig.details()
     |> Map.fetch(:frequency)
     |> case do
       {:ok, frequency} when is_frequency(frequency) ->
-        {:ok, %Dropout{frequency: frequency}}
+        %Dropout{frequency: frequency}
 
       {:ok, not_frequency} ->
-        error = %AnnexError{
+        raise %AnnexError{
           message: "Dropout.build/1 requires a :frequency that is a float between 0.0 and 1.0",
           details: [
             invalid_frequency: not_frequency,
@@ -43,17 +43,13 @@ defmodule Annex.Layer.Dropout do
           ]
         }
 
-        {:error, error}
-
       :error ->
-        error = %AnnexError{
+        raise %AnnexError{
           message: "Dropout.build/1 requires a :frequency that is a float between 0.0 and 1.0",
           details: [
             reason: {:key_not_found, :frequency}
           ]
         }
-
-        {:error, error}
     end
   end
 
