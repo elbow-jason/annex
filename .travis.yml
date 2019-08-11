@@ -4,5 +4,6 @@ elixir:
 otp_release:
   - "21.0"
 sudo: false
+
 script:
   - MIX_ENV=test mix do deps.get, compile, coveralls.travis
