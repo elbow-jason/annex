@@ -69,13 +69,13 @@ defmodule Annex.Layer do
   def has_shapes?(%module{}), do: has_shapes?(module)
   def has_shapes?(module) when is_atom(module), do: function_exported?(module, :shapes, 1)
 
-  @spec is_layer?(module() | struct()) :: boolean()
+  @spec is_layer?(any()) :: boolean()
   def is_layer?(%module{}) do
     is_layer?(module)
   end
 
-  def is_layer?(module) when is_atom(module) do
-    function_exported?(module, :__annex__, 1) && module.__annex__(:is_layer?)
+  def is_layer?(item) do
+    is_atom(item) && function_exported?(item, :__annex__, 1) && item.__annex__(:is_layer?)
   end
 
   def input_shape(layer) do
