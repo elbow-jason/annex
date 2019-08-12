@@ -6,10 +6,13 @@ defmodule Annex.Data.DMatrixTest do
     Data.DMatrix
   }
 
-  test "DMatrix enumerates floats with Enum.map/2" do
-    dmatrix = DMatrix.cast([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], [2, 3])
+  @dmatrix_2_by_3 DMatrix.build([
+                    [1.0, 2.0, 3.0],
+                    [4.0, 5.0, 6.0]
+                  ])
 
-    Enum.map(dmatrix, fn item ->
+  test "DMatrix enumerates floats with Enum.map/2" do
+    Enum.map(@dmatrix_2_by_3, fn item ->
       assert is_float(item) == true, """
       When a DMatrix is enumerated the values should be floats.
       got: #{inspect(item)}
@@ -24,23 +27,10 @@ defmodule Annex.Data.DMatrixTest do
     end
   end
 
-  alias Annex.{
-    Data,
-    Data.DMatrix,
-    Shape,
-    Utils
-  }
-
-  alias Tensor.Matrix
-
-  @dmatrix_2_by_3 DMatrix.build([
-                    [1.0, 2.0, 3.0],
-                    [4.0, 5.0, 6.0]
-                  ])
-
   describe "cast/2" do
     test "works for flat data given 1 dimensional shape" do
-      assert DMatrix.cast(@dmatrix_2_by_3, [6]) == DMatrix.build([[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]])
+      flat_data = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+      assert DMatrix.cast(flat_data, [6]) == DMatrix.build([[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]])
     end
 
     test "works for flat data given 2 dimensional shape" do
@@ -95,7 +85,7 @@ defmodule Annex.Data.DMatrixTest do
 
   describe "to_flat_list/1" do
     test "works for DMatrix struct" do
-      DMatrix.to_flat_list(@dmatrix_2_by_3) == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+      assert DMatrix.to_flat_list(@dmatrix_2_by_3) == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
     end
   end
 
@@ -393,6 +383,16 @@ defmodule Annex.Data.DMatrixTest do
                  [1.0, 8.0, 27.0],
                  [64.0, 125.0, 216.0]
                ])
+    end
+  end
+
+  describe "Enumerable protocol" do
+    test "Enum.count/1 works" do
+      assert Enum.count(@dmatrix_2_by_3) == 6
+    end
+
+    test "Enum.member?/2 works" do
+      assert Enum.member?(@dmatrix_2_by_3, 1.0)
     end
   end
 end

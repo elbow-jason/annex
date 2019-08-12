@@ -187,27 +187,27 @@ defmodule Annex.Data.DMatrix do
     apply_tensor(left, right, &Matrix.product/2)
   end
 
-  def dot(%DMatrix{} = left, data) when Data.is_flat_data(data) do
-    [_, columns] = shape(left)
-    # build it so that dot can be performed.
-    # in the future we might need to cast the shape with the
-    # given rows as well...
-    right = DMatrix.build(data, columns, 1)
-    apply_tensor(left, right, &Matrix.product/2)
-  end
+  # def dot(%DMatrix{} = left, data) when Data.is_flat_data(data) do
+  #   [_, columns] = shape(left)
+  #   # build it so that dot can be performed.
+  #   # in the future we might need to cast the shape with the
+  #   # given rows as well...
+  #   right = DMatrix.build(data, columns, 1)
+  #   apply_tensor(left, right, &Matrix.product/2)
+  # end
 
   @spec multiply(t(), t() | number | [float(), ...]) :: t()
   def multiply(%DMatrix{} = d, n) when is_number(n) do
     apply_tensor(d, n, &Matrix.mult_number/2)
   end
 
-  def multiply(%DMatrix{} = left, data) when Data.is_flat_data(data) do
-    [rows, columns] = shape(left)
-    # build it the same shape for multiply
-    right = DMatrix.build(data, rows, columns)
+  # def multiply(%DMatrix{} = left, data) when Data.is_flat_data(data) do
+  #   [rows, columns] = shape(left)
+  #   # build it the same shape for multiply
+  #   right = DMatrix.build(data, rows, columns)
 
-    multiply(left, right)
-  end
+  #   multiply(left, right)
+  # end
 
   def multiply(%DMatrix{} = left, %DMatrix{} = right) do
     debug_assert "shapes must match for mutltiply" do
@@ -308,7 +308,6 @@ defmodule Annex.Data.DMatrix do
     def count(dmatrix) do
       product =
         dmatrix
-        |> DMatrix.tensor()
         |> DMatrix.shape()
         |> Shape.product()
 
