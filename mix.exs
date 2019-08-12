@@ -76,11 +76,11 @@ defmodule Annex.MixProject do
   defp aliases do
     [
       "git.checks": ["git_hooks.run all"],
-      coverage: [&coveralls_html_and_open_browser/0]
+      coverage: [&coveralls_html_and_open_browser/1]
     ]
   end
 
-  defp coveralls_html_and_open_browser do
+  defp coveralls_html_and_open_browser(_) do
     Mix.Task.run("coveralls.html", [])
 
     System.cmd(open_command(), ["cover/excoveralls.html"])

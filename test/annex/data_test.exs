@@ -10,6 +10,8 @@ defmodule Annex.DataTest do
 
   alias AnnexHelpers.SimpleData
 
+  require Data
+
   @data_3 [1.0, 2.0, 3.0]
   @simple_3 SimpleData.cast(@data_3, [3])
 
@@ -42,7 +44,31 @@ defmodule Annex.DataTest do
   use Annex.DataCase, type: SimpleData, data: @casts
   use Annex.LayerCase
 
+  describe "cast/2" do
+    test "calls cast for implementers of behaviour" do
+      data = [1.0, 2.0, 3.0]
+      shape = [3, 1]
+
+      data = %SimpleData{
+        internal: data,
+        shape: shape
+      }
+
+      assert Data.cast(data, shape) == data
+    end
+  end
+
   describe "cast/3" do
+    test "raises for empty list shape" do
+      data = [1.0, 2.0, 3.0]
+      assert_raise(AnnexError, fn -> Data.cast(SimpleData, data, []) end)
+    end
+
+    test "raises for nil shape" do
+      data = [1.0, 2.0, 3.0]
+      assert_raise(FunctionClauseError, fn -> Data.cast(SimpleData, data, nil) end)
+    end
+
     test "calls cast for implementers of behaviour" do
       data = [1.0, 2.0, 3.0]
       shape = [3, 1]
@@ -52,7 +78,7 @@ defmodule Annex.DataTest do
         shape: shape
       }
 
-      assert Data.cast(SimpleData, data, shape) == {:ok, expected_data}
+      assert Data.cast(SimpleData, data, shape) == expected_data
     end
   end
 
@@ -77,34 +103,28 @@ defmodule Annex.DataTest do
 
   describe "convert/3" do
     test "makes no changes given the same shape" do
-      assert Data.convert(SimpleData, @simple_2_by_3, [2, 3]) == {:ok, @simple_2_by_3}
+      assert Data.convert(SimpleData, @simple_2_by_3, [2, 3]) == @simple_2_by_3
     end
 
     test "converts given a compatible concrete shape" do
-      expected = %SimpleData{
-        internal: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
-        shape: [3, 2]
-      }
-
-      assert Data.convert(SimpleData, @simple_2_by_3, [3, 2]) == {:ok, expected}
+      assert Data.convert(SimpleData, @simple_2_by_3, [3, 2]) == %SimpleData{
+               internal: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+               shape: [3, 2]
+             }
     end
 
     test "converts given a compatible abstract shape" do
-      expected = %SimpleData{
-        internal: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
-        shape: [6, 1]
-      }
-
-      assert Data.convert(SimpleData, @simple_2_by_3, [6, :any]) == {:ok, expected}
+      assert Data.convert(SimpleData, @simple_2_by_3, [6, :any]) == %SimpleData{
+               internal: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+               shape: [6, 1]
+             }
     end
 
     test "converts correctly given :any as the first element of the shape" do
-      expected = %SimpleData{
-        internal: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
-        shape: [2, 3]
-      }
-
-      assert Data.convert(SimpleData, @simple_2_by_3, [:any, 3]) == {:ok, expected}
+      assert Data.convert(SimpleData, @simple_2_by_3, [:any, 3]) == %SimpleData{
+               internal: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+               shape: [2, 3]
+             }
     end
 
     test "raises for an incompatible shape" do
@@ -149,6 +169,15 @@ defmodule Annex.DataTest do
   describe "data_type/1" do
     test "a built Dense layer defaults data_type to DMatrix" do
       assert %Dense{data_type: DMatrix} = build(Dense, rows: 3, columns: 2)
+    end
+  end
+
+  describe "is_flat_data/1 guard" do
+    test "can be used as a guard" do
+      case Enum.random([[1.0], [2.0]]) do
+        x when Data.is_flat_data(x) -> assert true
+        _ -> assert false, "is_flat_data guard did not work on flat data"
+      end
     end
   end
 end

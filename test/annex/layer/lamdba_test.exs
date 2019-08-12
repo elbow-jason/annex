@@ -25,7 +25,7 @@ defmodule Annex.Layer.LambdaTest do
     end
 
     on_init_layer = fn lambda, opts ->
-      do_send.([lambda, opts], {:ok, lambda})
+      do_send.([lambda, opts], lambda)
     end
 
     on_feedforward = fn lambda, input ->
@@ -70,13 +70,13 @@ defmodule Annex.Layer.LambdaTest do
   describe "on_init_layer" do
     test "works with functions", %{sender: sender} do
       opts = [blep: true, blop: false]
-      assert Lambda.init_layer(sender, opts) == {:ok, sender}
-      assert_receive({:yes, [^sender, ^opts], {:ok, ^sender}}, 50)
+      assert Lambda.init_layer(sender, opts) == sender
+      assert_receive({:yes, [^sender, ^opts], ^sender}, 50)
     end
 
     test "works with nil", %{nils: nils} do
       opts = [blep: true, blop: false]
-      assert Lambda.init_layer(nils, opts) == {:ok, nils}
+      assert Lambda.init_layer(nils, opts) == nils
       assert_no_receive(50)
     end
   end

@@ -21,7 +21,7 @@ defmodule Annex.Layer.Lambda do
   @type data_type :: Data.type() | nil
 
   @type t :: %Lambda{
-          on_init_layer: callback2({:ok, t()} | {:error, any()}) | nil,
+          on_init_layer: callback2(t()) | nil,
           on_feedforward: callback2({t(), any()}) | nil,
           on_backprop: callback3({t(), any(), Backprop.t()}) | nil,
           on_shape: (t() -> Shape.t() | nil),
@@ -53,9 +53,9 @@ defmodule Annex.Layer.Lambda do
 
   # @behaviour Layer
 
-  @spec init_layer(t(), Keyword.t()) :: {:ok, t()} | {:error, any()}
+  @spec init_layer(t(), Keyword.t()) :: t()
   def init_layer(%Lambda{} = lambda, opts \\ []) do
-    apply_callback(lambda, :on_init_layer, [lambda, opts], {:ok, lambda})
+    apply_callback(lambda, :on_init_layer, [lambda, opts], lambda)
   end
 
   @spec feedforward(t(), any()) :: {t(), Data.data()}

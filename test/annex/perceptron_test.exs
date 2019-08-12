@@ -41,7 +41,7 @@ defmodule Annex.PerceptronTest do
       ]
 
       p1 = Perceptron.new(3, &sigmoid/1, [])
-      p2 = Perceptron.train(p1, dataset, runs: 10_000)
+      p2 = Perceptron.train(p1, dataset, runs: 30_000)
       assert %Perceptron{} = p1
       assert %Perceptron{} = p2
       one = Perceptron.predict(p2, [1.0, 1.0, 1.0])

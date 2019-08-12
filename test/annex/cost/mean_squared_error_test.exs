@@ -19,16 +19,4 @@ defmodule Annex.Cost.MeanSquaredErrorTest do
       assert MeanSquaredError.calculate([3.0, 5.0]) == 34.0 / 2.0
     end
   end
-
-  describe "calculate/2" do
-    test "works" do
-      assert MeanSquaredError.calculate([2.0, 2.0, 2.0], [0.0, 0.0, 0.0]) == 4.0
-    end
-  end
-
-  describe "derivative/3" do
-    test "correctly calculates the derivative" do
-      assert MeanSquaredError.derivative([1.0, 2.0, 3.0], nil, nil) == -12.0
-    end
-  end
 end

@@ -96,7 +96,7 @@ defmodule Annex.Data.List1DTest do
         {@data_8, [8], @data_8}
       ]
       |> Enum.each(fn {data, shape_to_cast, expected} ->
-        assert Data.cast(List1D, data, shape_to_cast) == {:ok, expected}
+        assert Data.cast(List1D, data, shape_to_cast) == expected
       end)
     end
 

@@ -9,6 +9,7 @@ defmodule Annex.Data.DMatrix do
   use Annex.Data
 
   alias Annex.{
+    AnnexError,
     Data,
     Data.DMatrix,
     Shape,
@@ -47,7 +48,7 @@ defmodule Annex.Data.DMatrix do
     end
   end
 
-  def cast(%DMatrix{} = dmatrix, {columns}) do
+  def cast(%DMatrix{} = dmatrix, [columns]) do
     dmatrix
     |> to_flat_list()
     |> cast([1, columns])
@@ -118,17 +119,19 @@ defmodule Annex.Data.DMatrix do
     product = rows * columns
 
     if size != product do
-      raise ArgumentError,
-        message: """
-        DMatrix.build/3 expects the product of rows * columns to equal the length of the data.
+      message =
+        "DMatrix.build/3 expects the product of rows * columns to equal the length of the data."
 
-        data_length: #{inspect(size)}
-        product: #{inspect(product)}
-
-        rows: #{inspect(rows)}
-        columns: #{inspect(columns)}
-        data: #{inspect(data)}
-        """
+      raise %AnnexError{
+        message: message,
+        details: [
+          data_length: size,
+          product: product,
+          rows: rows,
+          columns: columns,
+          data: data
+        ]
+      }
     end
 
     data

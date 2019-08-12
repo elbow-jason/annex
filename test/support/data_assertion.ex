@@ -36,25 +36,18 @@ defmodule Annex.DataAssertion do
     shape: #{inspect(shape)}
     """
 
-    casted =
-      case Data.cast(type, data, shape) do
-        {:ok, casted} ->
-          assert Data.is_type?(type, casted) == true, """
-          Data.cast/3 failed to produce the expected type.
+    casted = Data.cast(type, data, shape)
 
-          invalid_result: #{inspect(casted)}
+    assert Data.is_type?(type, casted) == true, """
+    Data.cast/3 failed to produce the expected type.
 
-          type: #{inspect(type)}
-          data: #{inspect(data)}
-          shape: #{inspect(shape)}
+    invalid_result: #{inspect(casted)}
 
-          """
+    type: #{inspect(type)}
+    data: #{inspect(data)}
+    shape: #{inspect(shape)}
 
-          casted
-
-        {:error, error} ->
-          raise error
-      end
+    """
 
     casted
   end

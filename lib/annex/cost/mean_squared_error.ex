@@ -16,21 +16,12 @@ defmodule Annex.Cost.MeanSquaredError do
   the higher the penalty by a power of 2.
   """
 
-  alias Annex.{Cost, Data.List1D, Utils}
+  alias Annex.{Cost, Utils, Data.List1D}
 
   @behaviour Cost
 
-  def calculate(labels, predictions) do
-    labels
-    |> List1D.subtract(predictions)
-    |> calculate()
-  end
-
+  @spec calculate(List1D.t()) :: float
   def calculate(error) do
     Utils.mean(error, fn loss -> loss * loss end)
-  end
-
-  def derivative(errors, _data, _labels \\ []) do
-    -2.0 * Enum.sum(errors)
   end
 end
