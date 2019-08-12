@@ -75,7 +75,7 @@ defmodule Annex.Learner do
     |> do_train(dataset, opts)
   end
 
-  defp debug_logger(_learner, loss, epoch, opts) do
+  defp debug_logger(_learner, training_output, epoch, opts) do
     log_interval = Keyword.get(opts, :log_interval, 10_000)
 
     if rem(epoch, log_interval) == 0 do
@@ -84,7 +84,7 @@ defmodule Annex.Learner do
         Learner -
         training: #{Keyword.get(opts, :name)}
         epoch: #{epoch}
-        output #{inspect(loss)}
+        training_output: #{inspect(training_output, pretty: true)}
         """
       end)
     end
