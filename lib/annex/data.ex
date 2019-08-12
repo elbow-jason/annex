@@ -149,6 +149,17 @@ defmodule Annex.Data do
     end
   end
 
+  def infer_type([]) do
+    raise %AnnexError{
+      message: """
+      #{inspect(__MODULE__)}.infer_type/1 was given an empty list.
+
+      An empty list is not valid Data.
+      """,
+      details: []
+    }
+  end
+
   def infer_type(data) when is_flat_data(data) do
     List1D
   end

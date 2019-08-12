@@ -1,5 +1,6 @@
 defmodule Annex.Data.List2DTest do
   alias Annex.{
+    AnnexError,
     Data,
     Data.List2D
   }
@@ -48,7 +49,7 @@ defmodule Annex.Data.List2DTest do
       assert List2D.cast(@data_2_by_3, [3, 2]) == [[1.0, 1.0], [1.0, 2.0], [2.0, 2.0]]
     end
 
-    test "raises for other than 2D list of floats" do
+    test "raises ArgumentError for other than 2D list of floats" do
       raises = fn data ->
         assert_raise(ArgumentError, fn -> List2D.cast(data, [10, 10]) end)
       end
@@ -56,6 +57,10 @@ defmodule Annex.Data.List2DTest do
       raises.([[1]])
       raises.(:other)
       raises.("etc")
+    end
+
+    test "raises AnnexError for data size mismatch" do
+      assert_raise(AnnexError, fn -> List2D.cast([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], [2, 4]) end)
     end
   end
 
@@ -112,6 +117,20 @@ defmodule Annex.Data.List2DTest do
       assert List2D.is_type?(false) == false
       assert List2D.is_type?(%URI{}) == false
       assert List2D.is_type?(%{}) == false
+    end
+  end
+
+  describe "apply_op/3" do
+    test "works for map" do
+      mapper = fn x -> x + 1.0 end
+
+      assert @data_2_by_3 == [
+               [1.0, 1.0, 1.0],
+               [2.0, 2.0, 2.0]
+             ]
+
+      assert l2 = List2D.apply_op(@data_2_by_3, :map, [mapper])
+      assert l2 == [[2.0, 2.0, 2.0], [3.0, 3.0, 3.0]]
     end
   end
 end

@@ -3,8 +3,12 @@ defmodule Annex.Data.List1D do
   The Annex.Data.List is the most basic Annex.Data.
   """
   use Annex.Data
-  alias Annex.Shape
-  alias Annex.Utils
+
+  alias Annex.{
+    AnnexError,
+    Shape,
+    Utils
+  }
 
   @type t() :: [float(), ...]
 
@@ -20,16 +24,18 @@ defmodule Annex.Data.List1D do
     elements_count = length(data)
 
     if elements_count != n do
-      raise ArgumentError,
+      raise %AnnexError{
         message: """
         The number of items in the provided data did not match the required number of items of the given
         shape.
-
-        shape: #{inspect(shape)}
-        expected_count: #{inspect(n)}
-        actual_count: #{inspect(elements_count)}
-        data: #{inspect(data)}
-        """
+        """,
+        details: [
+          shape: shape,
+          expected_count: n,
+          actual_count: elements_count,
+          data: data
+        ]
+      }
     end
 
     data

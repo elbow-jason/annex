@@ -8,6 +8,35 @@ defmodule Annex.Layer.DropoutTest do
     LayerConfig
   }
 
+  require Dropout
+
+  describe "is_frequency/1 guard" do
+    test "true for float between 0.0 and 1.0" do
+      assert Dropout.is_frequency(0.0) == true
+      assert Dropout.is_frequency(0.5) == true
+      assert Dropout.is_frequency(1.0) == true
+    end
+
+    test "false for float below 0.0" do
+      assert Dropout.is_frequency(-0.1) == false
+    end
+
+    test "false for float above 1.0" do
+      assert Dropout.is_frequency(1.1) == false
+    end
+
+    test "false for everything else" do
+      assert Dropout.is_frequency(:belp) == false
+    end
+
+    test "useable as a guard" do
+      case Enum.random([0.0, 0.5, 1.0]) do
+        x when Dropout.is_frequency(x) -> assert true
+        _ -> assert false, "is_frequency failed"
+      end
+    end
+  end
+
   describe "init_layer/1" do
     test "ok for valid config" do
       assert Dropout
@@ -15,10 +44,18 @@ defmodule Annex.Layer.DropoutTest do
              |> Layer.init_layer() == %Dropout{frequency: 0.5}
     end
 
-    test "raises for invalid config" do
+    test "raises for invalid :frequency in config" do
       assert_raise(AnnexError, fn ->
         Dropout
         |> LayerConfig.build(frequency: 1.5)
+        |> Layer.init_layer()
+      end)
+    end
+
+    test "raises for missing :frequency in config" do
+      assert_raise(AnnexError, fn ->
+        Dropout
+        |> LayerConfig.build([])
         |> Layer.init_layer()
       end)
     end

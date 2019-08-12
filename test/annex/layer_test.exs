@@ -2,6 +2,7 @@ defmodule Annex.LayerTest do
   use Annex.LayerCase
 
   alias Annex.{
+    Data.DMatrix,
     Layer,
     Layer.Dense
   }
@@ -52,6 +53,20 @@ defmodule Annex.LayerTest do
       assert Layer.is_layer?(1) == false
       assert Layer.is_layer?(1.0) == false
       assert Layer.is_layer?(nil) == false
+    end
+  end
+
+  describe "convert/3" do
+    test "works" do
+      assert %Dense{} = dense = build(Dense, rows: 2, columns: 3)
+      converted = Layer.convert(dense, [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], [3, 2])
+
+      assert converted ==
+               DMatrix.build([
+                 [1.0, 2.0],
+                 [3.0, 4.0],
+                 [5.0, 6.0]
+               ])
     end
   end
 
