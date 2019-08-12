@@ -2,8 +2,9 @@ defmodule Annex.PerceptronTest do
   use ExUnit.Case
 
   alias Annex.Perceptron
+  alias Annex.Layer.Activation
 
-  def sigmoid(x), do: Annex.Layer.Activation.sigmoid(x)
+  def sigmoid(x), do: Activation.sigmoid(x)
 
   describe "new/3" do
     test "returns a Perceptron struct" do
