@@ -1,8 +1,8 @@
 defmodule Annex.PerceptronTest do
   use ExUnit.Case
 
-  alias Annex.Perceptron
   alias Annex.Layer.Activation
+  alias Annex.Perceptron
 
   def sigmoid(x), do: Activation.sigmoid(x)
 
