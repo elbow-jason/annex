@@ -16,7 +16,7 @@ defmodule Annex.Cost.MeanSquaredError do
   the higher the penalty by a power of 2.
   """
 
-  alias Annex.{Cost, Utils, Data.List1D}
+  alias Annex.{Cost, Data.List1D, Utils}
 
   @behaviour Cost
 
