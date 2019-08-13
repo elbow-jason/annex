@@ -2,6 +2,7 @@ defmodule Annex.Layer.DenseTest do
   use Annex.LayerCase, async: true
 
   alias Annex.{
+    AnnexError,
     Cost,
     Data,
     Data.DMatrix,
@@ -352,6 +353,43 @@ defmodule Annex.Layer.DenseTest do
             assert diff == 0.0
         end
       end)
+    end
+  end
+
+  describe "init_layer" do
+    test "raises for missing rows" do
+      cfg = LayerConfig.build(Dense, columns: 5)
+      assert_raise(AnnexError, fn -> Dense.init_layer(cfg) end)
+    end
+
+    test "raises for bad rows" do
+      cfg = LayerConfig.build(Dense, rows: :five, columns: 5)
+      assert_raise(AnnexError, fn -> Dense.init_layer(cfg) end)
+    end
+
+    test "raises for missing columns" do
+      cfg = LayerConfig.build(Dense, rows: 5)
+      assert_raise(AnnexError, fn -> Dense.init_layer(cfg) end)
+    end
+
+    test "raises for bad columns" do
+      cfg = LayerConfig.build(Dense, rows: 5, columns: :five)
+      assert_raise(AnnexError, fn -> Dense.init_layer(cfg) end)
+    end
+
+    test "raises for bad data_type" do
+      cfg = LayerConfig.build(Dense, rows: 5, columns: 5, data_type: :bad_thing)
+      assert_raise(AnnexError, fn -> Dense.init_layer(cfg) end)
+    end
+
+    test "raises for bad weights" do
+      cfg = LayerConfig.build(Dense, rows: 5, columns: 5, weights: [1.0])
+      assert_raise(AnnexError, fn -> Dense.init_layer(cfg) end)
+    end
+
+    test "raises for bad biases" do
+      cfg = LayerConfig.build(Dense, rows: 2, columns: 1, weights: [1.0, 2.0], biases: [1.0])
+      assert_raise(AnnexError, fn -> Dense.init_layer(cfg) end)
     end
   end
 end

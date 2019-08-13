@@ -91,22 +91,10 @@ defmodule Annex.Layer.Sequence do
 
     {output, layers2} =
       MapArray.reduce(layers1, {seq_inputs, %{}}, fn layer1, {inputs1, layers_acc}, i ->
-        with(
-          {:ok, inputs2} <- do_convert_for_feedforward(layers1, i, inputs1),
-          {layer2, output} <- Layer.feedforward(layer1, inputs2)
-        ) do
-          {output, MapArray.append(layers_acc, layer2)}
-        else
-          {:error, %AnnexError{} = error} ->
-            details = [
-              step: :backprop,
-              layer: layer1,
-              index: i,
-              sequence: seq
-            ]
+        inputs2 = do_convert_for_feedforward(layers1, i, inputs1)
+        {layer2, output} = Layer.feedforward(layer1, inputs2)
 
-            raise AnnexError.add_details(error, details)
-        end
+        {output, MapArray.append(layers_acc, layer2)}
       end)
 
     {%Sequence{seq | layers: layers2}, output}
@@ -119,7 +107,7 @@ defmodule Annex.Layer.Sequence do
     end)
     |> case do
       :error ->
-        {:ok, data}
+        data
 
       {:ok, layer} ->
         data_type = Layer.data_type(layer)
@@ -135,7 +123,7 @@ defmodule Annex.Layer.Sequence do
     end)
     |> case do
       :error ->
-        {:ok, data}
+        data
 
       {:ok, layer} ->
         data_type = Layer.data_type(layer)
@@ -170,23 +158,10 @@ defmodule Annex.Layer.Sequence do
     } =
       MapArray.reverse_reduce(layers, {seq_errors, seq_backprops, %{}}, fn
         layer, {errors, backprops, layers_acc}, i ->
-          with(
-            {:ok, errors2} <- do_convert_for_backprop(layers, i, errors),
-            {layer2, errors3, backprops2} <- Layer.backprop(layer, errors2, backprops),
-            layers_acc2 <- Map.put(layers_acc, i, layer2)
-          ) do
-            {errors3, backprops2, layers_acc2}
-          else
-            {:error, %AnnexError{} = error} ->
-              details = [
-                step: :backprop,
-                layer: layer,
-                index: i,
-                sequence: seq
-              ]
-
-              raise AnnexError.add_details(error, details)
-          end
+          errors2 = do_convert_for_backprop(layers, i, errors)
+          {layer2, errors3, backprops2} = Layer.backprop(layer, errors2, backprops)
+          layers_acc2 = Map.put(layers_acc, i, layer2)
+          {errors3, backprops2, layers_acc2}
       end)
 
     {%Sequence{seq | layers: output_layers}, output_errors, output_props}

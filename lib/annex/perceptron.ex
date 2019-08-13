@@ -3,35 +3,47 @@ defmodule Annex.Perceptron do
   A simple perceptron Learner capable of making good predictions given a linearly separable
   dataset and labels.
   """
-  alias Annex.{Perceptron, Utils}
+  use Annex.Learner
+
+  alias Annex.{
+    Data.List1D,
+    Dataset,
+    Perceptron,
+    Utils
+  }
+
+  import Annex.Utils, only: [is_pos_integer: 1]
+
+  @type activation :: (number() -> float())
+  @type data_type :: List1D
 
   @type t :: %Perceptron{
           weights: list(float),
           learning_rate: float(),
-          activation: (number() -> float()),
+          activation: activation(),
           bias: float()
         }
   defstruct [:weights, :learning_rate, :activation, :bias]
 
+  @spec new(pos_integer, activation(), Keyword.t()) :: Perceptron.t()
   def new(inputs, activation, opts \\ [])
-      when is_integer(inputs) and
-             inputs > 0 and
-             is_function(activation, 1) do
+      when is_pos_integer(inputs) and is_function(activation, 1) do
     %Perceptron{
-      weights: get_weights(inputs, opts),
-      bias: Keyword.get(opts, :bias, 0.0),
+      weights: get_or_create_weights(inputs, opts),
+      bias: Keyword.get(opts, :bias, 1.0),
       learning_rate: Keyword.get(opts, :learning_rate, 0.05),
       activation: activation
     }
   end
 
-  defp get_weights(inputs, opts) do
+  defp get_or_create_weights(inputs, opts) do
     case Keyword.get(opts, :weights) do
       weights when length(weights) == inputs -> weights
-      _ -> Enum.map(1..inputs, fn _ -> 2 * :rand.uniform() - 1 end)
+      _ -> Utils.random_weights(inputs)
     end
   end
 
+  @spec predict(t(), List1D.t()) :: float()
   def predict(%Perceptron{activation: activation, weights: weights, bias: bias}, inputs) do
     inputs
     |> Utils.dot(weights)
@@ -39,34 +51,38 @@ defmodule Annex.Perceptron do
     |> activation.()
   end
 
-  @spec train(Annex.Perceptron.t(), list(float()), list(float()), Keyword.t()) :: struct()
-  def train(%Perceptron{} = p, all_inputs, all_labels, opts \\ []) do
-    epochs = Keyword.fetch!(opts, :epochs)
+  @spec train(t(), Dataset.t(), Keyword.t()) :: struct()
+  def train(%Perceptron{} = p, dataset, opts \\ []) do
+    runs = Keyword.fetch!(opts, :runs)
 
-    all_inputs
-    |> Utils.zip(all_labels)
-    |> Stream.cycle()
+    fn -> Enum.random(dataset) end
+    |> Stream.repeatedly()
     |> Stream.with_index()
-    |> Stream.map(fn {{inputs, label}, index} -> {inputs, label, index} end)
-    |> Enum.reduce_while(p, fn {inputs, label, index}, p_acc ->
-      if index >= epochs do
+    |> Enum.reduce_while(p, fn {data_row, index}, p_acc ->
+      if index >= runs do
         {:halt, p_acc}
       else
-        {:cont, train_once(p_acc, inputs, label)}
+        {:cont, train_once(p_acc, data_row)}
       end
     end)
   end
 
-  def train_once(%Perceptron{weights: weights, bias: bias, learning_rate: lr} = p, inputs, label) do
+  defp train_once(%Perceptron{} = p, {inputs, label}) do
+    %Perceptron{
+      weights: weights,
+      bias: bias,
+      learning_rate: lr
+    } = p
+
     prediction = predict(p, inputs)
     error = label - prediction
     slope_delta = error * lr
 
-    weights =
+    updated_weights =
       inputs
       |> Utils.zip(weights)
       |> Enum.map(fn {i, w} -> w + slope_delta * i end)
 
-    %Perceptron{p | weights: weights, bias: bias + slope_delta}
+    %Perceptron{p | weights: updated_weights, bias: bias + slope_delta}
   end
 end

@@ -92,7 +92,7 @@ defmodule Annex.Layer do
     end
   end
 
-  @spec convert(t(), Data.data(), Shape.t()) :: {:ok, Data.data()} | {:error, any()}
+  @spec convert(t(), Data.data(), Shape.t()) :: Data.data()
   def convert(layer, data, shape) do
     layer
     |> data_type()

@@ -117,7 +117,7 @@ defmodule Annex.Learner do
     end)
   end
 
-  @spec init_learner(t(), options()) :: {:ok, t()} | {:error, any()}
+  @spec init_learner(t(), options()) :: t()
   def init_learner(%module{} = learner, options) do
     module.init_learner(learner, options)
   end

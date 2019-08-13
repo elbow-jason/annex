@@ -12,10 +12,10 @@ defmodule Annex.LayerConfigTest do
     def init_layer(%LayerConfig{} = cfg) do
       case LayerConfig.fetch(cfg, :name) do
         {:ok, :name, name} ->
-          {:ok, %Thing{name: name}}
+          %Thing{name: name}
 
         {:error, %AnnexError{}} = error ->
-          error
+          raise error
       end
     end
   end
@@ -111,10 +111,10 @@ defmodule Annex.LayerConfigTest do
   end
 
   describe "init_layer/1" do
-    test "{:ok Layer.t()} for valid config" do
-      cfg = LayerConfig.build(Thing, name: "Jason2")
-      assert {:ok, thing} = LayerConfig.init_layer(cfg)
-      assert thing == %Thing{name: "Jason2"}
+    test "Layer.t() for valid config" do
+      assert Thing
+             |> LayerConfig.build(name: "Jason2")
+             |> LayerConfig.init_layer() == %Thing{name: "Jason2"}
     end
   end
 

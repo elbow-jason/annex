@@ -51,48 +51,20 @@ defmodule Annex.Data do
   Valid shapes are a non-empty tuple of positive integers or any the atom :any.
   e.g. `{2, 3}` or `{3, :any}`
   """
-
   def cast(type, data, []) when is_list(data) do
     message = "Annex.Data.cast/3 got an empty list for shape"
-    error = AnnexError.build(message, type: type, data: data)
-    {:error, error}
-  end
-
-  def cast(type, data, nil) do
-    message = "Annex.Data.cast/3 got nil for a shape"
-    error = AnnexError.build(message, type: type, data: data)
-    {:error, error}
+    raise AnnexError.build(message, type: type, data: data)
   end
 
   def cast(type, data, shape) when Shape.is_shape(shape) and is_atom(type) do
-    {:ok, type.cast(data, shape)}
+    type.cast(data, shape)
   end
 
-  @spec cast(Data.data(), Shape.t() | nil) :: {:error, Annex.AnnexError.t()} | {:ok, any}
+  @spec cast(Data.data(), Shape.t()) :: Data.data()
   def cast(data, shape) do
     data
     |> infer_type()
     |> cast(data, shape)
-  end
-
-  @spec cast!(type(), data(), Shape.t()) :: Data.data()
-  def cast!(type, data, shape) do
-    type
-    |> cast(data, shape)
-    |> case do
-      {:ok, casted} ->
-        casted
-
-      {:error, %AnnexError{} = error} ->
-        raise error
-    end
-  end
-
-  @spec cast!(data(), Shape.t()) :: Data.data()
-  def cast!(data, shape) do
-    data
-    |> infer_type()
-    |> cast!(data, shape)
   end
 
   @doc """
@@ -175,6 +147,17 @@ defmodule Annex.Data do
     else
       module
     end
+  end
+
+  def infer_type([]) do
+    raise %AnnexError{
+      message: """
+      #{inspect(__MODULE__)}.infer_type/1 was given an empty list.
+
+      An empty list is not valid Data.
+      """,
+      details: []
+    }
   end
 
   def infer_type(data) when is_flat_data(data) do

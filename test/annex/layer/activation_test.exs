@@ -1,7 +1,52 @@
 defmodule Annex.Layer.ActivationTest do
   use ExUnit.Case
 
-  alias Annex.Layer.Activation
+  alias Annex.{
+    AnnexError,
+    Layer.Activation
+  }
+
+  describe "from_name/1" do
+    test "works for relu with a threshold" do
+      assert %Activation{} = Activation.from_name({:relu, 0.1})
+    end
+
+    test "works for softmax" do
+      assert %Activation{} = Activation.from_name(:softmax)
+    end
+
+    test "raises for unknown name" do
+      assert_raise(AnnexError, fn ->
+        Activation.from_name(:blep)
+      end)
+    end
+  end
+
+  describe "relu with threshold" do
+    test "activator works" do
+      activator =
+        {:relu, 0.1}
+        |> Activation.from_name()
+        |> Activation.get_activator()
+
+      assert is_function(activator, 1) == true
+      assert activator.(0.0) == 0.1
+      assert activator.(1.0) == 1.0
+    end
+
+    test "derivative works" do
+      derivative =
+        {:relu, 0.1}
+        |> Activation.from_name()
+        |> Activation.get_derivative()
+
+      assert is_function(derivative, 1) == true
+      assert derivative.(0.0) == 0.0
+      assert derivative.(0.1) == 0.0
+      assert derivative.(0.11) == 1.0
+      assert derivative.(1.0) == 1.0
+    end
+  end
 
   test "relu/1" do
     assert Activation.relu(1.0) == 1.0
@@ -42,5 +87,18 @@ defmodule Annex.Layer.ActivationTest do
     assert Activation.tanh_deriv(1.0) == 0.41997434161402614
     assert Activation.tanh_deriv(0.0) == 1.0
     assert Activation.tanh_deriv(-1.0) == 0.41997434161402614
+  end
+
+  test "softmax/1" do
+    assert Activation.softmax([1.0, 2.0, 3.0]) == [
+             0.09003057317038046,
+             0.24472847105479767,
+             0.6652409557748219
+           ]
+  end
+
+  test "get_inputs" do
+    act = %Activation{inputs: [2.0, 3.0, 4.0]}
+    assert Activation.get_inputs(act) == [2.0, 3.0, 4.0]
   end
 end

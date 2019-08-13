@@ -5,7 +5,11 @@ defmodule Annex.Data.List2D do
 
   use Annex.Data
   require Annex.Data.List1D
-  alias Annex.Data.List1D
+
+  alias Annex.{
+    AnnexError,
+    Data.List1D
+  }
 
   @type t :: [[float(), ...], ...]
 
@@ -31,16 +35,18 @@ defmodule Annex.Data.List2D do
     elements_expected = Shape.product(shape)
 
     if elements_count != elements_expected do
-      raise ArgumentError,
+      raise %AnnexError{
         message: """
         The number of items in the provided data did not match the required number of items of the given
         shape.
-
-        shape: #{inspect(shape)}
-        expected_count: #{inspect(elements_count)}
-        actual_count: #{inspect(elements_count)}
-        data: #{inspect(data)}
-        """
+        """,
+        details: [
+          shape: shape,
+          expected_count: elements_count,
+          actual_count: elements_expected,
+          data: data
+        ]
+      }
     end
 
     Data.flat_data_to_tensor(flat_data, shape)

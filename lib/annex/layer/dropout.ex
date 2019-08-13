@@ -56,12 +56,6 @@ defmodule Annex.Layer.Dropout do
   @spec frequency(t()) :: float()
   def frequency(%Dropout{frequency: f}), do: f
 
-  # @impl Layer
-  # @spec init_layer(t(), Keyword.t()) :: {:ok, t()}
-  # def init_layer(%Dropout{} = dropout, _opts \\ []) do
-  #   {:ok, dropout}
-  # end
-
   @impl Layer
   @spec feedforward(t(), data()) :: {t(), data()}
   def feedforward(%Dropout{} = layer, inputs) do

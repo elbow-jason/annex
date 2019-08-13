@@ -134,7 +134,7 @@ defmodule Annex.Layer.Dense do
           layer_size = rows * columns
           weights_size == layer_size
         end,
-      {:ok, casted_weights} <- Data.cast(data_type, weights, [rows, columns])
+      casted_weights <- Data.cast(data_type, weights, [rows, columns])
     ) do
       {:ok, :weights, casted_weights}
     end
@@ -161,7 +161,7 @@ defmodule Annex.Layer.Dense do
 
           biases_rows * biases_columns == rows
         end,
-      {:ok, casted_biases} <- Data.cast(data_type, biases, [rows, 1])
+      casted_biases <- Data.cast(data_type, biases, [rows, 1])
     ) do
       {:ok, :biases, casted_biases}
     end

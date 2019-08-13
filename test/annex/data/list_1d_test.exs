@@ -1,5 +1,6 @@
 defmodule Annex.Data.List1DTest do
   alias Annex.{
+    AnnexError,
     Data,
     Data.List1D
   }
@@ -23,11 +24,34 @@ defmodule Annex.Data.List1DTest do
 
   use Annex.DataCase, type: List1D, data: @casts
 
+  require List1D
+
+  describe "is_list1D guard" do
+    test "true for flat lists of floats" do
+      assert List1D.is_list1D([1.0, 2.0, 3.0]) == true
+    end
+  end
+
   describe "cast/2" do
+    test "handles 2D shape with a 1 as the rows" do
+      data = [1.0, 1.0, 1.0, 2.0, 2.0, 2.0]
+      assert List1D.cast(data, [1, 6]) == data
+    end
+
+    test "handles 2D shape with a 1 as the columns" do
+      data = [1.0, 1.0, 1.0, 2.0, 2.0, 2.0]
+      assert List1D.cast(data, [6, 1]) == data
+    end
+
     test "given a 1D list and a 1D shape of the same size" do
       data = [1.0, 1.0, 1.0, 2.0, 2.0, 2.0]
       assert length(data) == 6
       assert List1D.cast(data, [6]) == data
+    end
+
+    test "raises for the wrong sized data" do
+      data = [1.0, 1.0, 1.0, 2.0, 2.0, 2.0]
+      assert_raise(AnnexError, fn -> List1D.cast(data, [7]) end)
     end
 
     test "raises for nested lists" do
@@ -96,7 +120,7 @@ defmodule Annex.Data.List1DTest do
         {@data_8, [8], @data_8}
       ]
       |> Enum.each(fn {data, shape_to_cast, expected} ->
-        assert Data.cast(List1D, data, shape_to_cast) == {:ok, expected}
+        assert Data.cast(List1D, data, shape_to_cast) == expected
       end)
     end
 
