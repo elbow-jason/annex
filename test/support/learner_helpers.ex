@@ -1,4 +1,4 @@
-defmodule Annex.LearnerHelper do
+defmodule Annex.LearnerHelpers do
   @moduledoc """
   This module contains utility functions for the testing of an Annex.Learner
   """
@@ -18,33 +18,5 @@ defmodule Annex.LearnerHelper do
         """
       end)
     end
-  end
-end
-
-defmodule Annex.FakeLearnerWithoutTrain do
-  use Annex.Learner
-  alias Annex.FakeLearnerWithoutTrain
-
-  defstruct thing: 1
-
-  def predict(%FakeLearnerWithoutTrain{} = learner) do
-    prediction = [1.0]
-    {learner, prediction}
-  end
-end
-
-defmodule Annex.FakeLearnerWithTrain do
-  use Annex.Learner
-  alias Annex.FakeLearnerWithTrain
-
-  defstruct thing: 1
-
-  def predict(%FakeLearnerWithTrain{} = learner) do
-    prediction = [1.0]
-    {learner, prediction}
-  end
-
-  def train(learner, dataset, opts) do
-    {learner, dataset, opts}
   end
 end

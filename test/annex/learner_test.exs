@@ -2,14 +2,46 @@ defmodule Annex.LearnerTest do
   use ExUnit.Case
 
   alias Annex.{
-    FakeLearnerWithoutTrain,
-    FakeLearnerWithTrain,
     Layer.Sequence,
     LayerConfig,
     Learner,
     LearnerLayerMock,
     LearnerMock
   }
+
+  defmodule FakeLearnerWithoutTrain do
+    @moduledoc """
+    An Annex.Learner without a train/3 implementation
+    """
+    use Annex.Learner
+    alias Annex.FakeLearnerWithoutTrain
+
+    defstruct thing: 1
+
+    def predict(%FakeLearnerWithoutTrain{} = learner) do
+      prediction = [1.0]
+      {learner, prediction}
+    end
+  end
+
+  defmodule FakeLearnerWithTrain do
+    @moduledoc """
+    An Annex.Learner with a train/3 implementation
+    """
+    use Annex.Learner
+    alias Annex.FakeLearnerWithTrain
+
+    defstruct thing: 1
+
+    def predict(%FakeLearnerWithTrain{} = learner) do
+      prediction = [1.0]
+      {learner, prediction}
+    end
+
+    def train(learner, dataset, opts) do
+      {learner, dataset, opts}
+    end
+  end
 
   import Mox
 
