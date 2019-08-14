@@ -1,7 +1,10 @@
 defmodule Annex.DatasetTest do
   use ExUnit.Case
-  alias Annex.Dataset
-  alias Annex.Data.List1D
+
+  alias Annex.{
+    Data.List1D,
+    Dataset
+  }
 
   describe "zip/2" do
     test "give two same-length lists (inputs and labels) returns a zipped list of {inputs_row, labels_row}" do

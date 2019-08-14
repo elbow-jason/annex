@@ -10,10 +10,11 @@ defmodule Annex.Optimizer.SGDTest do
   describe "train/3" do
     test "trains with SGD for Layer learner" do
       seq =
-        Annex.sequence([
+        [
           Annex.dense(3, 2, [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], [1.0, 1.0, 1.0]),
           Annex.activation(:relu)
-        ])
+        ]
+        |> Annex.sequence()
         |> Sequence.init_layer()
 
       dataset = [
