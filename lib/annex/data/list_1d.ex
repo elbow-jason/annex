@@ -6,9 +6,12 @@ defmodule Annex.Data.List1D do
 
   alias Annex.{
     AnnexError,
+    Data.List2D,
     Shape,
     Utils
   }
+
+  import Utils, only: [is_pos_integer: 1]
 
   @type t() :: [float(), ...]
 
@@ -65,5 +68,80 @@ defmodule Annex.Data.List1D do
   @spec subtract(t(), t()) :: t()
   def subtract(a, b) do
     Utils.zipmap(a, b, fn ax, bx -> ax - bx end)
+  end
+
+  @doc """
+  Generates a list of `n` floats between -1.0 and 1.0.
+  """
+  @spec new_random(pos_integer()) :: t()
+  def new_random(n) when is_pos_integer(n) do
+    fn -> Utils.random_float() end
+    |> Stream.repeatedly()
+    |> Enum.take(n)
+  end
+
+  @spec ones(pos_integer()) :: t()
+  def ones(n) when is_pos_integer(n) do
+    fn -> 1.0 end
+    |> Stream.repeatedly()
+    |> Enum.take(n)
+  end
+
+  @doc """
+  Calculates the average of a 1D list.
+  """
+  @spec mean(any()) :: float()
+  def mean([]), do: 0.0
+
+  def mean(items) do
+    {counted, totaled} =
+      Enum.reduce(items, {0, 0.0}, fn item, {count, total} ->
+        {count + 1, total + item}
+      end)
+
+    totaled / counted
+  end
+
+  def mean([], _), do: 0.0
+
+  @doc """
+  Calculates the dot product which is the sum of element-wise multiplication of two enumerables.
+  """
+  @spec dot(t(), t()) :: float()
+  def dot(a, b) when is_list1D(a) and is_list1D(b) do
+    a
+    |> Utils.zipmap(b, fn ax, bx -> ax * bx end)
+    |> Enum.sum()
+  end
+
+  @spec transpose(t()) :: List2D.t()
+  def transpose(data) when is_list1D(data) do
+    Enum.map(data, fn f -> [f] end)
+  end
+
+  @doc """
+  Turns a list of floats into floats between 0.0 and 1.0 at their respective ratio.
+  """
+  @spec normalize(t()) :: t()
+  def normalize(data) when is_list1D(data) do
+    {minimum, maximum} = Enum.min_max(data)
+
+    case maximum - minimum do
+      0.0 -> Enum.map(data, fn _ -> 1.0 end)
+      diff -> Enum.map(data, fn item -> (item - minimum) / diff end)
+    end
+  end
+
+  @doc """
+  Turns a list of floats into their proportions.
+
+  The sum of the output should be approximately 1.0.
+  """
+  @spec proportions(t()) :: t()
+  def proportions(data) when is_list1D(data) do
+    case Enum.sum(data) do
+      0.0 -> Enum.map(data, fn item -> item end)
+      sum -> Enum.map(data, fn item -> item / sum end)
+    end
   end
 end

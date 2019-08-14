@@ -39,14 +39,14 @@ defmodule Annex.Perceptron do
   defp get_or_create_weights(inputs, opts) do
     case Keyword.get(opts, :weights) do
       weights when length(weights) == inputs -> weights
-      _ -> Utils.random_weights(inputs)
+      _ -> List1D.new_random(inputs)
     end
   end
 
   @spec predict(t(), List1D.t()) :: float()
   def predict(%Perceptron{activation: activation, weights: weights, bias: bias}, inputs) do
     inputs
-    |> Utils.dot(weights)
+    |> List1D.dot(weights)
     |> Kernel.+(bias)
     |> activation.()
   end

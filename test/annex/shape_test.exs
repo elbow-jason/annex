@@ -6,6 +6,29 @@ defmodule Annex.ShapeTest do
     Shape
   }
 
+  require Shape
+
+  describe "is_shape/1 guard" do
+    test "is usable as a guard" do
+      shape1 = [1]
+      shape2 = [2]
+
+      case Enum.random([shape1, shape2]) do
+        x when Shape.is_shape(x) -> assert true
+        s -> assert false, "is_shape guard failed to match a valid shape #{inspect(s)}"
+      end
+    end
+
+    test "true for shapes" do
+      assert Shape.is_shape([1, 3, 9]) == true
+    end
+
+    test "false for non-shapes" do
+      non_shape = Enum.random([{1, 3, 9}, :thing])
+      assert Shape.is_shape(non_shape) == false
+    end
+  end
+
   describe "convert_abstract_to_concrete/2" do
     test "when abstract is _actually_ a concrete returns the abstract when compatible" do
       abstract_shape = [12, 2]
@@ -99,6 +122,13 @@ defmodule Annex.ShapeTest do
       assert Shape.is_factor_of?(15, 4) == false
       assert Shape.is_factor_of?(9, 4) == false
       assert Shape.is_factor_of?(5, 4) == false
+    end
+
+    test "works for a concrete shape and integer" do
+      assert Shape.is_factor_of?([3, 3, 3], 3) == true
+      assert Shape.is_factor_of?([3, 3, 3], 9) == true
+      assert Shape.is_factor_of?([3, 3, 3], 27) == true
+      assert Shape.is_factor_of?([3, 3, 3], 6) == false
     end
   end
 
@@ -199,6 +229,34 @@ defmodule Annex.ShapeTest do
 
     test "returns :abstract for tuple with integers and some :any atoms" do
       assert Shape.kind([2, :any, 3]) == :abstract
+    end
+  end
+
+  describe "resolve_rows/1" do
+    test "returns 1 for 1D shape" do
+      assert Shape.resolve_rows([5]) == 1
+      assert Shape.resolve_rows([1]) == 1
+      assert Shape.resolve_rows([2]) == 1
+    end
+
+    test "returns rows for 2D shape" do
+      assert Shape.resolve_rows([5, 3]) == 5
+      assert Shape.resolve_rows([1, 3]) == 1
+      assert Shape.resolve_rows([2, 3]) == 2
+    end
+  end
+
+  describe "resolve_columns/1" do
+    test "returns only value for 1D shape" do
+      assert Shape.resolve_columns([5]) == 5
+      assert Shape.resolve_columns([1]) == 1
+      assert Shape.resolve_columns([2]) == 2
+    end
+
+    test "works for 2D shape" do
+      assert Shape.resolve_columns([5, 3]) == 3
+      assert Shape.resolve_columns([1, 2]) == 2
+      assert Shape.resolve_columns([2, 10]) == 10
     end
   end
 end

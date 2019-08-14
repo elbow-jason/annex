@@ -1,7 +1,7 @@
 defmodule Annex.DatasetTest do
   use ExUnit.Case
   alias Annex.Dataset
-  alias Annex.Utils
+  alias Annex.Data.List1D
 
   describe "zip/2" do
     test "give two same-length lists (inputs and labels) returns a zipped list of {inputs_row, labels_row}" do
@@ -24,8 +24,8 @@ defmodule Annex.DatasetTest do
 
   def random_dataset(n_inputs, n_labels, n_rows) do
     fn ->
-      inputs = Utils.random_weights(n_inputs)
-      labels = Utils.random_weights(n_labels)
+      inputs = List1D.new_random(n_inputs)
+      labels = List1D.new_random(n_labels)
       {inputs, labels}
     end
     |> Stream.repeatedly()

@@ -12,8 +12,8 @@ defmodule Annex.Data.DMatrix do
     AnnexError,
     Data,
     Data.DMatrix,
-    Shape,
-    Utils
+    Data.List1D,
+    Shape
   }
 
   @type tensor :: any()
@@ -93,7 +93,7 @@ defmodule Annex.Data.DMatrix do
     product = rows * columns
 
     product
-    |> Utils.random_weights()
+    |> List1D.new_random()
     |> build_tensor(rows, columns)
     |> from_tensor()
   end

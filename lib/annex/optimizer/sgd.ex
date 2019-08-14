@@ -66,18 +66,14 @@ defmodule Annex.Optimizer.SGD do
 
   @spec batch_dataset(Dataset.t(), nil | pos_integer) :: Dataset.t()
   def batch_dataset(dataset, nil) do
-    dataset
+    Enum.shuffle(dataset)
   end
 
   def batch_dataset(dataset, batch_size) when is_pos_integer(batch_size) do
-    if length(dataset) < batch_size do
-      dataset
-      |> Enum.shuffle()
-      |> Enum.take(batch_size)
-    else
-      fn -> Enum.random(dataset) end
-      |> Stream.repeatedly()
-      |> Enum.take(batch_size)
-    end
+    dataset
+    |> Enum.shuffle()
+    |> Stream.cycle()
+    |> Enum.take(batch_size)
+    |> Enum.shuffle()
   end
 end

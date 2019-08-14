@@ -123,17 +123,24 @@ defmodule Annex.Learner do
   end
 
   def has_train?(%module{}), do: has_train?(module)
-  def has_train?(module) when is_atom(module), do: function_exported?(module, :train, 3)
+
+  def has_train?(module) do
+    is_atom(module) && function_exported?(module, :train, 3)
+  end
 
   defp parse_halt_condition(func) when is_function(func, 4) do
     func
   end
 
   defp parse_halt_condition({:epochs, num}) when is_number(num) do
-    fn _, _, index, _ -> index >= num end
+    fn _, _, epoch, _ ->
+      epoch >= num
+    end
   end
 
   defp parse_halt_condition({:loss_less_than, num}) when is_number(num) do
-    fn _, loss, _, _ -> loss < num end
+    fn _, %{loss: loss}, _, _ ->
+      loss < num
+    end
   end
 end

@@ -15,7 +15,14 @@ defmodule Annex.PerceptronTest do
                bias: 1.0,
                activation: ^activation,
                learning_rate: 0.05
-             } = Perceptron.new(6, activation, [])
+             } = Perceptron.new(6, activation)
+
+      assert Enum.all?(weights, &is_float/1) == true
+    end
+
+    test "weights with the same legnth as input will make into the struct from the options" do
+      weights = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+      assert %Perceptron{weights: ^weights} = Perceptron.new(6, &sigmoid/1, weights: weights)
     end
   end
 

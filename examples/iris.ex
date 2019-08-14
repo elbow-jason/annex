@@ -1,5 +1,6 @@
 defmodule Annex.Examples.Iris do
   alias Annex.{
+    Data.List1D,
     Dataset,
     Layer.Sequence,
     Utils
@@ -57,7 +58,7 @@ defmodule Annex.Examples.Iris do
   def normalize_by_name(dataset, name) do
     dataset
     |> Enum.map(fn item -> item[name] end)
-    |> Utils.normalize()
+    |> List1D.normalize()
     |> Enum.zip(dataset)
     |> Enum.map(fn {normalized, item} ->
       Map.put(item, name, normalized)
@@ -105,7 +106,7 @@ defmodule Annex.Examples.Iris do
       test_dataset
       |> Enum.map(fn {datum, label} ->
         pred = Annex.predict(seq, datum)
-        norm = Utils.normalize(pred)
+        norm = List1D.normalize(pred)
 
         correct? =
           norm
