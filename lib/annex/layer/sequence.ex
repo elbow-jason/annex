@@ -165,8 +165,8 @@ defmodule Annex.Layer.Sequence do
   @impl Layer
   @spec shapes(t()) :: {Shape.t(), Shape.t()}
   def shapes(%Sequence{} = seq) do
-    {input_shape, _} = first_input_shape(seq)
-    {_, output_shape} = last_output_shape(seq)
+    {input_shape, _} = first_shape(seq)
+    {_, output_shape} = last_shape(seq)
     {input_shape, output_shape}
   end
 
