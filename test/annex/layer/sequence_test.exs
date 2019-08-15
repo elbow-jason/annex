@@ -1,8 +1,8 @@
 defmodule Annex.Layer.SequenceTest do
   use Annex.LayerCase
 
+  alias Annex.AnnexError
   alias Annex.Layer
-  alias Annex.LayerConfig
 
   alias Annex.Layer.{
     Activation,
@@ -11,6 +11,8 @@ defmodule Annex.Layer.SequenceTest do
     Dropout,
     Sequence
   }
+
+  alias Annex.LayerConfig
 
   alias Annex.Data.DMatrix
 
@@ -147,7 +149,7 @@ defmodule Annex.Layer.SequenceTest do
       assert_in_order(seq2)
     end
 
-    test "Sequence.backprop/2 preserves ordering of layers", %{seq: seq1} do
+    test "Sequence.backprop/3 preserves ordering of layers", %{seq: seq1} do
       assert {%Sequence{} = seq2, _} = Sequence.feedforward(seq1, [1.0])
       props = Backprop.new(negative_gradient: 0.1)
       assert {%Sequence{} = seq3, _, _} = Sequence.backprop(seq2, [1.0], props)
@@ -188,6 +190,58 @@ defmodule Annex.Layer.SequenceTest do
                | input: input,
                  output: pred
              } == dense2
+    end
+  end
+
+  describe "backprop/3" do
+    test "does nothing for an no-layer sequence" do
+      seq =
+        build(Sequence,
+          layers: [
+            LayerConfig.build(Activation, name: :sigmoid)
+          ]
+        )
+
+      {seq2, error, backprops} = Sequence.backprop(seq, [1.2, 3.4], [])
+      assert seq == seq2
+      assert error == [1.2, 3.4]
+      assert [derivative: activator] = backprops
+      assert is_function(activator, 1) == true
+    end
+  end
+
+  describe "init_layer/1" do
+    test "raises for missing layers key" do
+      cfg = LayerConfig.build(Sequence, [])
+      assert_raise(AnnexError, fn -> Sequence.init_layer(cfg) end)
+    end
+  end
+
+  describe "init_learner/1" do
+    test "works" do
+      assert %Sequence{layers: %{}} =
+               Sequence
+               |> LayerConfig.build(layers: [])
+               |> Sequence.init_learner()
+    end
+  end
+
+  describe "shapes/1" do
+    test "works" do
+      seq =
+        build(Sequence,
+          layers: [
+            LayerConfig.build(Dense, rows: 2, columns: 3),
+            LayerConfig.build(Activation, name: :sigmoid)
+          ]
+        )
+
+      assert Sequence.shapes(seq) == {[2, 3], [3, 2]}
+    end
+
+    test "raises when no layers have shapes" do
+      seq = build(Sequence, layers: [])
+      assert_raise(AnnexError, fn -> Sequence.shapes(seq) end)
     end
   end
 end

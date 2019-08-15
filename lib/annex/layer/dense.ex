@@ -8,6 +8,7 @@ defmodule Annex.Layer.Dense do
   alias Annex.{
     Data,
     Data.DMatrix,
+    Data.List1D,
     Layer.Backprop,
     Layer.Dense,
     LayerConfig,
@@ -115,7 +116,7 @@ defmodule Annex.Layer.Dense do
     with(
       {:ok, :weights, weights} <-
         LayerConfig.fetch_lazy(cfg, :weights, fn ->
-          Utils.random_weights(rows * columns)
+          List1D.new_random(rows * columns)
         end),
       :ok <-
         validate :weights, "must be an Annex.Data" do
@@ -144,7 +145,7 @@ defmodule Annex.Layer.Dense do
     with(
       {:ok, :biases, biases} <-
         LayerConfig.fetch_lazy(cfg, :biases, fn ->
-          Utils.ones(rows)
+          List1D.ones(rows)
         end),
       :ok <-
         validate :biases, "must be an Annex.Data" do

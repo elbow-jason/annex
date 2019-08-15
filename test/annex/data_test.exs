@@ -164,6 +164,10 @@ defmodule Annex.DataTest do
              |> build(rows: 2, columns: 3)
              |> Data.infer_type() == DMatrix
     end
+
+    test "raises for empty list" do
+      assert_raise(AnnexError, fn -> Data.infer_type([]) end)
+    end
   end
 
   describe "data_type/1" do

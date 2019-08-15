@@ -105,6 +105,44 @@ defmodule Annex.Data.List1DTest do
     end
   end
 
+  describe "normalize/1" do
+    test "normalizes a list" do
+      assert List1D.normalize([0.1, 0.2, 0.3]) == [0.0, 0.5000000000000001, 1.0]
+    end
+
+    test "works for zeros" do
+      assert List1D.normalize([0.0, 0.0]) == [1.0, 1.0]
+    end
+  end
+
+  describe "proportions/1" do
+    test "works for zeros" do
+      assert List1D.proportions([0.0, 0.0]) == [0.0, 0.0]
+    end
+
+    test "sum is 1.0 (or close)" do
+      assert [0.2, 0.16, 0.12] |> List1D.proportions() |> Enum.sum() == 1.0
+    end
+
+    test "produces expected vlaues" do
+      assert List1D.proportions([0.1, 0.2, 0.3]) == [
+               0.16666666666666666,
+               0.3333333333333333,
+               0.4999999999999999
+             ]
+    end
+  end
+
+  describe "transpose/1" do
+    test "turns a 1D list into a transposed 2D list" do
+      assert List1D.transpose([1.0, 2.0, 3.0]) == [
+               [1.0],
+               [2.0],
+               [3.0]
+             ]
+    end
+  end
+
   describe "Data Behaviour" do
     test "shape/1 works" do
       [{@data_5, [5]}, {@data_8, [8]}]

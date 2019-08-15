@@ -58,11 +58,6 @@ defmodule Annex.Layer.Sequence do
     |> MapArray.new()
   end
 
-  @spec add_layer(t(), struct()) :: t()
-  def add_layer(%Sequence{} = seq, %_{} = layer) do
-    %Sequence{seq | layers: seq |> get_layers() |> MapArray.append(layer)}
-  end
-
   @spec get_layers(t()) :: layers
   def get_layers(%Sequence{layers: layers}), do: layers
 
@@ -194,21 +189,15 @@ defmodule Annex.Layer.Sequence do
   end
 
   defp last_shape(%Sequence{} = seq) do
-    seq
-    |> get_layers
-    |> MapArray.seek_down(fn layer ->
-      Layer.has_shapes?(layer)
-    end)
-    |> case do
-      :error ->
-        raise Annex.AnnexError,
-          message: """
-          Sequence requires at least one shaped layer.
-          """
+    # error case cover in first_shape.
+    {:ok, layer} =
+      seq
+      |> get_layers
+      |> MapArray.seek_down(fn layer ->
+        Layer.has_shapes?(layer)
+      end)
 
-      {:ok, layer} ->
-        Layer.shapes(layer)
-    end
+    Layer.shapes(layer)
   end
 
   @impl Learner

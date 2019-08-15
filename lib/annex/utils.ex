@@ -15,20 +15,6 @@ defmodule Annex.Utils do
   end
 
   @doc """
-  Generates a list of `n` floats between -1.0 and 1.0.
-  """
-  @spec random_weights(integer()) :: list(float())
-  def random_weights(n) when n > 0 and is_integer(n) do
-    Enum.map(1..n, fn _ -> random_float() end)
-  end
-
-  def ones(n) do
-    fn -> 1.0 end
-    |> Stream.repeatedly()
-    |> Enum.take(n)
-  end
-
-  @doc """
   A strict zip function in which the two given enumerables *must* be the same size.
   """
   @spec zip([any()], [any()]) :: [{any(), any()}]
@@ -62,75 +48,14 @@ defmodule Annex.Utils do
     [func.(a, b) | zipmap(a_rest, b_rest, func)]
   end
 
-  @spec transpose(any()) :: [[any()]]
-  def transpose([]), do: []
-  def transpose([[] | _]), do: []
+  # def mean(items, mapper) when is_function(mapper, 1) do
+  #   {counted, totaled} =
+  #     Enum.reduce(items, {0, 0.0}, fn item, {count, total} ->
+  #       {count + 1, mapper.(item) + total}
+  #     end)
 
-  def transpose(a) do
-    [Enum.map(a, &hd/1) | transpose(Enum.map(a, &tl/1))]
-  end
-
-  @doc """
-  Calculates the average.
-  """
-  @spec mean(any()) :: float()
-  def mean([]), do: 0.0
-
-  def mean(items) do
-    {counted, totaled} =
-      Enum.reduce(items, {0, 0.0}, fn item, {count, total} ->
-        {count + 1, total + item}
-      end)
-
-    totaled / counted
-  end
-
-  def mean([], _), do: 0.0
-
-  def mean(items, mapper) when is_function(mapper, 1) do
-    {counted, totaled} =
-      Enum.reduce(items, {0, 0.0}, fn item, {count, total} ->
-        {count + 1, mapper.(item) + total}
-      end)
-
-    totaled / counted
-  end
-
-  @doc """
-  Calculates the dot product which is the sum of element-wise multiplication of two enumerables.
-  """
-  @spec dot(list(float()), list(float())) :: float()
-  def dot(a, b) when is_list(a) and is_list(b) do
-    a
-    |> zip(b)
-    |> Enum.reduce(0.0, fn {ax, bx}, total -> ax * bx + total end)
-  end
-
-  @doc """
-  Turns a list of floats into floats between 0.0 and 1.0 at their respective ratio.
-  """
-  @spec normalize(list(float())) :: list(float())
-  def normalize(data) when is_list(data) do
-    {minimum, maximum} = Enum.min_max(data)
-
-    case maximum - minimum do
-      0.0 -> Enum.map(data, fn _ -> 1.0 end)
-      diff -> Enum.map(data, fn item -> (item - minimum) / diff end)
-    end
-  end
-
-  @doc """
-  Turns a list of floats into their proportions.
-
-  The sum of the output should be approximately 1.0.
-  """
-  @spec proportions(list(float())) :: list(float())
-  def proportions(data) when is_list(data) do
-    case Enum.sum(data) do
-      0.0 -> Enum.map(data, fn item -> item end)
-      sum -> Enum.map(data, fn item -> item / sum end)
-    end
-  end
+  #   totaled / counted
+  # end
 
   def is_module?(item) do
     is_atom(item) && Code.ensure_loaded?(item)

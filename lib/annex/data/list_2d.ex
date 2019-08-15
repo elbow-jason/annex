@@ -98,6 +98,19 @@ defmodule Annex.Data.List2D do
     end)
   end
 
+  @spec transpose(t()) :: t()
+  def transpose(data) do
+    do_transpose(data)
+  end
+
+  defp do_transpose([]) do
+    []
+  end
+
+  defp do_transpose(data) do
+    [Enum.map(data, &hd/1) | data |> Enum.map(&tl/1) |> do_transpose()]
+  end
+
   defp type_check(data) do
     if not is_list2D(data) do
       raise ArgumentError,

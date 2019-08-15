@@ -1,7 +1,7 @@
 defmodule Annex.AndTest do
   use ExUnit.Case
   alias Annex.Layer.Sequence
-  alias Annex.LearnerHelper
+  alias Annex.LearnerHelpers
 
   @dataset [
     {[1.0, 1.0, 1.0], [1.0]},
@@ -27,7 +27,7 @@ defmodule Annex.AndTest do
                learning_rate: 0.15,
                name: "AND operation",
                halt_condition: {:epochs, 1500},
-               log: &LearnerHelper.test_logger/4,
+               log: &LearnerHelpers.test_logger/4,
                log_interval: 750
              )
 

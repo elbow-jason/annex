@@ -1,4 +1,4 @@
-defmodule Annex.LearnerHelper do
+defmodule Annex.LearnerHelpers do
   @moduledoc """
   This module contains utility functions for the testing of an Annex.Learner
   """

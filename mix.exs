@@ -54,7 +54,8 @@ defmodule Annex.MixProject do
       {:nimble_csv, "~> 0.6.0", only: [:dev, :test]},
       {:ex_doc, "~> 0.20.2", only: :dev, runtime: false},
       {:tensor, "~> 2.1"},
-      {:map_array, github: "elbow-jason/map_array", rev: "a9c3077"}
+      {:map_array, github: "elbow-jason/map_array", rev: "a9c3077"},
+      {:mox, "~> 0.5.0"}
     ]
   end
 
