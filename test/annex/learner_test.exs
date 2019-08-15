@@ -14,7 +14,6 @@ defmodule Annex.LearnerTest do
     An Annex.Learner without a train/3 implementation
     """
     use Annex.Learner
-    alias Annex.FakeLearnerWithoutTrain
 
     defstruct thing: 1
 
@@ -29,7 +28,6 @@ defmodule Annex.LearnerTest do
     An Annex.Learner with a train/3 implementation
     """
     use Annex.Learner
-    alias Annex.FakeLearnerWithTrain
 
     defstruct thing: 1
 
