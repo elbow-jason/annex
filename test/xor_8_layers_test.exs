@@ -1,4 +1,4 @@
-defmodule Annex.SequenceXorTest do
+defmodule Annex.SequenceXor8LayerTest do
   use ExUnit.Case, async: true
 
   alias Annex.Layer.Sequence
