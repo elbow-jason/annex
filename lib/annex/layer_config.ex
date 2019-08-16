@@ -78,4 +78,11 @@ defmodule Annex.LayerConfig do
         {:ok, key, func.()}
     end
   end
+
+  def get(%LayerConfig{} = cfg, key, default \\ nil) do
+    case fetch(cfg, key) do
+      {:ok, _, value} -> value
+      {:error, _, _} -> default
+    end
+  end
 end

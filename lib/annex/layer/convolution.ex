@@ -17,11 +17,13 @@ defmodule Annex.Layer.Convolution do
     Layer.Convolution
   }
 
-  @behaviour Layer
+  use Layer
 
-  @configured_data_type :annex
-                        |> Application.get_env(__MODULE__, [])
-                        |> Keyword.get(:data_type, DMatrix)
+  defp configured_data_type do
+    :annex
+    |> Application.get_env(__MODULE__, [])
+    |> Keyword.get(:data_type, DMatrix)
+  end
 
   @type t :: %Convolution{
           input_shape: Shape.t(),
@@ -30,7 +32,7 @@ defmodule Annex.Layer.Convolution do
           data_type: Data.type()
         }
 
-  defstruct data_type: @configured_data_type,
+  defstruct data_type: nil,
             filters: nil,
             stride: nil,
             input_shape: nil
@@ -48,8 +50,8 @@ defmodule Annex.Layer.Convolution do
 
   def filter_width(%Convolution{} = conv) do
     case filter_shape(conv) do
-      {width} -> width
-      {_, columns} -> columns
+      [width] -> width
+      [_, columns] -> columns
     end
   end
 
@@ -69,8 +71,35 @@ defmodule Annex.Layer.Convolution do
   end
 
   @impl Layer
-  def init_layer(%Convolution{} = _conv, _opts) do
-    raise "not implemented"
+  def init_layer(%LayerConfig{} = cfg) do
+    with(
+      {:ok, :data_type, data_type} <- LayerConfig.fetch(cfg, :data_type)
+
+      # :filters: nil,
+      #   :stride: nil,
+      #   :input_shape: nil
+    ) do
+      raise "not implemented"
+    else
+      {:error, _, %AnnexError{} = err} ->
+        raise err
+    end
+  end
+
+  def init_filters(%LayerConfig{} = cfg) do
+    with(
+      {:error, _, _} <- LayerConfig.fetch(cfg, :filters),
+      {:error, _, _} <- LayerConfig.fetch(cfg, :n_filters)
+      # add more stuff
+    ) do
+      raise "not implemented"
+    else
+      {:ok, :filters, _filters} ->
+        raise "not implemented"
+
+      {:ok, :n_filters, _n_filters} ->
+        raise "not implemented"
+    end
   end
 
   @impl Layer
@@ -89,8 +118,8 @@ defmodule Annex.Layer.Convolution do
   end
 
   @impl Layer
-  @spec shape(t()) :: {Shape.t(), Shape.t()}
-  def shape(%Convolution{} = conv), do: {input_shape(conv), output_shape(conv)}
+  # @spec shapes(t()) :: {Shape.t(), Shape.t()}
+  def shapes(%Convolution{} = conv), do: {input_shape(conv), output_shape(conv)}
 
   @spec input_shape(t()) :: Shape.t()
   def input_shape(%Convolution{input_shape: input_shape}), do: input_shape
@@ -98,8 +127,8 @@ defmodule Annex.Layer.Convolution do
   @spec output_shape(t()) :: Shape.t()
   def output_shape(%Convolution{} = conv) do
     case input_shape(conv) do
-      {_} -> {output_width(conv), depth(conv)}
-      {rows, _} -> {rows, output_width(conv), depth(conv)}
+      [_] -> [output_width(conv), depth(conv)]
+      [rows, _] -> [rows, output_width(conv), depth(conv)]
     end
   end
 end
