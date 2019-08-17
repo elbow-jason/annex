@@ -15,7 +15,7 @@ by adding `annex` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:annex, "~> 0.1.0"}
+    {:annex, "~> 0.2.0"}
   ]
 end
 ```
