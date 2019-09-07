@@ -37,8 +37,9 @@ Annex is a framework for building and executing machine learning with deep neura
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `annex` to your list of dependencies in `mix.exs`:
+[Annex is available on Hex](https://hex.pm/docs/publish)
+
+Annex can be installed by adding `annex` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
@@ -47,10 +48,6 @@ def deps do
   ]
 end
 ```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/annex](https://hexdocs.pm/annex).
 
 ## Features
 
