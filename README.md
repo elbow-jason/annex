@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://github.com/elbow-jason/annex">
-    <img alt="annex logo" src="https://raw.githubusercontent.com/elbow-jason/annex/master/assets/annex_x.svg" width="450">
+    <img alt="annex logo" src="https://raw.githubusercontent.com/elbow-jason/annex/master/assets/annex_x.png" width="450">
   </a>
 </p>
 
