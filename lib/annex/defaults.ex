@@ -15,8 +15,8 @@ defmodule Annex.Defaults do
   end
 
   @spec cost() :: module()
-  def cost, do: get_defaults(:cost, MeanSquaredError)
+  def cost, do: get_defaults(:cost) || MeanSquaredError
 
   @spec learning_rate() :: float()
-  def learning_rate, do: get_defaults(:learning_rate, 0.05)
+  def learning_rate, do: get_defaults(:learning_rate) || 0.05
 end

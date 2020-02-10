@@ -47,7 +47,7 @@ defmodule Annex.Optimizer.SGD do
 
       error = Data.error(prediction, labels)
 
-      props = Backprop.new()
+      props = Backprop.new(opts)
       {layer3, _error2, _props} = Layer.backprop(layer2, error, props)
 
       loss = Cost.calculate(cost, error)

@@ -20,7 +20,7 @@ defmodule Annex.SequenceXor2Test do
              |> Annex.sequence()
              |> Annex.train(dataset,
                name: "xor2",
-               learning_rate: 0.02,
+               learning_rate: 0.1,
                halt_condition: {:epochs, 1200},
                log_interval: 600
              )
