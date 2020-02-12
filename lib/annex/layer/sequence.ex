@@ -65,7 +65,7 @@ defmodule Annex.Layer.Sequence do
   @spec init_learner(t() | LayerConfig.t(Sequence), Keyword.t()) :: t() | no_return()
   def init_learner(seq, opts \\ [])
 
-  def init_learner(%Sequence{initialized?: true} = seq, opts), do: seq
+  def init_learner(%Sequence{initialized?: true} = seq, _opts), do: seq
 
   def init_learner(%Sequence{layer_configs: layer_configs, initialized?: false}, opts) do
     Sequence
