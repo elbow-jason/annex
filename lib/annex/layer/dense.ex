@@ -116,7 +116,6 @@ defmodule Annex.Layer.Dense do
     with(
       {:ok, :weights, weights} <-
         LayerConfig.fetch_lazy(cfg, :weights, fn ->
-          IO.inspect(Process.info(self(), :current_stacktrace))
           List1D.new_random(rows * columns)
         end),
       :ok <-
