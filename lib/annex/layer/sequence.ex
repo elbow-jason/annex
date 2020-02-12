@@ -42,7 +42,7 @@ defmodule Annex.Layer.Sequence do
       {:ok, :layers, layer_configs} <- LayerConfig.fetch(cfg, :layers),
       layers <- do_init_layers(layer_configs)
     ) do
-      %Sequence{layers: layers, layer_configs: layer_configs}
+      %Sequence{layers: layers, layer_configs: layer_configs, initialized?: true}
     else
       {:error, :layers, %AnnexError{} = err} ->
         raise err
@@ -65,7 +65,9 @@ defmodule Annex.Layer.Sequence do
   @spec init_learner(t() | LayerConfig.t(Sequence), Keyword.t()) :: t() | no_return()
   def init_learner(seq, opts \\ [])
 
-  def init_learner(%Sequence{layer_configs: layer_configs}, opts) do
+  def init_learner(%Sequence{initialized?: true} = seq, opts), do: seq
+
+  def init_learner(%Sequence{layer_configs: layer_configs, initialized?: false}, opts) do
     Sequence
     |> LayerConfig.build(layers: layer_configs)
     |> init_learner(opts)
