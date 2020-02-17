@@ -29,3 +29,7 @@ annex-*.tar
 # dialyzer plt
 annex.plt
 annex.plt.hash
+
+#IntelliJ cruft
+.idea/
+annex.iml

@@ -89,6 +89,18 @@ defmodule Annex.Layer.ActivationTest do
     assert Activation.tanh_deriv(-1.0) == 0.41997434161402614
   end
 
+  test "linear/1" do
+    assert Activation.linear(1.0) == 1.0
+    assert Activation.linear(0.0) == 0.0
+    assert Activation.linear(-1.0) == -1.0
+  end
+
+  test "linear_deriv/1" do
+    assert Activation.linear_deriv(1.0) == 1.0
+    assert Activation.linear_deriv(0.0) == 1.0
+    assert Activation.linear_deriv(-1.0) == 1.0
+  end
+
   test "softmax/1" do
     assert Activation.softmax([1.0, 2.0, 3.0]) == [
              0.09003057317038046,

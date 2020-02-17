@@ -16,7 +16,7 @@ defmodule Annex.Layer.Activation do
 
   @type func_type :: :float | :list
 
-  @type func_name :: :relu | :sigmoid | :tanh | {:relu, number()}
+  @type func_name :: :relu | :sigmoid | :tanh | {:relu, number()} | :linear
 
   @type t :: %__MODULE__{
           activator: (number -> number),
@@ -87,6 +87,14 @@ defmodule Annex.Layer.Activation do
           activator: &softmax/1,
           derivative: &tanh_deriv/1,
           func_type: :list,
+          name: name
+        }
+
+      :linear ->
+        %Activation{
+          activator: &linear/1,
+          derivative: &linear_deriv/1,
+          func_type: :float,
           name: name
         }
 
@@ -181,6 +189,12 @@ defmodule Annex.Layer.Activation do
   def tanh_deriv(x) do
     1.0 - (x |> :math.tanh() |> :math.pow(2))
   end
+
+  @spec linear(float()) :: float()
+  def linear(n), do: n
+
+  @spec linear_deriv(float()) :: float()
+  def linear_deriv(_x), do: 1.0
 
   defimpl Inspect do
     @spec inspect(Activation.t(), any) :: String.t()
