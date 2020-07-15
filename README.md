@@ -37,7 +37,7 @@ Annex is a framework for building and executing machine learning with deep neura
 
 ## Installation
 
-[Annex is available on Hex](https://hex.pm/docs/publish)
+[Annex is available on Hex](https://hex.pm/packages/annex)
 
 Annex can be installed by adding `annex` to your list of dependencies in `mix.exs`:
 
